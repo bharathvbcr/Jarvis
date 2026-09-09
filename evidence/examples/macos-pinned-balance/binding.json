@@ -1,0 +1,5 @@
+{
+ "schema_version":1,"tenant":"north","application":"jarvis-bank",
+ "platforms":["darwin","windows","linux"],"window_title":"Jarvis Bank — North Cooperative",
+ "read_only_targets":[{"role":"button","name":"Search"},{"role":"button","name":"New subaccount"},{"role":"button","name":"Review"},{"role":"button","name":"Back"},{"role":"button","name":"Dismiss"},{"role":"text_field","name":"Member ID"},{"role":"text_field","name":"Subaccount name"}]
+}

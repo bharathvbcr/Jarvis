@@ -1,32 +1,45 @@
 # Requirement to evidence matrix
 
-Status vocabulary: **verified** means the named check ran; **implemented, unqualified** means code exists but the required live environment has not proved it; **open** means work or external setup remains. Current native evidence must be read together with its campaign and source revision.
+**Verified** applies only to the named check or immutable report. **Implemented, unqualified** means code exists but the required live behavior has not been demonstrated. **Open** identifies missing implementation, setup or evidence. The macOS and Linux campaign reports bind historical executable hashes; final source rebuilds require their own qualification.
 
-| Requirement | Implementation owner | Evidence / remaining gate |
-|---|---|---|
-| Rust/Go first-party code | All three workspaces | Go/Rust source and build commands; no first-party Python/JS runtime |
-| Native bank, two tenant layouts | Jarvis `desktop/crates/bank-demo` | 17 state/semantic tests verified; actual macOS controls and balance observed |
-| Real discovery | Manvi loop + Jarvis scoped registry | Implemented, unqualified: Gemini credential and live multimodal/save-restore conformance |
-| Immutable capability/compiler | Manvi `workflow` | Type/dataflow/forward-control-flow and mutation tests; exact-byte hashes |
-| Live model-free replay | Manvi `computer` + `workflow` | macOS run `158b79ef3ae80a9e25bf809c1cc6ee0e` completed, balance125000USD, DevCouncil passed |
-| Offline trace replay | Exported workflow reducer | Same run reconstructs exact final state; Go dependency boundary check verified |
-| Independent acceptance | DevCouncil `dc-evidence` | 23 evaluator +9 CLI tests; live Go→Rust resumed/wrong-run fixture check verified |
-| Saved-state oracle | Jarvis qualification CLI | Baseline40/40 bank state remained unchanged; mutation detection test; successful creation oracle remains open |
-| Privacy across warm/cold/restored history | Manvi session | Escaped-string, alias, image, opaque continuation and restoration regressions |
-| Responsive cancellation | Manvi registry/runner/native helpers | Cancelled admission, approval race, stale epoch, interrupted helper tests; host blocked-pipe review in progress |
-| Human approval/takeover | Native broker + workbench | Implemented; successful human-approved creation on each OS/tenant remains open |
-| Workbench and visual editor | Jarvis Rust workbench | Native build and semantic tests; final rendered/live control QA required |
-| Optional1: catalog/invocation | Manvi catalog + workbench | Immutable storage, typed forms and promotion wiring; integration tests |
-| Optional2: generated Go caller | Manvi catalog codegen | Embeds exact artifact and calls canonical executor; generated-package compile gate |
-| Optional3: matching diagnostics/approval | Native resolve + workbench | Unique locator/actionability refusals, competing matches, state-diff diagnostics; score never bypasses approval |
-| Optional4: one assisted recovery | Manvi runner + scoped Gemini tool | Once-per-run paused-only Back/Dismiss tests; live credentialed scenario open |
-| Optional5: tenant/platform bindings | Jarvis `profiles` | Exact title/platform and subset policy checks; macOS both layouts; Windows/Linux live gates |
-| Optional6: stability reports | Jarvis qualification CLI | First campaign20runs/tenant: North3passed, South17passed; retained baseline failures; hardening rerun pending |
-| macOS capture/input | Manvi native | AX SetValue and Press +1760×1464 scoped capture verified on macOS27arm64 |
-| Windows/Linux adapters | Manvi native | ARM64 cargo-check verified; runtime VM qualification open |
-| $25 campaign accounting | Manvi `llm/budget` | Five ledger tests and per-HTTP-attempt transport tests; unknown reservations retained |
-| Assignment package | Jarvis docs/evidence/build | README, required REPORT headings, baseline bundle and reproducible build command; final pins and qualification remain open |
+The final pinned build now has its own [40-run macOS report](../evidence/macos-pinned-40.json):
+23 passed and 17 suspended after native input-counter changes, with all 40 saved-state
+checks unchanged. This does not pass the clean stability gate. Its [denial campaign](../evidence/macos-pinned-denial.json)
+reached denial on South; North suspended before approval. [Build, test and offline source restoration](../evidence/build-verification.json)
+passed against the pins in `upstream.lock.json`. Earlier 40/40 results below retain
+their original binary scope.
 
-The baseline runs are real external desktop operations. Headless egui tests, mocked workflow tests and imported verifier fixtures are distinct evidence classes. They do not establish native execution or live provider behavior.
+| Requirement | Canonical owner / source surface | Evidence and remaining gate |
+| --- | --- | --- |
+| Rust/Go first-party implementation | Manvi, DevCouncil and Jarvis workspaces | Go host and native Rust bank/workbench/broker; first-party build and VM preparation tools are Go. |
+| Native bank and two tenants | Jarvis `desktop/crates/bank-demo` | **Verified:** genuine balance observations and independent saved-state checks for both layouts on macOS and Linux. Semantic UI checks are a separate evidence class. |
+| Scoped Gemini discovery | Manvi loop; Jarvis `internal/app/discovery.go` | **Implemented, unqualified:** scoped desktop tools and proposed capability publication. No live multimodal discovery, second model decision or saved-session continuation bundle yet. |
+| Immutable compiler and typed schema | Manvi `workflow` | Compiler/reducer regressions cover types, unavailable outputs, bounded forward flow, mutation/alias ownership and exact-byte revision identity. |
+| Live replay without model decisions | Manvi `computer` + `workflow` | **Verified:** macOS [40-run readiness report](../evidence/macos-stability-readiness.json) and Linux [40-run X11 report](../evidence/linux-x11-final-40.json), each 20 successful runs per tenant with zero model requests/cost. |
+| Offline trace replay | Jarvis `internal/trace`; exported Manvi reducer | Desktop/provider dependency exclusion and foreign-event/final-state replay checks. Curated [macOS](../evidence/examples/macos-balance/) and [Linux](../evidence/examples/linux-balance/) bundles retain the exact capability and trace used. |
+| Independent acceptance | DevCouncil `rust/dc-evidence`; additive `dcverify evidence-check` | Contracts are supplied independently. Evaluator/CLI regressions cover forged PASS, wrong run, changed expectations, missing/changed artifacts, duplicates and incomplete journals. The existing `check` and health schema remain separate interfaces. |
+| Durable state oracle | Jarvis `cmd/qualify/oracle.go` | **Verified:** each successful 40-run campaign has 40 unchanged saved-state checks. False-ack tests require a dispatched approved action, matching post-action success acknowledgment and independent saved-state disagreement; live positive creation and false-ack qualification remain open. |
+| Sanitization before publication | Manvi session/computer; Jarvis journal | Warm/cold/restored, alias, sensitive geometry, opaque continuation and imported visual-anchor regressions. Curated public screenshots mask member input. Discovery action admission and masked frames are durably stored before publication. |
+| Responsive cancellation and epochs | Manvi tools/computer/native; Jarvis lifecycle | Tests cover cancelled admission, stale grants, blocked writes/helpers, retirement, durable receipt failure and interrupted delivery. Unknown-outcome reconciliation observes without retrying, retains incomplete acceptance and keeps the bank alive until cleanup. |
+| Human approval and same-session takeover | Manvi broker/runner; Jarvis workbench | **Verified:** both tenants reached real pending approval and were denied on macOS and Linux. **Unqualified:** human-approved positive creation, completed takeover/resume and live visual input. No test or model fabricates a human grant. |
+| Workbench | Jarvis `desktop/crates/workbench` | Structured forms use the canonical compiler; history, owner, approval queue, frame/AX timeline, asynchronous diagnostics/export and stale-control guards are implemented. Semantic/rendered checks do not substitute for all native control paths. |
+| Optional 1: catalog and typed invocation | Manvi `workflow/catalog`; Jarvis host/workbench | Immutable registration/promotion, revision history and typed input forms are wired into real host operations and the UI. Catalog publication/promotion and UI transport tests cover their local contracts. |
+| Optional 2: generated Go callers | Manvi catalog generator; Jarvis `examples/generated/balance` | Generated source embeds the exact artifact and delegates to the canonical executor. It contains no alternate workflow engine or model decision path. |
+| Optional 3: matching diagnostics and approval rules | Manvi `computer/diagnostics.go`; native resolver; workbench | Unique matches, role/name/ancestry requirements, enabled/editable state, recipient/geometry checks and refusals are recorded. A diagnostic score never grants permission. Linux missing/duplicate/overlay campaigns observed and refused their faults. |
+| Optional 4: one assisted recovery | Manvi computer recovery; Jarvis `internal/app/assist.go` | Opt-in, once-per-run, paused-only Back/Dismiss policy and checkpoint resume have regressions. **Unqualified:** credentialed safe model recovery followed by native checkpoint verification. |
+| Optional 5: tenant/platform bindings | Jarvis `profiles`; `internal/app/profile.go` | Exact target scope and policy-subset validation; both tenant layouts have native macOS/Linux evidence. Windows runtime qualification is deferred. |
+| Optional 6: N-run stability reporting | Jarvis `cmd/qualify` | Reports distinguish requested/attempted runs, first-attempt outcomes, observation/input retries, latency, model cost and independent saved-state results. Latest historical counts: macOS 40/40 with 0 first-attempt successes; Linux 40/40 with 1 first-attempt success. |
+| Visual fallback | Manvi visual compiler/resolver; Jarvis anchor host/UI | **Verified:** native macOS protected crop creation, unique bounded match and unapproved-click refusal with unchanged seed in [the visual probe](../evidence/examples/macos-visual-no-grant/). No live approved click or inaccessible-canvas text extraction claim. |
+| macOS native execution | Manvi AX/ScreenCaptureKit adapter | Actual scoped capture and native control execution in retained campaigns. Final rebuilt binary qualification, hardware interference, mixed-display and permission-revocation cases remain open. |
+| Linux ARM64/X11 execution | Manvi AT-SPI/X11 adapter; Jarvis VM harness | **Verified:** genuine guest 40-run campaign plus denial/overlay/missing/duplicate scenarios. Input uses AT-SPI semantics and a checked XTest fallback for editable fields. The [current-source refresh](../evidence/linux-refresh-blocked.json) is blocked before VM startup; 0/40 trials attempted. No Wayland unattended input or external-interaction listener implementation. |
+| Windows ARM64 | Manvi Windows adapter; Go/Rust build tools | Source/cross-build checks are separate from destination linking and desktop execution. **Deferred by user:** Windows runtime, capture, UIA, DPI and input qualification. |
+| Provider campaign budget | Manvi `llm/budget` and transport | Every actual provider attempt reserves conservatively; unknown charges retain reservations. Regression surfaces include persistence, cancellation, retry settlement and exclusive campaign ownership. Live provider behavior remains unqualified. |
+| Assignment package | Jarvis `cmd/dev`, documentation and evidence | Reviewed upstream pins, consolidated build/tests and actual offline restoration from verified Git bundles are complete. The archive includes source, binaries, manifests and curated evidence; acceptance gates remain distinct from packaging. |
 
-Adversarial coverage still requiring physical qualification includes mixed DPI/negative origins, same-process windows, overlays, permission revocation, external interference, guest crashes and uncertain account-change delivery. Keep blocked or unexamined cases visible in the final report.
+The [evidence inventory](../evidence/README.md) retains earlier failures alongside successful campaigns. Safety-campaign success means the expected refusal or denial occurred; it does not turn a blocked task into accepted completion. The `false-ack` scenario deliberately permits UI evidence to pass while the independent task oracle fails.
+
+The packaged workbench still requires its own Accessibility and Screen Recording grants: its actual doctor returned denied for both. Successful CLI-launched capture/input does not grant permission to the app-bundle launch route.
+
+Physical/provider cases still open include successful human-approved changes for each platform/tenant, positive takeover, live assisted recovery, false acknowledgment, crash after durable commit, uncertain delivery, mixed DPI/negative display origins, same-process competing windows, permission revocation and hung native providers. Some corresponding policy and process cases have synthetic regressions; that is not physical qualification. macOS bounded HID checking is implemented but hardware classification is unqualified; continuous monitoring and Windows/X11 external-input listeners remain implementation gaps.
+
+Repeated controlled trials are regression evidence. Even if twenty successes were independent, their one-sided 95% exact-binomial lower bound would be approximately 86.1%; the reports explicitly do not assume independence. Completing one platform's read-only matrix does not complete the assignment's full acceptance matrix.

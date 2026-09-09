@@ -1,0 +1,212 @@
+{
+  "initial": {
+    "run_id": "3a005356846d0b300c8e220819b99c9c",
+    "session_id": "session-1788977707061-36",
+    "epoch": 1,
+    "capability_sha256": "5b514aefd13850e5f97f911392c4df615aeab0608aadc84fe81a8e91c7d7cbc0",
+    "sequence": 0,
+    "elapsed_millis": 0,
+    "phase": "ready",
+    "step_index": 0,
+    "actions": 0,
+    "attempts": 0,
+    "observation": {
+      "id": "",
+      "target_id": "",
+      "matches": 0,
+      "complete": false,
+      "actionable": false,
+      "value": {
+        "type": ""
+      }
+    },
+    "outputs": {}
+  },
+  "state": {
+    "run_id": "3a005356846d0b300c8e220819b99c9c",
+    "session_id": "session-1788977707061-36",
+    "epoch": 3,
+    "capability_sha256": "5b514aefd13850e5f97f911392c4df615aeab0608aadc84fe81a8e91c7d7cbc0",
+    "sequence": 8,
+    "elapsed_millis": 1980,
+    "phase": "cancelled",
+    "resume_phase": "post_action",
+    "step_index": 0,
+    "actions": 1,
+    "attempts": 0,
+    "observation": {
+      "id": "",
+      "target_id": "",
+      "matches": 0,
+      "complete": false,
+      "actionable": false,
+      "value": {
+        "type": ""
+      }
+    },
+    "outputs": {},
+    "reason": "cancelled"
+  },
+  "events": [
+    {
+      "sequence": 1,
+      "run_id": "3a005356846d0b300c8e220819b99c9c",
+      "session_id": "session-1788977707061-36",
+      "epoch": 1,
+      "elapsed_millis": 0,
+      "kind": "start",
+      "observation": {
+        "id": "",
+        "target_id": "",
+        "matches": 0,
+        "complete": false,
+        "actionable": false,
+        "value": {
+          "type": ""
+        }
+      }
+    },
+    {
+      "sequence": 2,
+      "run_id": "3a005356846d0b300c8e220819b99c9c",
+      "session_id": "session-1788977707061-36",
+      "epoch": 1,
+      "elapsed_millis": 490,
+      "kind": "observe_failed",
+      "action_id": "3a005356846d0b300c8e220819b99c9c:member",
+      "observation": {
+        "id": "",
+        "target_id": "",
+        "matches": 0,
+        "complete": false,
+        "actionable": false,
+        "value": {
+          "type": ""
+        }
+      },
+      "failure_code": "observation_inconsistent",
+      "reason": "observation_inconsistent: Accessibility state changed during first scoped capture: nodes 19 -\u003e 20; changed 3; sample 3: [3]:id; [4]:id; [2, 0, 0]:added"
+    },
+    {
+      "sequence": 3,
+      "run_id": "3a005356846d0b300c8e220819b99c9c",
+      "session_id": "session-1788977707061-36",
+      "epoch": 1,
+      "elapsed_millis": 1537,
+      "kind": "observed",
+      "action_id": "3a005356846d0b300c8e220819b99c9c:member",
+      "observation": {
+        "id": "observation-1788977708503-37",
+        "target_id": "n6",
+        "matches": 1,
+        "complete": true,
+        "actionable": true,
+        "value": {
+          "type": "string",
+          "text": "[redacted]"
+        }
+      }
+    },
+    {
+      "sequence": 4,
+      "run_id": "3a005356846d0b300c8e220819b99c9c",
+      "session_id": "session-1788977707061-36",
+      "epoch": 1,
+      "elapsed_millis": 1776,
+      "kind": "receipt",
+      "action_id": "3a005356846d0b300c8e220819b99c9c:member",
+      "observation": {
+        "id": "",
+        "target_id": "",
+        "matches": 0,
+        "complete": false,
+        "actionable": false,
+        "value": {
+          "type": ""
+        }
+      },
+      "delivery": "sent"
+    },
+    {
+      "sequence": 5,
+      "run_id": "3a005356846d0b300c8e220819b99c9c",
+      "session_id": "session-1788977707061-36",
+      "epoch": 1,
+      "elapsed_millis": 1973,
+      "kind": "external_interaction",
+      "action_id": "3a005356846d0b300c8e220819b99c9c:member",
+      "observation": {
+        "id": "",
+        "target_id": "",
+        "matches": 0,
+        "complete": false,
+        "actionable": false,
+        "value": {
+          "type": ""
+        }
+      },
+      "failure_code": "external_interaction",
+      "reason": "external_interaction: Hardware input changed since admission; automation requires reconciliation"
+    },
+    {
+      "sequence": 6,
+      "run_id": "3a005356846d0b300c8e220819b99c9c",
+      "session_id": "session-1788977707061-36",
+      "epoch": 1,
+      "next_epoch": 2,
+      "elapsed_millis": 1973,
+      "kind": "pause",
+      "observation": {
+        "id": "",
+        "target_id": "",
+        "matches": 0,
+        "complete": false,
+        "actionable": false,
+        "value": {
+          "type": ""
+        }
+      },
+      "reason": "external interaction requires human reconciliation: external_interaction: Hardware input changed since admission; automation requires reconciliation"
+    },
+    {
+      "sequence": 7,
+      "run_id": "3a005356846d0b300c8e220819b99c9c",
+      "session_id": "session-1788977707061-36",
+      "epoch": 2,
+      "elapsed_millis": 1973,
+      "kind": "cancel",
+      "observation": {
+        "id": "",
+        "target_id": "",
+        "matches": 0,
+        "complete": false,
+        "actionable": false,
+        "value": {
+          "type": ""
+        }
+      },
+      "reason": "caller cancelled"
+    },
+    {
+      "sequence": 8,
+      "run_id": "3a005356846d0b300c8e220819b99c9c",
+      "session_id": "session-1788977707061-36",
+      "epoch": 2,
+      "next_epoch": 3,
+      "elapsed_millis": 1980,
+      "kind": "fence",
+      "observation": {
+        "id": "",
+        "target_id": "",
+        "matches": 0,
+        "complete": false,
+        "actionable": false,
+        "value": {
+          "type": ""
+        }
+      },
+      "reason": "terminal input fence"
+    }
+  ],
+  "error": "context canceled"
+}

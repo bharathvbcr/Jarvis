@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-09-09T18:08:01Z",
+  "purpose": "Refresh Linux ARM64/X11 qualification against committed sources",
+  "status": "blocked_before_guest_start",
+  "host": {
+    "os": "macOS",
+    "version": "27.0",
+    "build": "26A5425a",
+    "utm_version": "4.7.5",
+    "utm_build": "118"
+  },
+  "vm": {
+    "uuid": "41990217-EBE5-483F-9821-056DF0FD571A",
+    "initial_status": "stopped",
+    "final_observed_status": "stopped",
+    "configuration_changed": false,
+    "guest_files_changed": false,
+    "guest_commands_executed": false,
+    "current_source_runtime_qualified": false
+  },
+  "attempts": [
+    {
+      "command": "utmctl start 41990217-EBE5-483F-9821-056DF0FD571A",
+      "observed_error": "Error from event: The operation couldn’t be completed. (OSStatus error -609.)",
+      "host_diagnostics": "UTM logged NSInternalInconsistencyException at NSWindow.m:15387. Its crash report records EXC_BAD_ACCESS/SIGSEGV on the main thread, with Swift SerialExecutor.isMainExecutor in the stack.",
+      "crash_report_sha256": "3fd763d07c867c45427b7be12aaa894464fcb6445d08960192c0b1817e292ccb"
+    },
+    {
+      "command": "utmctl start --hide --debug 41990217-EBE5-483F-9821-056DF0FD571A",
+      "observed_error": "Error from event: The operation couldn’t be completed. (OSStatus error -10004.)",
+      "host_diagnostics": "The debug scripting request logged an AppleEvents privilege rejection. UTM also repeated the NSWindow.m:15387 assertion and NSInternalInconsistencyException; the VM remained stopped. The waiting utmctl process was terminated after collecting diagnostics."
+    }
+  ],
+  "recovery_actions": {
+    "permission_changes": false,
+    "vm_reconfiguration": false,
+    "retries_after_second_failure": false,
+    "new_dependencies": false
+  },
+  "prepared_sources": {
+    "manvi_native": {
+      "revision": "28610bdb98a6e15c449f4a35d173730971c6c3c1",
+      "tree": "b58a4e5c0ba3cbbacb4a78c4167730af376997a4",
+      "archive_sha256": "fb9034f77c732221097d0bcecb66255dc5dcc3b622877f3e33db9c53f48e950d"
+    },
+    "jarvis_desktop": {
+      "revision": "1eaf987dadafddba69aabab7178892c3d1082956",
+      "tree": "51a4e09e893e61cecc3da41776920c146d8fccae",
+      "archive_sha256": "bb41e969b719f3be78762819efc8fa0aa7e65600eef612026fac03887246824d"
+    },
+    "devcouncil_rust": {
+      "revision": "4ccadc604f40e21a3a14471d0af3c7674265e15f",
+      "tree": "37558ae470e604a715e1428841fc6455259cb937",
+      "archive_sha256": "26ef6d096f9ca2ff17d5324ce528e1944074eae7c32ef728142fd1c743ff88cd"
+    }
+  },
+  "native_cross_check": {
+    "command": "cargo check --locked -p manvi-desktop --target aarch64-unknown-linux-gnu",
+    "source_revision": "28610bdb98a6e15c449f4a35d173730971c6c3c1",
+    "exit_code": 0,
+    "result": "Finished dev profile in 17.68s",
+    "runtime_execution": false
+  },
+  "campaign": {
+    "requested_read_only_runs": 40,
+    "attempted_runs": 0,
+    "model_requests": 0,
+    "cost_nano_usd": 0,
+    "new_human_approvals": 0,
+    "historical_report": "linux-x11-final-40.json",
+    "historical_passed": 40,
+    "historical_total": 40,
+    "historical_scope": "The earlier report remains valid for its recorded executable hashes. It does not qualify the refreshed sources."
+  }
+}

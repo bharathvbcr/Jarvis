@@ -229,4 +229,10 @@ the native helper`. Doctor also reported Accessibility denied and qualification
 `not_tested` under the initial development app wrapper. No native success, frame,
 or bank write was manufactured. This exposed the need for the stable bundle
 above; native workbench completion remains gated on the user's OS permissions.
-Live Gemini, Windows and Linux remain separate qualification gates.
+On the rebuilt stable bundle, a subsequent rendered check loaded both registered
+capabilities and the canonical structured balance editor with typed invocation.
+The real-backend interoperability test passed separately. Doctor again reported
+both application permissions denied. CLI-launched native bank campaigns have
+their own permission identity and cannot qualify the workbench's native path.
+Linux now has a historical 40/40 CLI campaign; its refreshed run is blocked by
+UTM startup. Live Gemini and Windows remain separate qualification gates.

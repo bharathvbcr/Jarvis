@@ -1,0 +1,133 @@
+{
+  "schema_version": 3,
+  "platform": "darwin",
+  "architecture": "arm64",
+  "desktop_session": "",
+  "started_at": "2026-09-09T18:19:05Z",
+  "mode": "fresh_process",
+  "scenario": "denial",
+  "requested_per_tenant": 1,
+  "tenants": [
+    "north",
+    "south"
+  ],
+  "results": [
+    {
+      "run_id": "ecc020c810a0810fe74136db1931ade2",
+      "tenant": "north",
+      "index": 1,
+      "scenario": "denial",
+      "attempted": true,
+      "phase": "cancelled",
+      "verdict": "unavailable",
+      "outcome": "blocked",
+      "latency_millis": 6628,
+      "observation_retries": 1,
+      "input_retries": 0,
+      "error": "native run paused: external interaction requires human reconciliation: external_interaction: Hardware input changed since admission; automation requires reconciliation\ncontext canceled",
+      "evidence_dir": "/Users/bharath/Code/devtools/Jarvis/evidence/private/ecc020c810a0810fe74136db1931ade2",
+      "oracle": "seeded balances, members and subaccounts unchanged",
+      "oracle_verified": true,
+      "ui_acknowledgment_observed": false,
+      "approval_denied": false,
+      "approved_action_ids": [],
+      "fault_reached": false,
+      "expected_behavior_verified": false
+    },
+    {
+      "run_id": "ab69a9b42acf67afa2d7b8e4d822d769",
+      "tenant": "south",
+      "index": 1,
+      "scenario": "denial",
+      "attempted": true,
+      "phase": "cancelled",
+      "verdict": "incomplete",
+      "outcome": "blocked",
+      "latency_millis": 12703,
+      "observation_retries": 1,
+      "input_retries": 0,
+      "error": "human denied action",
+      "evidence_dir": "/Users/bharath/Code/devtools/Jarvis/evidence/private/ab69a9b42acf67afa2d7b8e4d822d769",
+      "oracle": "seeded balances, members and subaccounts unchanged",
+      "oracle_verified": true,
+      "ui_acknowledgment_observed": false,
+      "approval_denied": true,
+      "approved_action_ids": [],
+      "fault_reached": true,
+      "expected_behavior_verified": true
+    }
+  ],
+  "by_tenant": {
+    "north": {
+      "requested": 1,
+      "attempted": 1,
+      "passed": 0,
+      "failed": 0,
+      "blocked": 1,
+      "fault_reached": 0
+    },
+    "south": {
+      "requested": 1,
+      "attempted": 1,
+      "passed": 0,
+      "failed": 0,
+      "blocked": 1,
+      "fault_reached": 1
+    }
+  },
+  "matrix_complete": true,
+  "qualified": false,
+  "passed": 0,
+  "failed": 0,
+  "blocked": 2,
+  "first_attempt_successes": 0,
+  "model_requests": 0,
+  "cost_nano_usd": 0,
+  "one_sided_95_lower_bound": 0,
+  "independence_assumed": false,
+  "interactive": false,
+  "expected_behavior_passes": 1,
+  "campaign_passed": false,
+  "provenance": {
+    "files": {
+      "bank": {
+        "path": "/Users/bharath/Code/devtools/Jarvis/build/jarvis-bank",
+        "resolved_path": "/Users/bharath/Code/devtools/Jarvis/build/jarvis-bank",
+        "sha256": "f8ba7ed94bb164223653e6cea1d81085e74368d5363ef0caefcfef367ee2f2d4",
+        "size": 39071536
+      },
+      "broker": {
+        "path": "/Users/bharath/Code/devtools/Jarvis/build/manvi-desktop",
+        "resolved_path": "/Users/bharath/Code/devtools/Jarvis/build/manvi-desktop",
+        "sha256": "48af525f0e8cc659efbeadbf589b857d3f9258cb3b7ce7ad9a376522dd018214",
+        "size": 6991856
+      },
+      "capability": {
+        "path": "/Users/bharath/Code/devtools/Jarvis/examples/create-subaccount.json",
+        "resolved_path": "/Users/bharath/Code/devtools/Jarvis/examples/create-subaccount.json",
+        "sha256": "7acd7ab3ce9165769e84e78fac7a5afc2afeb9f04fc7dcf9e157ec9599623605",
+        "size": 1542
+      },
+      "contract": {
+        "path": "/Users/bharath/Code/devtools/Jarvis/scenarios/subaccount.contract.json",
+        "resolved_path": "/Users/bharath/Code/devtools/Jarvis/scenarios/subaccount.contract.json",
+        "sha256": "0fd7b3d12d29e94ef36e5dfacc67427b6c68e543208823f2f01dd473c34132b1",
+        "size": 171
+      },
+      "qualifier": {
+        "path": "/Users/bharath/Code/devtools/Jarvis/build/jarvis-qualify",
+        "resolved_path": "/Users/bharath/Code/devtools/Jarvis/build/jarvis-qualify",
+        "sha256": "f437421c23bf7c1df52de162a78ba240100957fdbeda52cffa0ca0ded6c9cc25",
+        "size": 7621746
+      },
+      "verifier": {
+        "path": "/Users/bharath/Code/devtools/Jarvis/build/dcverify",
+        "resolved_path": "/Users/bharath/Code/devtools/Jarvis/build/dcverify",
+        "sha256": "1711f07f47af8508775d0b76e863eb90a04bf73501b20d6d45675c86c2433fab",
+        "size": 3499848
+      }
+    },
+    "source_revision": "1eaf987dadafddba69aabab7178892c3d1082956",
+    "source_status": "dirty"
+  }
+}

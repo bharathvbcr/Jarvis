@@ -2,7 +2,15 @@
 
 Jarvis discovers desktop capabilities with Gemini, freezes them into typed artifacts, and executes those artifacts through Manvi with zero model decisions. DevCouncil evaluates an independent acceptance contract against the resulting evidence. The native bank has two tenant layouts; the native workbench exposes catalog, editing, execution, approvals, takeover, diagnostics, and evidence inspection.
 
-This checkout is under active qualification. The macOS readiness campaign in `evidence/macos-stability-readiness.json` passed **20/20 North and 20/20 South** live balance replays, with independent evidence checks and unchanged saved bank state. Every run needed observation retries; first-attempt successes were zero. Both tenants also exercised actual approval denial safely. Reports bind exact tested executable hashes; later visual-anchor and discovery-journal changes still require a consolidated build and rerun. The original failing campaigns remain available. Live Gemini and human-approved account changes remain unqualified; Windows runtime qualification is deferred by the user, and Linux guest qualification is underway.
+The pinned build passes its automated suites. Its fresh macOS campaign completed
+**23/40 read-only replays**, with **17 safe suspensions after input-counter changes**;
+all 40 independent saved-state checks passed. This is not a clean stability pass.
+Earlier macOS and Linux X11 campaigns each passed 20/20 per tenant on their recorded
+executables. First-attempt successes were zero on macOS and one on Linux; retries
+are reported separately. The Linux refresh is blocked by a UTM startup crash.
+Live Gemini and human-approved account changes remain unqualified; Windows
+runtime qualification is deferred by the user. See the exact results in
+[`evidence/`](evidence/README.md) and the remaining [acceptance gates](docs/requirements-evidence.md).
 
 ## Ownership
 
@@ -27,6 +35,24 @@ Manvi owns the workflow/compiler/catalog, native broker/client, provider integra
 
 Prerequisites: Rust and Cargo with the target platform toolchain, Go 1.26.6, platform accessibility and capture permissions, and the pinned Manvi/DevCouncil checkouts. `cmd/dev` uses Go/Rust only. Platform-specific prerequisites are in `docs/platforms.md`.
 
+The assignment archive includes `build/upstream/Manvi.bundle` and
+`build/upstream/DevCouncil.bundle`. Restore the exact reviewed revisions without
+depending on unpublished remote branches:
+
+```sh
+GOWORK=off go run ./cmd/dev bootstrap
+go run ./cmd/dev check-pins
+go run ./cmd/dev build
+go run ./cmd/dev test
+```
+
+Bootstrap creates `.local/upstream/` and the ignored Go workspace. It refuses a
+different or dirty existing upstream checkout. Go 1.26.6 must already be installed
+for a fully offline bootstrap; automatic Go toolchain acquisition needs network
+access. Rust/Go dependency downloads are separate from restoring source bundles.
+
+For existing checkouts at the exact revisions in `upstream.lock.json`:
+
 ```sh
 go run ./cmd/dev workspace --manvi /path/to/Manvi --devcouncil /path/to/DevCouncil
 go run ./cmd/dev build --manvi /path/to/Manvi --devcouncil /path/to/DevCouncil
@@ -41,7 +67,7 @@ The generated local `go.work` is ignored. Build outputs are under `build/`. The 
 ./build/jarvis replay --capability examples/balance.json --tenant north
 ./build/jarvis replay --capability examples/balance.json --tenant south
 ./build/jarvis codegen --capability examples/balance.json --out examples/generated/balance/capability.go
-go run ./cmd/qualify --n 20 --out evidence/macos-stability.json
+go run ./cmd/qualify --n 20 --out evidence/platform-fresh-40.json
 ```
 
 The default typed input is the synthetic member M-1001. Use `--inputs scenarios/m1002.inputs.json --contract scenarios/balance-m1002.contract.json` for the second independent expectation. `--pid` attaches an existing bank process; absent `--pid`, Jarvis starts and owns a new bank process. Each interactive desktop has one input owner, including cooperating broker processes.

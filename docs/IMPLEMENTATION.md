@@ -1,22 +1,27 @@
 # Implementation ledger
 
-The approved design is being implemented in three repositories. This ledger records gates, not inferred completion.
+Jarvis composes reusable Manvi execution and DevCouncil evidence components. This ledger distinguishes implemented behavior, observed native results, and remaining qualification. It does not declare the whole assignment complete.
 
-| Gate | Status |
+| Gate | Current status and evidence |
 | --- | --- |
-| Isolated upstream worktrees | Created |
-| Manvi privacy, cancellation, replay and provider regressions | Implemented; focused and race suites passed, final audit running |
-| DevCouncil independent evidence evaluator |23 evaluator+9 CLI tests passed; real Go/Rust compatibility passed |
-| Rust native broker and platform adapters | macOS native execution verified; ARM Windows/Linux cross-checks passed |
-| Deterministic workflow compiler and executor | Implemented and adversarially tested; real macOS live/offline replay passed |
-| Rust bank and native workbench | Built;17 bank tests and15 workbench tests passed; rendered qualification pending |
-| Live Gemini multi-turn conformance | Pending credential readiness |
-| Physical macOS qualification | Baseline40runs retained;20passed/10failed/10incomplete; timing hardening under test |
-| Windows ARM64 qualification | User deferred execution; build/qualification instructions prepared |
-| Linux ARM64/X11 qualification | UTM guest booted; guest readiness and native execution pending |
-| All six optional features | Implemented surfaces; live assisted mode and final workbench integration still require qualification |
-| Submission evidence and report | Genuine macOS bundles and baseline report exist; final pins and complete qualification gates remain |
+| Canonical upstream ownership | Workflow, computer control, privacy and provider accounting reside in Manvi; independent evidence evaluation resides in DevCouncil. Jarvis contains product composition, bank, workbench and qualification. |
+| Privacy and execution foundations | Canonical sanitized session projections, deep-owned replay fixtures, cancelled-call admission checks and per-provider-attempt reservations are implemented with upstream regressions. Discovery and replay share durable action admission and masked frame storage. |
+| Deterministic execution | Compiler, pure reducer, live executor and offline playback are implemented. Genuine macOS and Linux balance bundles demonstrate model-free native execution and independent acceptance. |
+| Native broker | macOS AX/ScreenCaptureKit and Linux AT-SPI/X11 execution have genuine campaign evidence. Windows ARM64 execution is deferred by the user. Cross-compilation alone does not qualify a platform. |
+| Independent acceptance | DevCouncil evaluates the supplied contract against immutable artifact bytes and recorded action/observation bindings. Jarvis separately checks actual saved bank state. An evidence evaluation completing successfully is distinct from task acceptance. |
+| Bank fault behavior | Both tenant layouts, read-only balance and simulated subaccount creation are implemented. The `false-ack` semantic regression verifies a normal success acknowledgment while the saved seed remains byte-identical. The corresponding qualifier regression rejects that task outcome; a human-approved native false-ack campaign is still unqualified. |
+| Workbench | Catalog, typed forms, canonical structured editor, run history, approval queue, frame timeline, AX differences, visual anchor authoring, diagnostics, takeover and exports are implemented. Headless semantic tests and rendered inspection remain separate from complete native approval/takeover qualification. |
+| macOS read-only campaign | [Readiness campaign](../evidence/macos-stability-readiness.json): 20/20 North and 20/20 South passed; all 40 saved-state oracles unchanged. All runs used an observation retry, so first-attempt successes were 0/40. |
+| Linux ARM64/X11 read-only campaign | [Guest campaign](../evidence/linux-x11-final-40.json): 20/20 North and 20/20 South passed; all 40 saved-state oracles unchanged. There were 39 observation retries, no input retries and 1/40 first-attempt successes. A [current-source refresh](../evidence/linux-refresh-blocked.json) is blocked before guest startup by UTM host failure: 0/40 trials attempted. |
+| Denial and visible fault campaigns | Actual approval denial passed its expected safety behavior for both tenants on macOS and Linux. Linux overlay, missing-control and duplicate-control campaigns each observed their fault and safely terminated for both tenants. Their task acceptance remained blocked, incomplete or unavailable. |
+| Six optional features | All six have implemented source surfaces. Catalog/callers, diagnostics, bindings and reports have local checks or native evidence; credentialed assisted recovery and complete human takeover/positive mutation evidence remain open. See the [requirement matrix](requirements-evidence.md). |
+| Live Gemini | No genuine discovery or save/restore continuation bundle yet. Local credentials and the [multi-turn qualification procedure](provider-qualification.md) remain prerequisites. |
+| External interaction | macOS has a bounded HID-counter admission guard; actual hardware/injected classification is unqualified. Continuous monitoring and Windows/X11 external-input listeners are not implemented. |
+| Pinned build and source restoration | Manvi `4818dc2081a53240eb8f4bde48026ad8d704e351` and DevCouncil `4ccadc604f40e21a3a14471d0af3c7674265e15f` are pinned. The consolidated build/test command, Jarvis race suite, full Manvi Go suite (50 tested packages), Rust suites, and actual offline source-bundle bootstrap passed. See [build verification](../evidence/build-verification.json). |
+| Pinned macOS qualification | [Fresh campaign](../evidence/macos-pinned-40.json): 23 passed, 17 blocked by input-counter changes, all 40 saved-state checks passed. North 14/20 and South 9/20; zero first-attempt successes. The clean stability gate remains open. [Denial](../evidence/macos-pinned-denial.json): South reached denial; North suspended before approval. |
 
-Sources are maintained in their canonical owning repositories. Local integration uses an ignored Go workspace; release integration pins reviewed revisions. Existing shared checkout edits are preserved.
+The retained macOS campaign reports `source_status: dirty`; the Linux guest reports `source_status: unavailable`. Both bind the actual admitted executables by SHA-256. Later source changes, including visual/HID and journal/lifecycle work, must not inherit those binaries' qualification automatically. A filename containing `final` is historical naming, not proof of a final revision.
 
-No fixture run, synthetic input event, or build result counts as native execution. A missing check is not a pass. Discovery and live replay use only external desktop APIs. Evaluator-only state inspection is unavailable to the automation tool registry.
+Current local integration checks passed 58 desktop Rust tests (19 bank, 37 workbench library, two workbench entry-point tests), plus the separately invoked real-backend interoperability test. Native Rust passed 40 collected tests; DevCouncil passed 24 evidence-library and nine evidence-CLI tests, with its legacy suite preserved. These counts describe local tests, not physical qualification. The packaged workbench's doctor still reports Accessibility and Screen Recording denied, even though the CLI-launched broker has permission; permissions are scoped to the actual launch route.
+
+No fixture, semantic UI test, synthetic input event or build result counts as native execution. Discovery and live replay use external desktop observation and input; evaluator-only saved-state inspection is unavailable to their tool registry. Successful human-approved creation, live visual clicks, uncertain post-commit delivery and live assisted recovery remain explicit native/provider gates.
