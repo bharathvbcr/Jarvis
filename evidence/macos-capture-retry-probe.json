@@ -1,0 +1,208 @@
+{
+  "schema_version": 3,
+  "platform": "darwin",
+  "architecture": "arm64",
+  "desktop_session": "",
+  "started_at": "2026-09-09T16:07:31Z",
+  "mode": "fresh_process",
+  "scenario": "balance",
+  "requested_per_tenant": 3,
+  "tenants": [
+    "north",
+    "south"
+  ],
+  "results": [
+    {
+      "run_id": "22cefe6a40409e88ee4dd7053944af80",
+      "tenant": "north",
+      "index": 1,
+      "scenario": "balance",
+      "attempted": true,
+      "phase": "completed",
+      "verdict": "passed",
+      "outcome": "passed",
+      "latency_millis": 9006,
+      "observation_retries": 1,
+      "input_retries": 0,
+      "evidence_dir": "/Users/bharath/Code/devtools/Jarvis/evidence/private/22cefe6a40409e88ee4dd7053944af80",
+      "oracle": "seeded balances, members and subaccounts unchanged",
+      "oracle_verified": true,
+      "approval_denied": false,
+      "approved_action_ids": [],
+      "fault_reached": false,
+      "expected_behavior_verified": true
+    },
+    {
+      "run_id": "f16f3521c633b2f8271d9f9bf8e828f7",
+      "tenant": "north",
+      "index": 2,
+      "scenario": "balance",
+      "attempted": true,
+      "phase": "completed",
+      "verdict": "passed",
+      "outcome": "passed",
+      "latency_millis": 10504,
+      "observation_retries": 1,
+      "input_retries": 0,
+      "evidence_dir": "/Users/bharath/Code/devtools/Jarvis/evidence/private/f16f3521c633b2f8271d9f9bf8e828f7",
+      "oracle": "seeded balances, members and subaccounts unchanged",
+      "oracle_verified": true,
+      "approval_denied": false,
+      "approved_action_ids": [],
+      "fault_reached": false,
+      "expected_behavior_verified": true
+    },
+    {
+      "run_id": "daa240fbd6774c95a905ce241a0d6a36",
+      "tenant": "north",
+      "index": 3,
+      "scenario": "balance",
+      "attempted": true,
+      "phase": "completed",
+      "verdict": "passed",
+      "outcome": "passed",
+      "latency_millis": 12208,
+      "observation_retries": 1,
+      "input_retries": 0,
+      "evidence_dir": "/Users/bharath/Code/devtools/Jarvis/evidence/private/daa240fbd6774c95a905ce241a0d6a36",
+      "oracle": "seeded balances, members and subaccounts unchanged",
+      "oracle_verified": true,
+      "approval_denied": false,
+      "approved_action_ids": [],
+      "fault_reached": false,
+      "expected_behavior_verified": true
+    },
+    {
+      "run_id": "a92055a76b7434cd9aef5d1ec4e355ac",
+      "tenant": "south",
+      "index": 1,
+      "scenario": "balance",
+      "attempted": true,
+      "phase": "completed",
+      "verdict": "passed",
+      "outcome": "passed",
+      "latency_millis": 8605,
+      "observation_retries": 1,
+      "input_retries": 0,
+      "evidence_dir": "/Users/bharath/Code/devtools/Jarvis/evidence/private/a92055a76b7434cd9aef5d1ec4e355ac",
+      "oracle": "seeded balances, members and subaccounts unchanged",
+      "oracle_verified": true,
+      "approval_denied": false,
+      "approved_action_ids": [],
+      "fault_reached": false,
+      "expected_behavior_verified": true
+    },
+    {
+      "run_id": "55bcb1eef476f3c946d4b389a70c545e",
+      "tenant": "south",
+      "index": 2,
+      "scenario": "balance",
+      "attempted": true,
+      "phase": "completed",
+      "verdict": "passed",
+      "outcome": "passed",
+      "latency_millis": 8502,
+      "observation_retries": 1,
+      "input_retries": 0,
+      "evidence_dir": "/Users/bharath/Code/devtools/Jarvis/evidence/private/55bcb1eef476f3c946d4b389a70c545e",
+      "oracle": "seeded balances, members and subaccounts unchanged",
+      "oracle_verified": true,
+      "approval_denied": false,
+      "approved_action_ids": [],
+      "fault_reached": false,
+      "expected_behavior_verified": true
+    },
+    {
+      "run_id": "846e87c99971a080d215da5629452b89",
+      "tenant": "south",
+      "index": 3,
+      "scenario": "balance",
+      "attempted": true,
+      "phase": "completed",
+      "verdict": "passed",
+      "outcome": "passed",
+      "latency_millis": 10504,
+      "observation_retries": 1,
+      "input_retries": 0,
+      "evidence_dir": "/Users/bharath/Code/devtools/Jarvis/evidence/private/846e87c99971a080d215da5629452b89",
+      "oracle": "seeded balances, members and subaccounts unchanged",
+      "oracle_verified": true,
+      "approval_denied": false,
+      "approved_action_ids": [],
+      "fault_reached": false,
+      "expected_behavior_verified": true
+    }
+  ],
+  "by_tenant": {
+    "north": {
+      "requested": 3,
+      "attempted": 3,
+      "passed": 3,
+      "failed": 0,
+      "blocked": 0,
+      "fault_reached": 0
+    },
+    "south": {
+      "requested": 3,
+      "attempted": 3,
+      "passed": 3,
+      "failed": 0,
+      "blocked": 0,
+      "fault_reached": 0
+    }
+  },
+  "matrix_complete": true,
+  "qualified": false,
+  "passed": 6,
+  "failed": 0,
+  "blocked": 0,
+  "first_attempt_successes": 0,
+  "model_requests": 0,
+  "cost_nano_usd": 0,
+  "one_sided_95_lower_bound": 0.6069622310029172,
+  "independence_assumed": false,
+  "interactive": false,
+  "expected_behavior_passes": 6,
+  "campaign_passed": true,
+  "provenance": {
+    "files": {
+      "bank": {
+        "path": "/Users/bharath/Code/devtools/Jarvis/build/jarvis-bank",
+        "resolved_path": "/Users/bharath/Code/devtools/Jarvis/build/jarvis-bank",
+        "sha256": "c181b608fa12b1715211d7ff75b6454510c045ab82f62ed64718b4b37a599cb5",
+        "size": 39069808
+      },
+      "broker": {
+        "path": "/Users/bharath/Code/devtools/Jarvis/build/manvi-desktop",
+        "resolved_path": "/Users/bharath/Code/devtools/Jarvis/build/manvi-desktop",
+        "sha256": "89cff05a36371ec5ee48ef50fcc829491cd539baa02262e2c163261f91ced23b",
+        "size": 4609984
+      },
+      "capability": {
+        "path": "/Users/bharath/Code/devtools/Jarvis/examples/balance.json",
+        "resolved_path": "/Users/bharath/Code/devtools/Jarvis/examples/balance.json",
+        "sha256": "5b514aefd13850e5f97f911392c4df615aeab0608aadc84fe81a8e91c7d7cbc0",
+        "size": 1173
+      },
+      "contract": {
+        "path": "/Users/bharath/Code/devtools/Jarvis/scenarios/balance-m1001.contract.json",
+        "resolved_path": "/Users/bharath/Code/devtools/Jarvis/scenarios/balance-m1001.contract.json",
+        "sha256": "90ecc1c9403ba5139d955f5be8ce876c7525bb3eaf704cc9de2b599e3bcb888d",
+        "size": 361
+      },
+      "qualifier": {
+        "path": "/tmp/jarvis-qualify-capture-retry",
+        "resolved_path": "/private/tmp/jarvis-qualify-capture-retry",
+        "sha256": "f08bc5d027cd30f9cd2d09a31ce12aa6a117371363400188d31ffa707fb9957b",
+        "size": 7484082
+      },
+      "verifier": {
+        "path": "/Users/bharath/Code/devtools/Jarvis/build/dcverify",
+        "resolved_path": "/Users/bharath/Code/devtools/Jarvis/build/dcverify",
+        "sha256": "52bdb453d75ebf8cc35a982abdde350755dbacb62f1f91752a27942c8a0e6dca",
+        "size": 3514232
+      }
+    },
+    "source_status": "dirty"
+  }
+}

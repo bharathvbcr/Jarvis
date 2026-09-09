@@ -1,0 +1,29 @@
+{
+  "ok": true,
+  "evidence_schema_version": 1,
+  "verdict": "passed",
+  "contract_sha256": "90ecc1c9403ba5139d955f5be8ce876c7525bb3eaf704cc9de2b599e3bcb888d",
+  "bundle_sha256": "a7c032318d1019ca7799506371290d73e7924909379740ebe48617aebd929683",
+  "run_id": "09a8bb6c81691e2e5b8c16d6e275e61d",
+  "criteria": [
+    {
+      "id": "balance",
+      "required": true,
+      "verdict": "passed",
+      "reason": "predicate satisfied"
+    },
+    {
+      "id": "currency",
+      "required": true,
+      "verdict": "passed",
+      "reason": "predicate satisfied"
+    },
+    {
+      "id": "member-found",
+      "required": true,
+      "verdict": "passed",
+      "reason": "predicate satisfied"
+    }
+  ],
+  "issues": []
+}

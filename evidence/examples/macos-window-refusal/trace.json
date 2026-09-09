@@ -1,0 +1,151 @@
+{
+  "initial": {
+    "run_id": "5c25ec24dd665d2febe30710061ad87e",
+    "session_id": "session-1788968802323-36",
+    "epoch": 1,
+    "capability_sha256": "5b514aefd13850e5f97f911392c4df615aeab0608aadc84fe81a8e91c7d7cbc0",
+    "sequence": 0,
+    "elapsed_millis": 0,
+    "phase": "ready",
+    "step_index": 0,
+    "actions": 0,
+    "attempts": 0,
+    "observation": {
+      "id": "",
+      "target_id": "",
+      "matches": 0,
+      "complete": false,
+      "actionable": false,
+      "value": {
+        "type": ""
+      }
+    },
+    "outputs": {}
+  },
+  "state": {
+    "run_id": "5c25ec24dd665d2febe30710061ad87e",
+    "session_id": "session-1788968802323-36",
+    "epoch": 2,
+    "capability_sha256": "5b514aefd13850e5f97f911392c4df615aeab0608aadc84fe81a8e91c7d7cbc0",
+    "sequence": 5,
+    "elapsed_millis": 1792,
+    "phase": "failed",
+    "step_index": 0,
+    "actions": 1,
+    "attempts": 0,
+    "observation": {
+      "id": "observation-1788968803854-37",
+      "target_id": "n7",
+      "matches": 1,
+      "complete": true,
+      "actionable": true,
+      "value": {
+        "type": "string",
+        "text": "[redacted]"
+      }
+    },
+    "outputs": {},
+    "reason": "action not dispatched: window_changed: Window identity or geometry changed; observe again (previous bounds Bounds { x: 424.0, y: 101.0, width: 880.0, height: 732.0 }; current bounds Bounds { x: 22.0, y: 480.0, width: 102.0, height: 125.0 })"
+  },
+  "events": [
+    {
+      "sequence": 1,
+      "run_id": "5c25ec24dd665d2febe30710061ad87e",
+      "session_id": "session-1788968802323-36",
+      "epoch": 1,
+      "elapsed_millis": 0,
+      "kind": "start",
+      "observation": {
+        "id": "",
+        "target_id": "",
+        "matches": 0,
+        "complete": false,
+        "actionable": false,
+        "value": {
+          "type": ""
+        }
+      }
+    },
+    {
+      "sequence": 2,
+      "run_id": "5c25ec24dd665d2febe30710061ad87e",
+      "session_id": "session-1788968802323-36",
+      "epoch": 1,
+      "elapsed_millis": 379,
+      "kind": "observe_failed",
+      "action_id": "5c25ec24dd665d2febe30710061ad87e:member",
+      "observation": {
+        "id": "",
+        "target_id": "",
+        "matches": 0,
+        "complete": false,
+        "actionable": false,
+        "value": {
+          "type": ""
+        }
+      },
+      "reason": "observation_inconsistent: Accessibility state changed during first scoped capture: nodes 19 -\u003e 20; changed 3; sample 3: [3]:id; [4]:id; [2, 0, 0]:added"
+    },
+    {
+      "sequence": 3,
+      "run_id": "5c25ec24dd665d2febe30710061ad87e",
+      "session_id": "session-1788968802323-36",
+      "epoch": 1,
+      "elapsed_millis": 1649,
+      "kind": "observed",
+      "action_id": "5c25ec24dd665d2febe30710061ad87e:member",
+      "observation": {
+        "id": "observation-1788968803854-37",
+        "target_id": "n7",
+        "matches": 1,
+        "complete": true,
+        "actionable": true,
+        "value": {
+          "type": "string",
+          "text": "[redacted]"
+        }
+      }
+    },
+    {
+      "sequence": 4,
+      "run_id": "5c25ec24dd665d2febe30710061ad87e",
+      "session_id": "session-1788968802323-36",
+      "epoch": 1,
+      "elapsed_millis": 1788,
+      "kind": "receipt",
+      "action_id": "5c25ec24dd665d2febe30710061ad87e:member",
+      "observation": {
+        "id": "",
+        "target_id": "",
+        "matches": 0,
+        "complete": false,
+        "actionable": false,
+        "value": {
+          "type": ""
+        }
+      },
+      "delivery": "not_sent",
+      "reason": "window_changed: Window identity or geometry changed; observe again (previous bounds Bounds { x: 424.0, y: 101.0, width: 880.0, height: 732.0 }; current bounds Bounds { x: 22.0, y: 480.0, width: 102.0, height: 125.0 })"
+    },
+    {
+      "sequence": 5,
+      "run_id": "5c25ec24dd665d2febe30710061ad87e",
+      "session_id": "session-1788968802323-36",
+      "epoch": 1,
+      "next_epoch": 2,
+      "elapsed_millis": 1792,
+      "kind": "fence",
+      "observation": {
+        "id": "",
+        "target_id": "",
+        "matches": 0,
+        "complete": false,
+        "actionable": false,
+        "value": {
+          "type": ""
+        }
+      },
+      "reason": "terminal input fence"
+    }
+  ]
+}

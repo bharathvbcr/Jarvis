@@ -1,0 +1,21 @@
+{
+  "schema_version":1,"id":"bank.create-subaccount","revision":"1","application":"jarvis-bank",
+  "description":"Create a simulated subaccount after a human approves the exact reviewed form.",
+  "parameters":[{"name":"member_id","type":"string","sensitive":true},{"name":"subaccount_name","type":"string","sensitive":true}],
+  "targets":{
+    "member":{"role":"text_field","name":"Member ID"},"search":{"role":"button","name":"Search"},
+    "new":{"role":"button","name":"New subaccount"},"name":{"role":"text_field","name":"Subaccount name"},
+    "review":{"role":"button","name":"Review"},"confirm":{"role":"button","name":"Confirm creation"},
+    "status":{"role":"text_field","name":"Status"}
+  },
+  "steps":[
+    {"id":"member","kind":"set_value","target":"member","effect":"read","input":{"source":"input","key":"member_id"}},
+    {"id":"search","kind":"press","target":"search","effect":"read"},
+    {"id":"new","kind":"press","target":"new","effect":"read"},
+    {"id":"name","kind":"set_value","target":"name","effect":"read","input":{"source":"input","key":"subaccount_name"}},
+    {"id":"review","kind":"press","target":"review","effect":"read"},
+    {"id":"confirm","kind":"press","target":"confirm","effect":"change"},
+    {"id":"created","kind":"wait","target":"status","effect":"read","output_type":"string","predicate":{"op":"contains","expected":{"source":"literal","literal":{"type":"string","text":"created"}}}}
+  ],
+  "limits":{"max_actions":40,"active_seconds":300,"observation_attempts":3,"intervention_seconds":600}
+}

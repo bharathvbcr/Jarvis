@@ -1,0 +1,253 @@
+{
+  "initial": {
+    "run_id": "aa8e64f3844a7a03233c793bf09586df",
+    "session_id": "session-1788968769586-1",
+    "epoch": 1,
+    "capability_sha256": "5b514aefd13850e5f97f911392c4df615aeab0608aadc84fe81a8e91c7d7cbc0",
+    "sequence": 0,
+    "elapsed_millis": 0,
+    "phase": "ready",
+    "step_index": 0,
+    "actions": 0,
+    "attempts": 0,
+    "observation": {
+      "id": "",
+      "target_id": "",
+      "matches": 0,
+      "complete": false,
+      "actionable": false,
+      "value": {
+        "type": ""
+      }
+    },
+    "outputs": {}
+  },
+  "state": {
+    "run_id": "aa8e64f3844a7a03233c793bf09586df",
+    "session_id": "session-1788968769586-1",
+    "epoch": 1,
+    "capability_sha256": "5b514aefd13850e5f97f911392c4df615aeab0608aadc84fe81a8e91c7d7cbc0",
+    "sequence": 10,
+    "elapsed_millis": 5088,
+    "phase": "completed",
+    "step_index": 4,
+    "actions": 4,
+    "attempts": 0,
+    "observation": {
+      "id": "",
+      "target_id": "",
+      "matches": 0,
+      "complete": false,
+      "actionable": false,
+      "value": {
+        "type": ""
+      }
+    },
+    "outputs": {
+      "balance": {
+        "type": "money",
+        "integer": 125000,
+        "currency": "USD"
+      }
+    }
+  },
+  "events": [
+    {
+      "sequence": 1,
+      "run_id": "aa8e64f3844a7a03233c793bf09586df",
+      "session_id": "session-1788968769586-1",
+      "epoch": 1,
+      "elapsed_millis": 0,
+      "kind": "start",
+      "observation": {
+        "id": "",
+        "target_id": "",
+        "matches": 0,
+        "complete": false,
+        "actionable": false,
+        "value": {
+          "type": ""
+        }
+      }
+    },
+    {
+      "sequence": 2,
+      "run_id": "aa8e64f3844a7a03233c793bf09586df",
+      "session_id": "session-1788968769586-1",
+      "epoch": 1,
+      "elapsed_millis": 352,
+      "kind": "observe_failed",
+      "action_id": "aa8e64f3844a7a03233c793bf09586df:member",
+      "observation": {
+        "id": "",
+        "target_id": "",
+        "matches": 0,
+        "complete": false,
+        "actionable": false,
+        "value": {
+          "type": ""
+        }
+      },
+      "reason": "observation_inconsistent: Accessibility state changed during first scoped capture: nodes 19 -\u003e 20; changed 3; sample 3: [3]:id; [4]:id; [2, 0, 0]:added"
+    },
+    {
+      "sequence": 3,
+      "run_id": "aa8e64f3844a7a03233c793bf09586df",
+      "session_id": "session-1788968769586-1",
+      "epoch": 1,
+      "elapsed_millis": 1273,
+      "kind": "observed",
+      "action_id": "aa8e64f3844a7a03233c793bf09586df:member",
+      "observation": {
+        "id": "observation-1788968770787-2",
+        "target_id": "n6",
+        "matches": 1,
+        "complete": true,
+        "actionable": true,
+        "value": {
+          "type": "string",
+          "text": "[redacted]"
+        }
+      }
+    },
+    {
+      "sequence": 4,
+      "run_id": "aa8e64f3844a7a03233c793bf09586df",
+      "session_id": "session-1788968769586-1",
+      "epoch": 1,
+      "elapsed_millis": 1444,
+      "kind": "receipt",
+      "action_id": "aa8e64f3844a7a03233c793bf09586df:member",
+      "observation": {
+        "id": "",
+        "target_id": "",
+        "matches": 0,
+        "complete": false,
+        "actionable": false,
+        "value": {
+          "type": ""
+        }
+      },
+      "delivery": "sent"
+    },
+    {
+      "sequence": 5,
+      "run_id": "aa8e64f3844a7a03233c793bf09586df",
+      "session_id": "session-1788968769586-1",
+      "epoch": 1,
+      "elapsed_millis": 2128,
+      "kind": "observed",
+      "action_id": "aa8e64f3844a7a03233c793bf09586df:member",
+      "observation": {
+        "id": "observation-1788968771646-3",
+        "target_id": "",
+        "matches": 0,
+        "complete": true,
+        "actionable": false,
+        "value": {
+          "type": ""
+        }
+      }
+    },
+    {
+      "sequence": 6,
+      "run_id": "aa8e64f3844a7a03233c793bf09586df",
+      "session_id": "session-1788968769586-1",
+      "epoch": 1,
+      "elapsed_millis": 2820,
+      "kind": "observed",
+      "action_id": "aa8e64f3844a7a03233c793bf09586df:search",
+      "observation": {
+        "id": "observation-1788968772340-4",
+        "target_id": "n7",
+        "matches": 1,
+        "complete": true,
+        "actionable": true,
+        "value": {
+          "type": "string",
+          "text": "Search"
+        }
+      }
+    },
+    {
+      "sequence": 7,
+      "run_id": "aa8e64f3844a7a03233c793bf09586df",
+      "session_id": "session-1788968769586-1",
+      "epoch": 1,
+      "elapsed_millis": 2986,
+      "kind": "receipt",
+      "action_id": "aa8e64f3844a7a03233c793bf09586df:search",
+      "observation": {
+        "id": "",
+        "target_id": "",
+        "matches": 0,
+        "complete": false,
+        "actionable": false,
+        "value": {
+          "type": ""
+        }
+      },
+      "delivery": "sent"
+    },
+    {
+      "sequence": 8,
+      "run_id": "aa8e64f3844a7a03233c793bf09586df",
+      "session_id": "session-1788968769586-1",
+      "epoch": 1,
+      "elapsed_millis": 3680,
+      "kind": "observed",
+      "action_id": "aa8e64f3844a7a03233c793bf09586df:search",
+      "observation": {
+        "id": "observation-1788968773197-5",
+        "target_id": "",
+        "matches": 0,
+        "complete": true,
+        "actionable": false,
+        "value": {
+          "type": ""
+        }
+      }
+    },
+    {
+      "sequence": 9,
+      "run_id": "aa8e64f3844a7a03233c793bf09586df",
+      "session_id": "session-1788968769586-1",
+      "epoch": 1,
+      "elapsed_millis": 4378,
+      "kind": "observed",
+      "action_id": "aa8e64f3844a7a03233c793bf09586df:found",
+      "observation": {
+        "id": "observation-1788968773896-6",
+        "target_id": "n15",
+        "matches": 1,
+        "complete": true,
+        "actionable": true,
+        "value": {
+          "type": "string",
+          "text": "Member found"
+        }
+      }
+    },
+    {
+      "sequence": 10,
+      "run_id": "aa8e64f3844a7a03233c793bf09586df",
+      "session_id": "session-1788968769586-1",
+      "epoch": 1,
+      "elapsed_millis": 5088,
+      "kind": "observed",
+      "action_id": "aa8e64f3844a7a03233c793bf09586df:balance",
+      "observation": {
+        "id": "observation-1788968774600-7",
+        "target_id": "n11",
+        "matches": 1,
+        "complete": true,
+        "actionable": true,
+        "value": {
+          "type": "money",
+          "integer": 125000,
+          "currency": "USD"
+        }
+      }
+    }
+  ]
+}

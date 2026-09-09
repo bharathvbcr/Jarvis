@@ -1,0 +1,1 @@
+{"schema_version":1,"id":"bank.create-subaccount","criteria":[{"id":"acknowledgment","fact":"ui.Status","required":true,"predicate":{"op":"contains","value":"created"}}]}

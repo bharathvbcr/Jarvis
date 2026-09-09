@@ -1,0 +1,32 @@
+Script started on 2026-09-09 16:04:15+00:00 [COMMAND="/usr/bin/sudo -u jarvis /home/jarvis/.cargo/bin/cargo build --locked --manifest-path /home/jarvis/rust/Cargo.toml -p dc-verify" <not executed on terminal>]
+^@[1m[92m    Updating[0m crates.io index
+[1m[92m    Updating[0m git repository `https://github.com/microsoft/tgrep`
+[1m[92m Downloading[0m crates ...
+[1m[92m  Downloaded[0m syn v3.0.4
+[1m[92m   Compiling[0m version_check v0.9.5
+[1m[92m   Compiling[0m proc-macro2 v1.0.107
+[1m[92m   Compiling[0m unicode-ident v1.0.24
+[1m[92m   Compiling[0m typenum v1.20.1
+[1m[92m   Compiling[0m quote v1.0.47
+[1m[92m   Compiling[0m generic-array v0.14.7
+[1m[92m   Compiling[0m libc v0.2.189
+[1m[92m   Compiling[0m serde_core v1.0.229
+[1m[92m   Compiling[0m zmij v1.0.23
+[1m[92m   Compiling[0m block-buffer v0.10.4
+[1m[92m   Compiling[0m crypto-common v0.1.7
+[1m[92m   Compiling[0m syn v3.0.4
+[1m[92m   Compiling[0m serde_json v1.0.151
+[1m[92m   Compiling[0m serde v1.0.229
+[1m[92m   Compiling[0m cpufeatures v0.2.17
+[1m[92m   Compiling[0m digest v0.10.7
+[1m[92m   Compiling[0m itoa v1.0.18
+[1m[92m   Compiling[0m cfg-if v1.0.4
+[1m[92m   Compiling[0m memchr v2.8.3
+[1m[92m   Compiling[0m sha2 v0.10.9
+[1m[92m   Compiling[0m dc-glob v0.1.1 (/home/jarvis/rust/dc-glob)
+[1m[92m   Compiling[0m serde_derive v1.0.229
+[1m[92m   Compiling[0m dc-evidence v0.1.1 (/home/jarvis/rust/dc-evidence)
+[1m[92m   Compiling[0m dc-verify v0.1.1 (/home/jarvis/rust/dc-verify)
+[1m[92m    Finished[0m `dev` profile [unoptimized + debuginfo] target(s) in 21.81s
+
+Script done on 2026-09-09 16:04:37+00:00 [COMMAND_EXIT_CODE="0"]

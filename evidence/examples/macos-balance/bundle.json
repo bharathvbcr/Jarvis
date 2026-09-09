@@ -1,0 +1,175 @@
+{
+  "schema_version": 1,
+  "run_id": "aa8e64f3844a7a03233c793bf09586df",
+  "session_id": "session-1788968769586-1",
+  "epoch": 1,
+  "contract_sha256": "90ecc1c9403ba5139d955f5be8ce876c7525bb3eaf704cc9de2b599e3bcb888d",
+  "capability_sha256": "5b514aefd13850e5f97f911392c4df615aeab0608aadc84fe81a8e91c7d7cbc0",
+  "journal_complete": true,
+  "degraded": [],
+  "actions": [
+    {
+      "id": "aa8e64f3844a7a03233c793bf09586df:member",
+      "sequence": 2,
+      "disposition": "succeeded"
+    },
+    {
+      "id": "aa8e64f3844a7a03233c793bf09586df:search",
+      "sequence": 6,
+      "disposition": "succeeded"
+    },
+    {
+      "id": "aa8e64f3844a7a03233c793bf09586df:found",
+      "sequence": 9,
+      "disposition": "succeeded"
+    },
+    {
+      "id": "aa8e64f3844a7a03233c793bf09586df:balance",
+      "sequence": 12,
+      "disposition": "succeeded"
+    }
+  ],
+  "observations": [
+    {
+      "sequence": 4,
+      "run_id": "aa8e64f3844a7a03233c793bf09586df",
+      "session_id": "session-1788968769586-1",
+      "epoch": 1,
+      "after_action_id": "aa8e64f3844a7a03233c793bf09586df:member",
+      "facts": {
+        "ui.Balance": "—",
+        "ui.Status": "Ready"
+      },
+      "artifact_ids": [
+        "frame-000003",
+        "frame-000003-tree"
+      ]
+    },
+    {
+      "sequence": 8,
+      "run_id": "aa8e64f3844a7a03233c793bf09586df",
+      "session_id": "session-1788968769586-1",
+      "epoch": 1,
+      "after_action_id": "aa8e64f3844a7a03233c793bf09586df:search",
+      "facts": {
+        "balance_minor": 125000,
+        "currency": "USD",
+        "ui.Balance": "1250.00 USD",
+        "ui.Status": "Member found"
+      },
+      "artifact_ids": [
+        "frame-000007",
+        "frame-000007-tree"
+      ]
+    },
+    {
+      "sequence": 11,
+      "run_id": "aa8e64f3844a7a03233c793bf09586df",
+      "session_id": "session-1788968769586-1",
+      "epoch": 1,
+      "after_action_id": "aa8e64f3844a7a03233c793bf09586df:found",
+      "facts": {
+        "balance_minor": 125000,
+        "currency": "USD",
+        "ui.Balance": "1250.00 USD",
+        "ui.Status": "Member found"
+      },
+      "artifact_ids": [
+        "frame-000010",
+        "frame-000010-tree"
+      ]
+    },
+    {
+      "sequence": 14,
+      "run_id": "aa8e64f3844a7a03233c793bf09586df",
+      "session_id": "session-1788968769586-1",
+      "epoch": 1,
+      "after_action_id": "aa8e64f3844a7a03233c793bf09586df:balance",
+      "facts": {
+        "balance_minor": 125000,
+        "currency": "USD",
+        "ui.Balance": "1250.00 USD",
+        "ui.Status": "Member found"
+      },
+      "artifact_ids": [
+        "frame-000013",
+        "frame-000013-tree"
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "frame-000001",
+      "path": "frame-000001.png",
+      "sha256": "aecf918ecfeb23aa20a00f7138796510977bd4bcdc147f71c878827db5363d74",
+      "size_bytes": 77482
+    },
+    {
+      "id": "frame-000001-tree",
+      "path": "frame-000001.json",
+      "sha256": "4eabb812e53cb56bc3c618955a47b420e6e9ff837b90a739424125615680b1b3",
+      "size_bytes": 8017
+    },
+    {
+      "id": "frame-000003",
+      "path": "frame-000003.png",
+      "sha256": "aecf918ecfeb23aa20a00f7138796510977bd4bcdc147f71c878827db5363d74",
+      "size_bytes": 77482
+    },
+    {
+      "id": "frame-000003-tree",
+      "path": "frame-000003.json",
+      "sha256": "4957a7a380a8252b8e8f46e0c1f2578c8b75e372d5937cabad3fe1182b656a20",
+      "size_bytes": 8017
+    },
+    {
+      "id": "frame-000005",
+      "path": "frame-000005.png",
+      "sha256": "aecf918ecfeb23aa20a00f7138796510977bd4bcdc147f71c878827db5363d74",
+      "size_bytes": 77482
+    },
+    {
+      "id": "frame-000005-tree",
+      "path": "frame-000005.json",
+      "sha256": "d53742eb051520fdf3fc4bb80bce6c04e492b5e8532f997c2d2c94435a88c68a",
+      "size_bytes": 8017
+    },
+    {
+      "id": "frame-000007",
+      "path": "frame-000007.png",
+      "sha256": "e8a3617e55f226a4e9f247374b8d654ef80a48c161a1ad5464ff8dce94ba2695",
+      "size_bytes": 83187
+    },
+    {
+      "id": "frame-000007-tree",
+      "path": "frame-000007.json",
+      "sha256": "4145d3993370d97deaa3e1671e2a72802668ae8e57d21fc7b7388f6ba1228afa",
+      "size_bytes": 8725
+    },
+    {
+      "id": "frame-000010",
+      "path": "frame-000010.png",
+      "sha256": "e8a3617e55f226a4e9f247374b8d654ef80a48c161a1ad5464ff8dce94ba2695",
+      "size_bytes": 83187
+    },
+    {
+      "id": "frame-000010-tree",
+      "path": "frame-000010.json",
+      "sha256": "aa1e18daf8baf63775bc0cca14389b4806e77d0e6149d861d24cf164d2f3daa9",
+      "size_bytes": 8725
+    },
+    {
+      "id": "frame-000013",
+      "path": "frame-000013.png",
+      "sha256": "e8a3617e55f226a4e9f247374b8d654ef80a48c161a1ad5464ff8dce94ba2695",
+      "size_bytes": 83187
+    },
+    {
+      "id": "frame-000013-tree",
+      "path": "frame-000013.json",
+      "sha256": "48f284f2b8d45f4518762e99dcd29f6fcd8b8817e0a41f5e760ce05ea02eab90",
+      "size_bytes": 8725
+    }
+  ],
+  "epoch_transitions": []
+}

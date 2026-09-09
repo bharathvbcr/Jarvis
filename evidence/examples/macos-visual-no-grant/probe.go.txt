@@ -1,0 +1,240 @@
+package main
+
+import (
+	"context"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"math"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"time"
+
+	"github.com/bharathvbcr/Manvi/manvi/computer"
+)
+
+type proof struct {
+	StartedAt               string                       `json:"started_at"`
+	Platform                string                       `json:"platform"`
+	Status                  string                       `json:"status"`
+	Stage                   string                       `json:"stage"`
+	NativeSHA               string                       `json:"native_binary_sha256,omitempty"`
+	BankSHA                 string                       `json:"bank_binary_sha256,omitempty"`
+	Admission               computer.AttachmentReadiness `json:"admission"`
+	Observations            int                          `json:"observation_attempts"`
+	FrameWidth              uint32                       `json:"frame_width,omitempty"`
+	FrameHeight             uint32                       `json:"frame_height,omitempty"`
+	Scale                   float64                      `json:"scale,omitempty"`
+	Crop                    computer.PixelRect           `json:"crop"`
+	Search                  computer.PixelRect           `json:"search"`
+	Resolved                *computer.ResolvedTarget     `json:"resolved,omitempty"`
+	ErrorCode               string                       `json:"error_code,omitempty"`
+	Delivery                string                       `json:"delivery,omitempty"`
+	NoGrantRefused          bool                         `json:"no_grant_refused"`
+	LiveClickTested         bool                         `json:"live_click_tested"`
+	RawFrameDigestPublished bool                         `json:"raw_frame_digest_published"`
+	OracleUnchanged         bool                         `json:"oracle_unchanged"`
+}
+
+func copyBinary(from, to string) (string, error) {
+	in, err := os.Open(from)
+	if err != nil {
+		return "", err
+	}
+	defer in.Close()
+	out, err := os.OpenFile(to, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0700)
+	if err != nil {
+		return "", err
+	}
+	h := sha256.New()
+	_, err = io.Copy(io.MultiWriter(out, h), in)
+	closeErr := out.Close()
+	return hex.EncodeToString(h.Sum(nil)), errors.Join(err, closeErr)
+}
+
+func run(p *proof) (retErr error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+	defer cancel()
+	dir, err := os.MkdirTemp("", "jarvis-visual-proof-")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(dir)
+	p.Stage = "freeze_binaries"
+	native := filepath.Join(dir, "manvi-desktop")
+	bank := filepath.Join(dir, "jarvis-bank")
+	p.NativeSHA, err = copyBinary("/Users/bharath/.codex/worktrees/jarvis-automation/Manvi/native/target/debug/manvi-desktop", native)
+	if err != nil {
+		return err
+	}
+	p.BankSHA, err = copyBinary("/Users/bharath/Code/devtools/Jarvis/build/jarvis-bank", bank)
+	if err != nil {
+		return err
+	}
+	p.Stage = "launch_synthetic_bank"
+	state := filepath.Join(dir, "bank-state.json")
+	cmd := exec.CommandContext(ctx, bank, "--tenant", "north", "--state", state)
+	cmd.Stdout = io.Discard
+	cmd.Stderr = io.Discard
+	if err = cmd.Start(); err != nil {
+		return err
+	}
+	defer func() { _ = cmd.Process.Kill(); _ = cmd.Wait() }()
+	client, err := computer.Start(ctx, native)
+	if err != nil {
+		return err
+	}
+	defer func() { retErr = errors.Join(retErr, client.Close()) }()
+	p.Stage = "attach"
+	session, admission, err := client.AttachFocusedReady(ctx, "visual-no-grant-proof", uint32(cmd.Process.Pid), []computer.Selector{{Role: "button", Name: "Search"}})
+	p.Admission = admission
+	if err != nil {
+		return err
+	}
+	defer func() {
+		cleanup, stop := context.WithTimeout(context.Background(), 3*time.Second)
+		defer stop()
+		_, err := client.Call(cleanup, "detach", &session, nil)
+		retErr = errors.Join(retErr, err)
+	}()
+	p.Stage = "observe"
+	var observation computer.Observation
+	for i := 0; i < 4; i++ {
+		p.Observations++
+		observation, err = client.Observe(ctx, session)
+		if err == nil {
+			break
+		}
+		var nativeErr *computer.BrokerError
+		if !errors.As(err, &nativeErr) || nativeErr.Delivery != "not_sent" || (nativeErr.Code != "window_ambiguous" && nativeErr.Code != "observation_inconsistent") {
+			return err
+		}
+		timer := time.NewTimer(250 * time.Millisecond)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return ctx.Err()
+		case <-timer.C:
+		}
+	}
+	if err != nil {
+		return err
+	}
+	before, err := os.ReadFile(state)
+	if err != nil {
+		return err
+	}
+	p.FrameWidth = observation.Screenshot.Width
+	p.FrameHeight = observation.Screenshot.Height
+	p.Scale = observation.Window.Scale
+	p.Stage = "build_privacy_checked_anchor"
+	var node *computer.Node
+	for i := range observation.Nodes {
+		n := &observation.Nodes[i]
+		if n.Role == "button" && n.Name == "Search" {
+			if node != nil {
+				return errors.New("duplicate Search")
+			}
+			node = n
+		}
+	}
+	if node == nil || node.Bounds == nil {
+		return errors.New("Search bounds missing")
+	}
+	b, w := node.Bounds, observation.Window.Bounds
+	sx, sy := float64(p.FrameWidth)/w.Width, float64(p.FrameHeight)/w.Height
+	x, y := int(math.Ceil((b.X-w.X)*sx))+3, int(math.Ceil((b.Y-w.Y)*sy))+3
+	right, bottom := int(math.Floor((b.X+b.Width-w.X)*sx))-3, int(math.Floor((b.Y+b.Height-w.Y)*sy))-3
+	width, height := right-x, bottom-y
+	if x < 0 || y < 0 || width < 8 || height < 8 || right > int(p.FrameWidth) || bottom > int(p.FrameHeight) {
+		return errors.New("Search bounds outside frame")
+	}
+	p.Search = computer.PixelRect{X: uint32(x), Y: uint32(y), Width: uint32(width), Height: uint32(height)}
+	cw, ch := min(width, 120), min(height, 64)
+	p.Crop = computer.PixelRect{X: uint32(x), Y: uint32(y + (height-ch)/2), Width: uint32(cw), Height: uint32(ch)}
+	policy := computer.PrivacyPolicy{PID: observation.Window.PID, WindowID: observation.Window.ID, SensitiveTargets: []computer.Selector{{Role: "text_field", Name: "Member ID"}, {Role: "text_field", Name: "Subaccount name"}}}
+	sanitized, err := computer.Sanitize(observation, policy)
+	if err != nil {
+		return err
+	}
+	imageBytes, err := base64.StdEncoding.DecodeString(sanitized.Screenshot.Base64)
+	if err != nil {
+		return err
+	}
+	if err = os.WriteFile("/Users/bharath/Code/devtools/Jarvis/tests/native-platform/local/macos-visual-sanitized.png", imageBytes, 0600); err != nil {
+		return err
+	}
+	anchor, err := computer.CreateVisualAnchor(observation, policy, p.Crop, p.Search, computer.PixelPoint{X: uint32(cw / 2), Y: uint32(ch / 2)})
+	if err != nil {
+		return err
+	}
+	p.Stage = "native_visual_resolution"
+	resolved, err := client.ResolveTarget(ctx, session, observation.ID, computer.Selector{Visual: &anchor})
+	if err != nil {
+		return err
+	}
+	if resolved.Kind != "visual" || resolved.Visual == nil {
+		return errors.New("wrong target kind")
+	}
+	p.RawFrameDigestPublished = resolved.Visual.FrameSHA256 != ""
+	if p.RawFrameDigestPublished {
+		return errors.New("private digest present")
+	}
+	p.Resolved = &resolved
+	p.Stage = "refuse_unapproved_visual_click"
+	_, err = client.Act(ctx, session, computer.Action{ActionID: "visual-click-without-human-grant", ObservationID: observation.ID, TargetID: resolved.Visual.TargetID, Kind: "click", Effect: "read"})
+	var nativeErr *computer.BrokerError
+	if !errors.As(err, &nativeErr) {
+		return fmt.Errorf("expected native refusal: %w", err)
+	}
+	p.ErrorCode = nativeErr.Code
+	p.Delivery = nativeErr.Delivery
+	if nativeErr.Code != "approval_required" || nativeErr.Delivery != "not_sent" {
+		return err
+	}
+	p.NoGrantRefused = true
+	after, err := os.ReadFile(state)
+	if err != nil {
+		return err
+	}
+	p.OracleUnchanged = sha256.Sum256(before) == sha256.Sum256(after)
+	if !p.OracleUnchanged {
+		return errors.New("synthetic oracle changed")
+	}
+	p.Stage = "completed"
+	return nil
+}
+
+func main() {
+	p := proof{StartedAt: time.Now().UTC().Format(time.RFC3339), Platform: "macos-arm64", Status: "failed"}
+	err := run(&p)
+	if err == nil {
+		p.Status = "passed"
+	} else {
+		var nativeErr *computer.BrokerError
+		if errors.As(err, &nativeErr) {
+			p.ErrorCode = nativeErr.Code
+			p.Delivery = nativeErr.Delivery
+		} else {
+			p.ErrorCode = "probe_error"
+		}
+	}
+	b, e := json.MarshalIndent(p, "", "  ")
+	if e != nil {
+		panic(e)
+	}
+	output := "/Users/bharath/Code/devtools/Jarvis/tests/native-platform/local/macos-visual-no-grant.json"
+	if e = os.WriteFile(output, append(b, '\n'), 0600); e != nil {
+		panic(e)
+	}
+	fmt.Println(string(b))
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "probe failed at", p.Stage, "with", p.ErrorCode, err)
+		os.Exit(1)
+	}
+}

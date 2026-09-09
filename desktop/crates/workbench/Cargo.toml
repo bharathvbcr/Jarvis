@@ -1,0 +1,20 @@
+[package]
+name = "jarvis-workbench"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+jarvis-desktop-ui = { path = "../desktop-ui" }
+eframe.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+base64.workspace = true
+image.workspace = true
+
+[dev-dependencies]
+egui_kittest = { version = "=0.36.2", default-features = false }
+
+[lints]
+workspace = true

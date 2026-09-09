@@ -1,0 +1,47 @@
+[
+  {
+    "name": "start",
+    "cat": "workflow",
+    "ph": "i",
+    "ts": 0,
+    "pid": 1,
+    "tid": 1,
+    "s": "t"
+  },
+  {
+    "name": "observe_failed",
+    "cat": "workflow",
+    "ph": "i",
+    "ts": 379000,
+    "pid": 1,
+    "tid": 1,
+    "s": "t"
+  },
+  {
+    "name": "observed",
+    "cat": "workflow",
+    "ph": "i",
+    "ts": 1649000,
+    "pid": 1,
+    "tid": 1,
+    "s": "t"
+  },
+  {
+    "name": "receipt",
+    "cat": "workflow",
+    "ph": "i",
+    "ts": 1788000,
+    "pid": 1,
+    "tid": 1,
+    "s": "t"
+  },
+  {
+    "name": "fence",
+    "cat": "workflow",
+    "ph": "i",
+    "ts": 1792000,
+    "pid": 1,
+    "tid": 1,
+    "s": "t"
+  }
+]

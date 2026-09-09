@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "run_id": "5c25ec24dd665d2febe30710061ad87e",
+  "session_id": "session-1788968802323-36",
+  "epoch": 1,
+  "contract_sha256": "90ecc1c9403ba5139d955f5be8ce876c7525bb3eaf704cc9de2b599e3bcb888d",
+  "capability_sha256": "5b514aefd13850e5f97f911392c4df615aeab0608aadc84fe81a8e91c7d7cbc0",
+  "journal_complete": false,
+  "degraded": [
+    "failed"
+  ],
+  "actions": [
+    {
+      "id": "5c25ec24dd665d2febe30710061ad87e:member",
+      "sequence": 2,
+      "disposition": "failed"
+    }
+  ],
+  "observations": [],
+  "artifacts": [
+    {
+      "id": "frame-000001",
+      "path": "frame-000001.png",
+      "sha256": "dbef166898cb5c9f9b5dd72fbec0c830ebb10d45efee7d8e117cd28bc81d62ae",
+      "size_bytes": 201025
+    },
+    {
+      "id": "frame-000001-tree",
+      "path": "frame-000001.json",
+      "sha256": "e78ecc7b6975de566c9daa457cf2bed2a49ef97cd5703a3e60b35d5b5fb94ca9",
+      "size_bytes": 8023
+    }
+  ],
+  "epoch_transitions": [
+    {
+      "sequence": 3,
+      "from_epoch": 1,
+      "to_epoch": 2,
+      "reason": "fence"
+    }
+  ]
+}

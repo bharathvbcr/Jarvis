@@ -1,0 +1,2 @@
+# Preserve exact terminal capture bytes, including CR and ANSI control codes.
+evidence/linux-*.txt -text -diff

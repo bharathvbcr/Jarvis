@@ -1,0 +1,208 @@
+{
+  "schema_version": 3,
+  "platform": "linux",
+  "architecture": "arm64",
+  "desktop_session": "x11",
+  "started_at": "2026-09-09T16:07:05Z",
+  "mode": "fresh_process",
+  "scenario": "balance",
+  "requested_per_tenant": 3,
+  "tenants": [
+    "north",
+    "south"
+  ],
+  "results": [
+    {
+      "run_id": "da24076814df19ecd9dd0e51e14239f3",
+      "tenant": "north",
+      "index": 1,
+      "scenario": "balance",
+      "attempted": true,
+      "phase": "admitted",
+      "verdict": "unavailable",
+      "outcome": "blocked",
+      "latency_millis": 1001,
+      "observation_retries": 0,
+      "input_retries": 0,
+      "error": "window_ambiguous: Cannot uniquely bind the X11 window to its AT-SPI root",
+      "evidence_dir": "/home/jarvis/Jarvis/evidence/private/da24076814df19ecd9dd0e51e14239f3",
+      "oracle": "seeded balances, members and subaccounts unchanged",
+      "oracle_verified": true,
+      "approval_denied": false,
+      "approved_action_ids": [],
+      "fault_reached": false,
+      "expected_behavior_verified": false
+    },
+    {
+      "run_id": "1f176b69c56b3fc751bc6abf44ff673c",
+      "tenant": "north",
+      "index": 2,
+      "scenario": "balance",
+      "attempted": true,
+      "phase": "admitted",
+      "verdict": "unavailable",
+      "outcome": "blocked",
+      "latency_millis": 1001,
+      "observation_retries": 0,
+      "input_retries": 0,
+      "error": "window_ambiguous: Cannot uniquely bind the X11 window to its AT-SPI root",
+      "evidence_dir": "/home/jarvis/Jarvis/evidence/private/1f176b69c56b3fc751bc6abf44ff673c",
+      "oracle": "seeded balances, members and subaccounts unchanged",
+      "oracle_verified": true,
+      "approval_denied": false,
+      "approved_action_ids": [],
+      "fault_reached": false,
+      "expected_behavior_verified": false
+    },
+    {
+      "run_id": "6899ad6844be146bf886f2b5b211beb5",
+      "tenant": "north",
+      "index": 3,
+      "scenario": "balance",
+      "attempted": true,
+      "phase": "admitted",
+      "verdict": "unavailable",
+      "outcome": "blocked",
+      "latency_millis": 1003,
+      "observation_retries": 0,
+      "input_retries": 0,
+      "error": "window_ambiguous: Cannot uniquely bind the X11 window to its AT-SPI root",
+      "evidence_dir": "/home/jarvis/Jarvis/evidence/private/6899ad6844be146bf886f2b5b211beb5",
+      "oracle": "seeded balances, members and subaccounts unchanged",
+      "oracle_verified": true,
+      "approval_denied": false,
+      "approved_action_ids": [],
+      "fault_reached": false,
+      "expected_behavior_verified": false
+    },
+    {
+      "run_id": "1f2012a4f2a9f4e09dbe2ebe3d38bd20",
+      "tenant": "south",
+      "index": 1,
+      "scenario": "balance",
+      "attempted": true,
+      "phase": "admitted",
+      "verdict": "unavailable",
+      "outcome": "blocked",
+      "latency_millis": 1002,
+      "observation_retries": 0,
+      "input_retries": 0,
+      "error": "window_ambiguous: Cannot uniquely bind the X11 window to its AT-SPI root",
+      "evidence_dir": "/home/jarvis/Jarvis/evidence/private/1f2012a4f2a9f4e09dbe2ebe3d38bd20",
+      "oracle": "seeded balances, members and subaccounts unchanged",
+      "oracle_verified": true,
+      "approval_denied": false,
+      "approved_action_ids": [],
+      "fault_reached": false,
+      "expected_behavior_verified": false
+    },
+    {
+      "run_id": "2377d72699d9dac74d2e6bec8f805b12",
+      "tenant": "south",
+      "index": 2,
+      "scenario": "balance",
+      "attempted": true,
+      "phase": "admitted",
+      "verdict": "unavailable",
+      "outcome": "blocked",
+      "latency_millis": 1003,
+      "observation_retries": 0,
+      "input_retries": 0,
+      "error": "window_ambiguous: Cannot uniquely bind the X11 window to its AT-SPI root",
+      "evidence_dir": "/home/jarvis/Jarvis/evidence/private/2377d72699d9dac74d2e6bec8f805b12",
+      "oracle": "seeded balances, members and subaccounts unchanged",
+      "oracle_verified": true,
+      "approval_denied": false,
+      "approved_action_ids": [],
+      "fault_reached": false,
+      "expected_behavior_verified": false
+    },
+    {
+      "run_id": "05cb869ff48cf53ac1a06aa3431ea2dd",
+      "tenant": "south",
+      "index": 3,
+      "scenario": "balance",
+      "attempted": true,
+      "phase": "admitted",
+      "verdict": "unavailable",
+      "outcome": "blocked",
+      "latency_millis": 1001,
+      "observation_retries": 0,
+      "input_retries": 0,
+      "error": "window_ambiguous: Cannot uniquely bind the X11 window to its AT-SPI root",
+      "evidence_dir": "/home/jarvis/Jarvis/evidence/private/05cb869ff48cf53ac1a06aa3431ea2dd",
+      "oracle": "seeded balances, members and subaccounts unchanged",
+      "oracle_verified": true,
+      "approval_denied": false,
+      "approved_action_ids": [],
+      "fault_reached": false,
+      "expected_behavior_verified": false
+    }
+  ],
+  "by_tenant": {
+    "north": {
+      "requested": 3,
+      "attempted": 3,
+      "passed": 0,
+      "failed": 0,
+      "blocked": 3,
+      "fault_reached": 0
+    },
+    "south": {
+      "requested": 3,
+      "attempted": 3,
+      "passed": 0,
+      "failed": 0,
+      "blocked": 3,
+      "fault_reached": 0
+    }
+  },
+  "matrix_complete": true,
+  "qualified": false,
+  "passed": 0,
+  "failed": 0,
+  "blocked": 6,
+  "first_attempt_successes": 0,
+  "model_requests": 0,
+  "cost_nano_usd": 0,
+  "one_sided_95_lower_bound": 0,
+  "independence_assumed": false,
+  "interactive": false,
+  "expected_behavior_passes": 0,
+  "campaign_passed": false,
+  "provenance": {
+    "files": {
+      "bank": {
+        "path": "/home/jarvis/desktop/target/debug/jarvis-bank",
+        "sha256": "b8308c5117b1c0bfa97629ca842e6541fe4ed8a3c6eaaf1da7c8f16b82052e5d",
+        "size": 251802488
+      },
+      "broker": {
+        "path": "/home/jarvis/native/target/debug/manvi-desktop",
+        "sha256": "6b85d1634768b25f8d5ee207d62f3235b73336dfa1f5ea03d3d80d8ca3cb40e2",
+        "size": 95805504
+      },
+      "capability": {
+        "path": "/home/jarvis/Jarvis/examples/balance.json",
+        "sha256": "5b514aefd13850e5f97f911392c4df615aeab0608aadc84fe81a8e91c7d7cbc0",
+        "size": 1173
+      },
+      "contract": {
+        "path": "/home/jarvis/Jarvis/scenarios/balance-m1001.contract.json",
+        "sha256": "90ecc1c9403ba5139d955f5be8ce876c7525bb3eaf704cc9de2b599e3bcb888d",
+        "size": 361
+      },
+      "qualifier": {
+        "path": "/home/jarvis/Jarvis/build/qualify",
+        "sha256": "53fa12afaceffc046668838ca6fb5360736778f1281b6f56135f7479ea6bd9c6",
+        "size": 7406608
+      },
+      "verifier": {
+        "path": "/home/jarvis/rust/target/debug/dcverify",
+        "sha256": "a2e661d622a325744e1f1ec4152bdab0e707c271e3c5c6037b1e44a89bcbb9b5",
+        "size": 14968648
+      }
+    },
+    "source_status": "unavailable"
+  }
+}

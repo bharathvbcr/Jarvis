@@ -1,0 +1,130 @@
+{
+  "schema_version": 3,
+  "platform": "darwin",
+  "architecture": "arm64",
+  "desktop_session": "",
+  "started_at": "2026-09-09T16:16:20Z",
+  "mode": "fresh_process",
+  "scenario": "denial",
+  "requested_per_tenant": 1,
+  "tenants": [
+    "north",
+    "south"
+  ],
+  "results": [
+    {
+      "run_id": "695706db51b0e5c725af7cdabfd3468b",
+      "tenant": "north",
+      "index": 1,
+      "scenario": "denial",
+      "attempted": true,
+      "phase": "admitted",
+      "verdict": "unavailable",
+      "outcome": "blocked",
+      "latency_millis": 1103,
+      "observation_retries": 0,
+      "input_retries": 0,
+      "error": "window_ambiguous: Admission requires a unique exact accessibility window title",
+      "evidence_dir": "/Users/bharath/Code/devtools/Jarvis/evidence/private/695706db51b0e5c725af7cdabfd3468b",
+      "oracle": "seeded balances, members and subaccounts unchanged",
+      "oracle_verified": true,
+      "approval_denied": false,
+      "approved_action_ids": [],
+      "fault_reached": false,
+      "expected_behavior_verified": false
+    },
+    {
+      "run_id": "b42a8c25c21587c0e625dac13155834d",
+      "tenant": "south",
+      "index": 1,
+      "scenario": "denial",
+      "attempted": true,
+      "phase": "admitted",
+      "verdict": "unavailable",
+      "outcome": "blocked",
+      "latency_millis": 1102,
+      "observation_retries": 0,
+      "input_retries": 0,
+      "error": "window_ambiguous: Admission requires a unique exact accessibility window title",
+      "evidence_dir": "/Users/bharath/Code/devtools/Jarvis/evidence/private/b42a8c25c21587c0e625dac13155834d",
+      "oracle": "seeded balances, members and subaccounts unchanged",
+      "oracle_verified": true,
+      "approval_denied": false,
+      "approved_action_ids": [],
+      "fault_reached": false,
+      "expected_behavior_verified": false
+    }
+  ],
+  "by_tenant": {
+    "north": {
+      "requested": 1,
+      "attempted": 1,
+      "passed": 0,
+      "failed": 0,
+      "blocked": 1,
+      "fault_reached": 0
+    },
+    "south": {
+      "requested": 1,
+      "attempted": 1,
+      "passed": 0,
+      "failed": 0,
+      "blocked": 1,
+      "fault_reached": 0
+    }
+  },
+  "matrix_complete": true,
+  "qualified": false,
+  "passed": 0,
+  "failed": 0,
+  "blocked": 2,
+  "first_attempt_successes": 0,
+  "model_requests": 0,
+  "cost_nano_usd": 0,
+  "one_sided_95_lower_bound": 0,
+  "independence_assumed": false,
+  "interactive": false,
+  "expected_behavior_passes": 0,
+  "campaign_passed": false,
+  "provenance": {
+    "files": {
+      "bank": {
+        "path": "/Users/bharath/Code/devtools/Jarvis/build/jarvis-bank",
+        "resolved_path": "/Users/bharath/Code/devtools/Jarvis/build/jarvis-bank",
+        "sha256": "c181b608fa12b1715211d7ff75b6454510c045ab82f62ed64718b4b37a599cb5",
+        "size": 39069808
+      },
+      "broker": {
+        "path": "/Users/bharath/Code/devtools/Jarvis/build/manvi-desktop",
+        "resolved_path": "/Users/bharath/Code/devtools/Jarvis/build/manvi-desktop",
+        "sha256": "89cff05a36371ec5ee48ef50fcc829491cd539baa02262e2c163261f91ced23b",
+        "size": 4609984
+      },
+      "capability": {
+        "path": "/Users/bharath/Code/devtools/Jarvis/examples/create-subaccount.json",
+        "resolved_path": "/Users/bharath/Code/devtools/Jarvis/examples/create-subaccount.json",
+        "sha256": "7acd7ab3ce9165769e84e78fac7a5afc2afeb9f04fc7dcf9e157ec9599623605",
+        "size": 1542
+      },
+      "contract": {
+        "path": "/Users/bharath/Code/devtools/Jarvis/scenarios/subaccount.contract.json",
+        "resolved_path": "/Users/bharath/Code/devtools/Jarvis/scenarios/subaccount.contract.json",
+        "sha256": "0fd7b3d12d29e94ef36e5dfacc67427b6c68e543208823f2f01dd473c34132b1",
+        "size": 171
+      },
+      "qualifier": {
+        "path": "/tmp/jarvis-qualify-review",
+        "resolved_path": "/private/tmp/jarvis-qualify-review",
+        "sha256": "62811ebab844b35c1508a7cf816ba8b348bcd1d900a0a5a79b33aea9c9a0d5ea",
+        "size": 7566802
+      },
+      "verifier": {
+        "path": "/Users/bharath/Code/devtools/Jarvis/build/dcverify",
+        "resolved_path": "/Users/bharath/Code/devtools/Jarvis/build/dcverify",
+        "sha256": "52bdb453d75ebf8cc35a982abdde350755dbacb62f1f91752a27942c8a0e6dca",
+        "size": 3514232
+      }
+    },
+    "source_status": "dirty"
+  }
+}

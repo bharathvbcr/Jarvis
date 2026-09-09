@@ -1,0 +1,1 @@
+{"schema_version":1,"id":"bank.balance.m1001","criteria":[{"id":"balance","fact":"balance_minor","required":true,"predicate":{"op":"equals","value":125000}},{"id":"currency","fact":"currency","required":true,"predicate":{"op":"equals","value":"USD"}},{"id":"member-found","fact":"ui.Status","required":true,"predicate":{"op":"equals","value":"Member found"}}]}

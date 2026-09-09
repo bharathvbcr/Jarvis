@@ -1,0 +1,130 @@
+{
+  "schema_version": 3,
+  "platform": "linux",
+  "architecture": "arm64",
+  "desktop_session": "x11",
+  "started_at": "2026-09-09T17:07:58Z",
+  "mode": "fresh_process",
+  "scenario": "missing-control",
+  "requested_per_tenant": 1,
+  "tenants": [
+    "north",
+    "south"
+  ],
+  "results": [
+    {
+      "run_id": "a5598e3e080a350120d1755959ee5eb7",
+      "tenant": "north",
+      "index": 1,
+      "scenario": "missing-control",
+      "attempted": true,
+      "phase": "cancelled",
+      "verdict": "unavailable",
+      "outcome": "blocked",
+      "latency_millis": 8422,
+      "observation_retries": 1,
+      "input_retries": 0,
+      "error": "native run paused: target resolves to 0 elements\ncontext canceled",
+      "evidence_dir": "/home/jarvis/Jarvis/evidence/private/a5598e3e080a350120d1755959ee5eb7",
+      "oracle": "seeded balances, members and subaccounts unchanged",
+      "oracle_verified": true,
+      "approval_denied": false,
+      "approved_action_ids": [],
+      "fault_reached": true,
+      "expected_behavior_verified": true
+    },
+    {
+      "run_id": "9d92c1312c6aba6d393f908b14ed2c90",
+      "tenant": "south",
+      "index": 1,
+      "scenario": "missing-control",
+      "attempted": true,
+      "phase": "cancelled",
+      "verdict": "unavailable",
+      "outcome": "blocked",
+      "latency_millis": 9516,
+      "observation_retries": 1,
+      "input_retries": 0,
+      "error": "native run paused: target resolves to 0 elements\ncontext canceled",
+      "evidence_dir": "/home/jarvis/Jarvis/evidence/private/9d92c1312c6aba6d393f908b14ed2c90",
+      "oracle": "seeded balances, members and subaccounts unchanged",
+      "oracle_verified": true,
+      "approval_denied": false,
+      "approved_action_ids": [],
+      "fault_reached": true,
+      "expected_behavior_verified": true
+    }
+  ],
+  "by_tenant": {
+    "north": {
+      "requested": 1,
+      "attempted": 1,
+      "passed": 0,
+      "failed": 0,
+      "blocked": 1,
+      "fault_reached": 1
+    },
+    "south": {
+      "requested": 1,
+      "attempted": 1,
+      "passed": 0,
+      "failed": 0,
+      "blocked": 1,
+      "fault_reached": 1
+    }
+  },
+  "matrix_complete": true,
+  "qualified": false,
+  "passed": 0,
+  "failed": 0,
+  "blocked": 2,
+  "first_attempt_successes": 0,
+  "model_requests": 0,
+  "cost_nano_usd": 0,
+  "one_sided_95_lower_bound": 0,
+  "independence_assumed": false,
+  "interactive": false,
+  "expected_behavior_passes": 2,
+  "campaign_passed": true,
+  "provenance": {
+    "files": {
+      "bank": {
+        "path": "/home/jarvis/desktop/target/debug/jarvis-bank",
+        "resolved_path": "/home/jarvis/desktop/target/debug/jarvis-bank",
+        "sha256": "b8308c5117b1c0bfa97629ca842e6541fe4ed8a3c6eaaf1da7c8f16b82052e5d",
+        "size": 251802488
+      },
+      "broker": {
+        "path": "/home/jarvis/native/target/debug/manvi-desktop",
+        "resolved_path": "/home/jarvis/native/target/debug/manvi-desktop",
+        "sha256": "da816c39a7152299314449b50a9374775d72ab48028b99e30053aab47c9bfd09",
+        "size": 99182256
+      },
+      "capability": {
+        "path": "/home/jarvis/Jarvis/examples/create-subaccount.json",
+        "resolved_path": "/home/jarvis/Jarvis/examples/create-subaccount.json",
+        "sha256": "7acd7ab3ce9165769e84e78fac7a5afc2afeb9f04fc7dcf9e157ec9599623605",
+        "size": 1542
+      },
+      "contract": {
+        "path": "/home/jarvis/Jarvis/scenarios/subaccount.contract.json",
+        "resolved_path": "/home/jarvis/Jarvis/scenarios/subaccount.contract.json",
+        "sha256": "0fd7b3d12d29e94ef36e5dfacc67427b6c68e543208823f2f01dd473c34132b1",
+        "size": 171
+      },
+      "qualifier": {
+        "path": "/home/jarvis/Jarvis/build/qualify",
+        "resolved_path": "/home/jarvis/Jarvis/build/qualify",
+        "sha256": "83c61edca425b86e92f10758efce21bf26f498ab4d8593206fba052099945763",
+        "size": 7565440
+      },
+      "verifier": {
+        "path": "/home/jarvis/rust/target/debug/dcverify",
+        "resolved_path": "/home/jarvis/rust/target/debug/dcverify",
+        "sha256": "a2e661d622a325744e1f1ec4152bdab0e707c271e3c5c6037b1e44a89bcbb9b5",
+        "size": 14968648
+      }
+    },
+    "source_status": "unavailable"
+  }
+}

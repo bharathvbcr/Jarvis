@@ -1,0 +1,175 @@
+{
+  "schema_version": 1,
+  "run_id": "09a8bb6c81691e2e5b8c16d6e275e61d",
+  "session_id": "session-1788973141220-1",
+  "epoch": 1,
+  "contract_sha256": "90ecc1c9403ba5139d955f5be8ce876c7525bb3eaf704cc9de2b599e3bcb888d",
+  "capability_sha256": "5b514aefd13850e5f97f911392c4df615aeab0608aadc84fe81a8e91c7d7cbc0",
+  "journal_complete": true,
+  "degraded": [],
+  "actions": [
+    {
+      "id": "09a8bb6c81691e2e5b8c16d6e275e61d:member",
+      "sequence": 2,
+      "disposition": "succeeded"
+    },
+    {
+      "id": "09a8bb6c81691e2e5b8c16d6e275e61d:search",
+      "sequence": 6,
+      "disposition": "succeeded"
+    },
+    {
+      "id": "09a8bb6c81691e2e5b8c16d6e275e61d:found",
+      "sequence": 9,
+      "disposition": "succeeded"
+    },
+    {
+      "id": "09a8bb6c81691e2e5b8c16d6e275e61d:balance",
+      "sequence": 12,
+      "disposition": "succeeded"
+    }
+  ],
+  "observations": [
+    {
+      "sequence": 4,
+      "run_id": "09a8bb6c81691e2e5b8c16d6e275e61d",
+      "session_id": "session-1788973141220-1",
+      "epoch": 1,
+      "after_action_id": "09a8bb6c81691e2e5b8c16d6e275e61d:member",
+      "facts": {
+        "ui.Balance": "—",
+        "ui.Status": "Ready"
+      },
+      "artifact_ids": [
+        "frame-000003",
+        "frame-000003-tree"
+      ]
+    },
+    {
+      "sequence": 8,
+      "run_id": "09a8bb6c81691e2e5b8c16d6e275e61d",
+      "session_id": "session-1788973141220-1",
+      "epoch": 1,
+      "after_action_id": "09a8bb6c81691e2e5b8c16d6e275e61d:search",
+      "facts": {
+        "balance_minor": 125000,
+        "currency": "USD",
+        "ui.Balance": "1250.00 USD",
+        "ui.Status": "Member found"
+      },
+      "artifact_ids": [
+        "frame-000007",
+        "frame-000007-tree"
+      ]
+    },
+    {
+      "sequence": 11,
+      "run_id": "09a8bb6c81691e2e5b8c16d6e275e61d",
+      "session_id": "session-1788973141220-1",
+      "epoch": 1,
+      "after_action_id": "09a8bb6c81691e2e5b8c16d6e275e61d:found",
+      "facts": {
+        "balance_minor": 125000,
+        "currency": "USD",
+        "ui.Balance": "1250.00 USD",
+        "ui.Status": "Member found"
+      },
+      "artifact_ids": [
+        "frame-000010",
+        "frame-000010-tree"
+      ]
+    },
+    {
+      "sequence": 14,
+      "run_id": "09a8bb6c81691e2e5b8c16d6e275e61d",
+      "session_id": "session-1788973141220-1",
+      "epoch": 1,
+      "after_action_id": "09a8bb6c81691e2e5b8c16d6e275e61d:balance",
+      "facts": {
+        "balance_minor": 125000,
+        "currency": "USD",
+        "ui.Balance": "1250.00 USD",
+        "ui.Status": "Member found"
+      },
+      "artifact_ids": [
+        "frame-000013",
+        "frame-000013-tree"
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "frame-000001",
+      "path": "frame-000001.png",
+      "sha256": "3a19d017d3b8cf7e35afcdae6a29a83e3321a6fc04c3e5ae3d5022a2c6cf7510",
+      "size_bytes": 30475
+    },
+    {
+      "id": "frame-000001-tree",
+      "path": "frame-000001.json",
+      "sha256": "72957e6fafa58adb2a99191ace3e4e83918226169300e80dc30baf00d51db0d9",
+      "size_bytes": 5555
+    },
+    {
+      "id": "frame-000003",
+      "path": "frame-000003.png",
+      "sha256": "3a19d017d3b8cf7e35afcdae6a29a83e3321a6fc04c3e5ae3d5022a2c6cf7510",
+      "size_bytes": 30475
+    },
+    {
+      "id": "frame-000003-tree",
+      "path": "frame-000003.json",
+      "sha256": "083bc0654071f72f1f83dda898293b716a1cd3c7bb2f29dc5fceea183060cb36",
+      "size_bytes": 5555
+    },
+    {
+      "id": "frame-000005",
+      "path": "frame-000005.png",
+      "sha256": "3a19d017d3b8cf7e35afcdae6a29a83e3321a6fc04c3e5ae3d5022a2c6cf7510",
+      "size_bytes": 30475
+    },
+    {
+      "id": "frame-000005-tree",
+      "path": "frame-000005.json",
+      "sha256": "64f006d136812a5cdac2afef4195be3e7ffc1f04e0ea0413363d44b70302a2e4",
+      "size_bytes": 5555
+    },
+    {
+      "id": "frame-000007",
+      "path": "frame-000007.png",
+      "sha256": "35c7ee73af3df152e2e32384c9f14cb2916b7944dda66d372da28b0ae8d7abb5",
+      "size_bytes": 32375
+    },
+    {
+      "id": "frame-000007-tree",
+      "path": "frame-000007.json",
+      "sha256": "5abf26b2586fde56760a85975e39bba218b4e266deebe3452c230d8dd883f21c",
+      "size_bytes": 6209
+    },
+    {
+      "id": "frame-000010",
+      "path": "frame-000010.png",
+      "sha256": "35c7ee73af3df152e2e32384c9f14cb2916b7944dda66d372da28b0ae8d7abb5",
+      "size_bytes": 32375
+    },
+    {
+      "id": "frame-000010-tree",
+      "path": "frame-000010.json",
+      "sha256": "a8714c0077a394ac7586afaf93791fa9d8c956cb626757520c3d5f01958dbf94",
+      "size_bytes": 6209
+    },
+    {
+      "id": "frame-000013",
+      "path": "frame-000013.png",
+      "sha256": "35c7ee73af3df152e2e32384c9f14cb2916b7944dda66d372da28b0ae8d7abb5",
+      "size_bytes": 32375
+    },
+    {
+      "id": "frame-000013-tree",
+      "path": "frame-000013.json",
+      "sha256": "a076f3928d8ea73249a745c0c705b61b861c084f1fc7363a5c0cd7614beb7a26",
+      "size_bytes": 6209
+    }
+  ],
+  "epoch_transitions": []
+}

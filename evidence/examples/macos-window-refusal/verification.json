@@ -1,0 +1,50 @@
+{
+  "ok": true,
+  "evidence_schema_version": 1,
+  "verdict": "failed",
+  "contract_sha256": "90ecc1c9403ba5139d955f5be8ce876c7525bb3eaf704cc9de2b599e3bcb888d",
+  "bundle_sha256": "a95e273636754faec0697b5a64a0ccf57fc84f3edb23a6040ca6b9622b685598",
+  "run_id": "5c25ec24dd665d2febe30710061ad87e",
+  "criteria": [
+    {
+      "id": "balance",
+      "required": true,
+      "verdict": "incomplete",
+      "reason": "evidence prerequisites not satisfied"
+    },
+    {
+      "id": "currency",
+      "required": true,
+      "verdict": "incomplete",
+      "reason": "evidence prerequisites not satisfied"
+    },
+    {
+      "id": "member-found",
+      "required": true,
+      "verdict": "incomplete",
+      "reason": "evidence prerequisites not satisfied"
+    }
+  ],
+  "issues": [
+    {
+      "code": "journal_incomplete_or_degraded",
+      "verdict": "incomplete"
+    },
+    {
+      "code": "empty_action_or_observation_journal",
+      "verdict": "incomplete"
+    },
+    {
+      "code": "final_epoch_unobserved",
+      "verdict": "incomplete"
+    },
+    {
+      "code": "action_failed",
+      "verdict": "failed"
+    },
+    {
+      "code": "action_has_no_post_observation",
+      "verdict": "incomplete"
+    }
+  ]
+}

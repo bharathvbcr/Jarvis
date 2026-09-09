@@ -1,0 +1,4 @@
+Script started on 2026-09-09 16:04:16+00:00 [COMMAND="/usr/bin/sudo -u jarvis /usr/bin/env DISPLAY=:0 XAUTHORITY=/home/jarvis/.Xauthority XDG_SESSION_TYPE=x11 XDG_RUNTIME_DIR=/run/user/1000 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus LIBGL_ALWAYS_SOFTWARE=1 /home/jarvis/native/target/debug/manvi-desktop probe" <not executed on terminal>]
+^@{"id":"probe","ok":true,"result":{"accessibility":{"backend":"atspi","state":"enabled"},"architecture":"aarch64","platform":"linux","protocol_version":1,"qualification":"not_tested","screen_capture":{"backend":"x11_get_image","scope":"unoccluded_window","state":"available"},"session":"x11"}}
+
+Script done on 2026-09-09 16:04:16+00:00 [COMMAND_EXIT_CODE="0"]

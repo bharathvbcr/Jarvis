@@ -1,0 +1,19 @@
+[package]
+name = "jarvis-bank"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Native synthetic bank fixture exercised through desktop accessibility"
+
+[dependencies]
+jarvis-desktop-ui = { path = "../desktop-ui" }
+eframe.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+egui_kittest = { version = "=0.36.2", default-features = false }
+
+[lints]
+workspace = true

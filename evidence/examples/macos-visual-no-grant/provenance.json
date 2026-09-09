@@ -1,0 +1,109 @@
+{
+  "captured_at": "2026-09-09T17:00:37Z",
+  "native_source_root": "/Users/bharath/.codex/worktrees/jarvis-automation/Manvi/native",
+  "native_source_timing": "Native Rust source and manifests sampled after the passing probe, before subsequent native source modification. The executed frozen native binary SHA is in report.json. This is a source snapshot, not a reproducible-build attestation.",
+  "bank_source_binding": "Executed bank binary SHA is recorded; an immutable bank source-to-build attestation was not available.",
+  "command": "go run /tmp/jarvis-visual-proof.go (from Manvi/manvi; exact probe source retained as probe.go.txt)",
+  "files": [
+    {
+      "path": "native/Cargo.lock",
+      "sha256": "2d831d16ec99797ec57969c1747d65ccd018375f0b7fe74eca2c9fd5ed9972c3"
+    },
+    {
+      "path": "native/Cargo.toml",
+      "sha256": "06ff8ec49ab98aecda8bc53c05fa19614c1f0f2906bf5ee4a040d0b1c3845bf0"
+    },
+    {
+      "path": "native/crates/desktop-core/Cargo.toml",
+      "sha256": "6d149a240e9b764d9feb33defa29783de83ccf5afefda77d2c7941c35bef6b21"
+    },
+    {
+      "path": "native/crates/desktop-core/src/lib.rs",
+      "sha256": "3f279ec10b90dd48874748ad9bfaa867b89417e70ac70c182edf27b402d85dff"
+    },
+    {
+      "path": "native/crates/desktop-core/src/visual.rs",
+      "sha256": "05dabe2d485e6713409b7f4e4a871bdcc6f7cd7d2eb74435ba7d3e15e621a230"
+    },
+    {
+      "path": "native/crates/desktop-core/tests/fixtures/visual-anchor.json",
+      "sha256": "23d7d6b6759ffedb9c2813e5a1333243a6e2e15701595838e4659bddd31f39d2"
+    },
+    {
+      "path": "native/crates/desktop-linux/Cargo.toml",
+      "sha256": "6b56224d4c0652a0d48f19ca2596cc13ac4a1ecd7345e6cf0bac3d1d614cae74"
+    },
+    {
+      "path": "native/crates/desktop-linux/src/keyboard.rs",
+      "sha256": "3e8390a9d696b7b740ea76f1fc4b7bca9aa866cb6ac55bb76094ed59a7818818"
+    },
+    {
+      "path": "native/crates/desktop-linux/src/lib.rs",
+      "sha256": "70a0df1a4cbdf4034fb621dc6b3360c350fa0d92a62273687ff772fc5f664413"
+    },
+    {
+      "path": "native/crates/desktop-linux/src/platform.rs",
+      "sha256": "683bfc652c8568f03afec96941763d64188e24b70e2879df74f4dac586b0455b"
+    },
+    {
+      "path": "native/crates/desktop-macos/Cargo.toml",
+      "sha256": "4beb7d881222ce53720659a2c8fefa519e25209cff3ad448824d4da760817b85"
+    },
+    {
+      "path": "native/crates/desktop-macos/src/lib.rs",
+      "sha256": "364ff624de82d174f3bf2f0d02eef152981474186d640fba6a2df96801c8ac04"
+    },
+    {
+      "path": "native/crates/desktop-macos/src/platform.rs",
+      "sha256": "5def58d2026ae68f41b3cde00069b43d60fc759ded4f890e3fde635a03059281"
+    },
+    {
+      "path": "native/crates/desktop-windows/Cargo.toml",
+      "sha256": "c099bc4b8567243e8d3f6500eba1331e866fdc1daa1e44478716e32886c1064d"
+    },
+    {
+      "path": "native/crates/desktop-windows/src/lib.rs",
+      "sha256": "85ec098de1e5ddcd6dbdbf004c6087eb91f7fe42506601bf27cb9e16db658367"
+    },
+    {
+      "path": "native/crates/desktop-windows/src/platform.rs",
+      "sha256": "aac2c0e82e038ade4a38b5fe8bdc73413187a62b3e569cf8951004f6b405521f"
+    },
+    {
+      "path": "native/crates/manvi-desktop/Cargo.toml",
+      "sha256": "81692563a08294a5656aee4035a8e5e4543b45550673803e2fd6f6936abefd07"
+    },
+    {
+      "path": "native/crates/manvi-desktop/build.rs",
+      "sha256": "2ba3915fd48dbd9ceb58bebc2e6a96a9b848233689fcb5e8abcb0527242a14a8"
+    },
+    {
+      "path": "native/crates/manvi-desktop/desktop.manifest",
+      "sha256": "39be3e8646f788b38239678b5546396c35d4f0d37942781146738d19a5833ad6"
+    },
+    {
+      "path": "native/crates/manvi-desktop/src/broker.rs",
+      "sha256": "fc8611a4af010a6bfea7c63b00b9ffd7d07d79283b5e0206a7afad1c189be09b"
+    },
+    {
+      "path": "native/crates/manvi-desktop/src/main.rs",
+      "sha256": "df8202dbbf02888866efa3c93cca36e6c6c6f6c86b349e796f747391b2f98a62"
+    },
+    {
+      "path": "native/crates/manvi-desktop/src/platform/mod.rs",
+      "sha256": "920abf6ba5ec962cffbe1396c1bba7c6d36342eeaebd6b60933708a11013d548"
+    },
+    {
+      "path": "probe.go.txt",
+      "sha256": "69711dc2af484588dcb6d2899ee172b7b05f45ba0fbfbe2e071bf6d62a484ff6"
+    },
+    {
+      "path": "report.json",
+      "sha256": "e9d37c9006d083d89e4798e71c7e18619f7f37fdf441eb3381b67032c8d469d1"
+    },
+    {
+      "path": "sanitized.png",
+      "sha256": "aecf918ecfeb23aa20a00f7138796510977bd4bcdc147f71c878827db5363d74"
+    }
+  ]
+}

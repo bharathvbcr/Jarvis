@@ -1,0 +1,301 @@
+package main
+
+import (
+	"archive/zip"
+	"bytes"
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"io"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
+	"strings"
+	"testing"
+	"time"
+)
+
+func writeFixture(t *testing.T, root, path string, data []byte) {
+	t.Helper()
+	path = filepath.Join(root, path)
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, data, 0600); err != nil {
+		t.Fatal(err)
+	}
+}
+func sourceRoot(t *testing.T) string {
+	t.Helper()
+	_, file, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("test source unavailable")
+	}
+	return filepath.Clean(filepath.Join(filepath.Dir(file), "../.."))
+}
+
+func packageFixture(t *testing.T) string {
+	t.Helper()
+	root := t.TempDir()
+	for _, path := range []string{"README.md", "REPORT.md", "go.mod", "upstream.lock.json", "cmd/dev/main.go", "internal/app/app.go", "examples/balance.json", "profiles/north.json", "scenarios/balance.contract.json", "docs/IMPLEMENTATION.md", "tests/native-platform/test.go", "desktop/crates/bank-demo/Cargo.toml", "desktop/crates/workbench/Cargo.toml", "desktop/crates/desktop-ui/Cargo.toml", "desktop/crates/desktop-ui/src/lib.rs", "desktop/packaging/macos/Info.plist", "desktop/Cargo.toml", "desktop/Cargo.lock", "desktop/README.md", "desktop/WORKBENCH.md", "build/upstream/Manvi.bundle", "build/upstream/DevCouncil.bundle", "evidence/report.json", "evidence/examples/reviewed/frame.png", "evidence/private/secret.json", "evidence/unreviewed/frame.png"} {
+		writeFixture(t, root, path, []byte(path))
+	}
+	suffix := ""
+	if runtime.GOOS == "windows" {
+		suffix = ".exe"
+	}
+	for _, name := range []string{"jarvis", "jarvis-bank", "jarvis-workbench", "manvi-desktop", "dcverify"} {
+		writeFixture(t, root, "build/"+name+suffix, []byte(name))
+	}
+	if runtime.GOOS == "darwin" {
+		for _, path := range []string{"build/JarvisWorkbench.app/Contents/Info.plist", "build/JarvisWorkbench.app/Contents/MacOS/jarvis-workbench"} {
+			writeFixture(t, root, path, []byte(path))
+		}
+	}
+	return root
+}
+
+func TestPackageIncludesCuratedEvidenceAndCompleteRustWorkspace(t *testing.T) {
+	root := packageFixture(t)
+	writeFixture(t, root, "tests/native-platform/local/private-vm/disk.img", []byte("private guest state"))
+	if err := packageBuild(root); err != nil {
+		t.Fatal(err)
+	}
+	reader, err := zip.OpenReader(filepath.Join(root, "build", "jarvis-"+runtime.GOOS+"-"+runtime.GOARCH+".zip"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer reader.Close()
+	entries := map[string][]byte{}
+	for _, file := range reader.File {
+		in, err := file.Open()
+		if err != nil {
+			t.Fatal(err)
+		}
+		data, err := io.ReadAll(in)
+		closeErr := in.Close()
+		if err != nil || closeErr != nil {
+			t.Fatal(err, closeErr)
+		}
+		entries[file.Name] = data
+	}
+	for _, path := range []string{"evidence/report.json", "evidence/examples/reviewed/frame.png", "desktop/Cargo.toml", "desktop/Cargo.lock", "desktop/crates/desktop-ui/Cargo.toml", "desktop/crates/desktop-ui/src/lib.rs"} {
+		if _, ok := entries[path]; !ok {
+			t.Errorf("required package entry missing: %s", path)
+		}
+	}
+	for path := range entries {
+		if strings.HasPrefix(path, "tests/native-platform/local/") || strings.HasPrefix(path, "evidence/private/") || strings.HasPrefix(path, "evidence/unreviewed/") {
+			t.Errorf("unselected evidence packaged: %s", path)
+		}
+	}
+	var manifest []packageFile
+	if err := json.Unmarshal(entries["artifact-manifest.json"], &manifest); err != nil {
+		t.Fatal(err)
+	}
+	if len(manifest) != len(entries)-1 {
+		t.Fatal("manifest inventory does not match ZIP")
+	}
+	for _, item := range manifest {
+		data, ok := entries[item.Path]
+		sum := sha256.Sum256(data)
+		if !ok || int64(len(data)) != item.Bytes || hex.EncodeToString(sum[:]) != item.SHA256 {
+			t.Fatalf("manifest mismatch: %+v", item)
+		}
+	}
+}
+
+func TestCopyBinaryRefusesSymlinkAndLeavesTargetUnchanged(t *testing.T) {
+	root := t.TempDir()
+	src := filepath.Join(root, "source")
+	target := filepath.Join(root, "target")
+	dst := filepath.Join(root, "destination")
+	writeFixture(t, root, "source", []byte("new binary"))
+	writeFixture(t, root, "target", []byte("preserve me"))
+	if err := os.Symlink(target, dst); err != nil {
+		t.Fatal(err)
+	}
+	if err := copyBinary(src, dst); err == nil {
+		t.Error("symlink destination accepted")
+	}
+	data, err := os.ReadFile(target)
+	if err != nil || string(data) != "preserve me" {
+		t.Fatalf("symlink target overwritten: %q %v", data, err)
+	}
+}
+
+func TestPackageDoesNotReplaceDestinationCreatedDuringAssembly(t *testing.T) {
+	root := packageFixture(t)
+	writeFixture(t, root, "cmd/large-fixture.data", bytes.Repeat([]byte("large fixture input\n"), 2<<20))
+	destination := filepath.Join(root, "build", "jarvis-"+runtime.GOOS+"-"+runtime.GOARCH+".zip")
+	done := make(chan error, 1)
+	go func() { done <- packageBuild(root) }()
+	deadline := time.After(5 * time.Second)
+	for {
+		staged, err := filepath.Glob(filepath.Join(root, "build", ".package-*.zip"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(staged) > 0 {
+			break
+		}
+		select {
+		case err := <-done:
+			t.Fatalf("assembly ended before publication test: %v", err)
+		case <-deadline:
+			t.Fatal("assembly did not stage archive")
+		case <-time.After(time.Millisecond):
+		}
+	}
+	if err := os.WriteFile(destination, []byte("concurrent reservation"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := <-done; err == nil {
+		t.Error("package replaced a destination created during assembly")
+	}
+	data, err := os.ReadFile(destination)
+	if err != nil || string(data) != "concurrent reservation" {
+		t.Fatal("concurrent destination was overwritten")
+	}
+}
+
+func TestBootstrapRunsOfflineWithoutWorkspaceOrUpstreamModules(t *testing.T) {
+	root := t.TempDir()
+	original := sourceRoot(t)
+	files, err := os.ReadDir(filepath.Join(original, "cmd/dev"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, file := range files {
+		if strings.HasSuffix(file.Name(), ".go") && !strings.HasSuffix(file.Name(), "_test.go") {
+			raw, err := os.ReadFile(filepath.Join(original, "cmd/dev", file.Name()))
+			if err != nil {
+				t.Fatal(err)
+			}
+			writeFixture(t, root, "cmd/dev/"+file.Name(), raw)
+		}
+	}
+	mod, err := os.ReadFile(filepath.Join(original, "go.mod"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeFixture(t, root, "go.mod", mod)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	pins := lock{SchemaVersion: 1}
+	for _, item := range []struct {
+		name string
+		pin  *source
+	}{{"Manvi", &pins.Manvi}, {"DevCouncil", &pins.DevCouncil}} {
+		repo := t.TempDir()
+		if item.name == "Manvi" {
+			writeFixture(t, repo, "manvi/go.mod", []byte("module github.com/bharathvbcr/Manvi/manvi\n\ngo 1.26.6\n"))
+		} else {
+			writeFixture(t, repo, "README.md", []byte("fixture"))
+		}
+		for _, args := range [][]string{{"init", "-b", "main"}, {"add", "."}, {"-c", "user.name=Bootstrap test", "-c", "user.email=bootstrap@example.invalid", "-c", "commit.gpgsign=false", "commit", "-m", "fixture"}} {
+			if _, err := git(ctx, repo, args...); err != nil {
+				t.Fatal(err)
+			}
+		}
+		revision, err := git(ctx, repo, "rev-parse", "HEAD")
+		if err != nil {
+			t.Fatal(err)
+		}
+		*item.pin = source{URL: "https://github.com/bharathvbcr/" + item.name + ".git", Revision: revision}
+		bundle := filepath.Join(root, "build", "upstream", item.name+".bundle")
+		if err := os.MkdirAll(filepath.Dir(bundle), 0700); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := git(ctx, repo, "bundle", "create", bundle, "HEAD"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	raw, err := json.Marshal(pins)
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeFixture(t, root, "upstream.lock.json", raw)
+	cmd := exec.CommandContext(ctx, "go", "run", "./cmd/dev", "bootstrap")
+	cmd.Dir = root
+	cmd.Env = append(os.Environ(), "GOWORK=off", "GOPROXY=off", "GOSUMDB=off", "GOTOOLCHAIN=local")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("fresh offline bootstrap failed: %v\n%s", err, output)
+	}
+	work, err := os.ReadFile(filepath.Join(root, "go.work"))
+	if err != nil || !bytes.Contains(work, []byte(filepath.Join(root, ".local", "upstream", "Manvi", "manvi"))) {
+		t.Fatalf("workspace missing or wrong: %q %v", work, err)
+	}
+	for _, item := range []struct {
+		name string
+		pin  source
+	}{{"Manvi", pins.Manvi}, {"DevCouncil", pins.DevCouncil}} {
+		head, err := git(ctx, filepath.Join(root, ".local", "upstream", item.name), "rev-parse", "HEAD")
+		if err != nil || head != item.pin.Revision {
+			t.Fatalf("wrong restored pin %s: %s %v", item.name, head, err)
+		}
+	}
+}
+
+func TestBuildFindsBinariesWithInheritedCargoTargetDirectory(t *testing.T) {
+	if _, err := exec.LookPath("cargo"); err != nil {
+		t.Skip("Cargo unavailable; Rust build integration not exercised")
+	}
+	root := t.TempDir()
+	original := sourceRoot(t)
+	files, err := os.ReadDir(filepath.Join(original, "cmd/dev"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, file := range files {
+		if strings.HasSuffix(file.Name(), ".go") && !strings.HasSuffix(file.Name(), "_test.go") {
+			raw, err := os.ReadFile(filepath.Join(original, "cmd/dev", file.Name()))
+			if err != nil {
+				t.Fatal(err)
+			}
+			writeFixture(t, root, "cmd/dev/"+file.Name(), raw)
+		}
+	}
+	writeFixture(t, root, "go.mod", []byte("module github.com/bharathvbcr/Jarvis\n\ngo 1.26.6\n"))
+	writeFixture(t, root, "cmd/jarvis/main.go", []byte("package main\nfunc main() {}\n"))
+	writeFixture(t, root, "desktop/packaging/macos/Info.plist", []byte("<plist/>"))
+	manvi, dc := filepath.Join(root, "Manvi"), filepath.Join(root, "DevCouncil")
+	writeFixture(t, manvi, "manvi/go.mod", []byte("module github.com/bharathvbcr/Manvi/manvi\n\ngo 1.26.6\n"))
+	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+	defer cancel()
+	for _, item := range []struct {
+		dir, name string
+		bins      []string
+	}{{filepath.Join(manvi, "native"), "native-fixture", []string{"manvi-desktop"}}, {filepath.Join(root, "desktop"), "desktop-fixture", []string{"jarvis-bank", "jarvis-workbench"}}, {filepath.Join(dc, "rust"), "dc-verify", []string{"dcverify"}}} {
+		manifest := "[package]\nname = \"" + item.name + "\"\nversion = \"0.1.0\"\nedition = \"2024\"\n[workspace]\n"
+		for _, bin := range item.bins {
+			manifest += "[[bin]]\nname = \"" + bin + "\"\npath = \"src/" + bin + ".rs\"\n"
+			writeFixture(t, item.dir, "src/"+bin+".rs", []byte("fn main() {}\n"))
+		}
+		writeFixture(t, item.dir, "Cargo.toml", []byte(manifest))
+		cmd := exec.CommandContext(ctx, "cargo", "generate-lockfile", "--offline")
+		cmd.Dir = item.dir
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("fixture Cargo.lock: %v\n%s", err, out)
+		}
+	}
+	cmd := exec.CommandContext(ctx, "go", "run", "./cmd/dev", "build", "--manvi", manvi, "--devcouncil", dc)
+	cmd.Dir = root
+	cmd.Env = append(os.Environ(), "GOWORK=off", "GOPROXY=off", "GOSUMDB=off", "GOTOOLCHAIN=local", "CARGO_NET_OFFLINE=true", "CARGO_TARGET_DIR="+filepath.Join(root, "redirected-target"))
+	if output, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("build lost Cargo artifacts with inherited target directory: %v\n%s", err, output)
+	}
+	suffix := ""
+	if runtime.GOOS == "windows" {
+		suffix = ".exe"
+	}
+	for _, bin := range []string{"jarvis", "jarvis-bank", "jarvis-workbench", "manvi-desktop", "dcverify"} {
+		info, err := os.Stat(filepath.Join(root, "build", bin+suffix))
+		if err != nil || !info.Mode().IsRegular() || info.Size() == 0 {
+			t.Fatalf("missing built fixture %s: %v", bin, err)
+		}
+	}
+}

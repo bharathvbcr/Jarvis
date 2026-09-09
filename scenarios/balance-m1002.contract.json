@@ -1,0 +1,1 @@
+{"schema_version":1,"id":"bank.balance.m1002","criteria":[{"id":"balance","fact":"balance_minor","required":true,"predicate":{"op":"equals","value":84050}},{"id":"currency","fact":"currency","required":true,"predicate":{"op":"equals","value":"USD"}}]}

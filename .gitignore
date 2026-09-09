@@ -1,0 +1,12 @@
+/go.work
+/go.work.sum
+/.local/
+/.devmap/
+/.devcouncil/
+/build/
+/desktop/target/
+/evidence/private/
+*.utm/
+*.iso
+/Assignment A — Computer-Use Automation System.pdf
+.DS_Store

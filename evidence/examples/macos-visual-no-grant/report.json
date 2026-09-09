@@ -1,0 +1,54 @@
+{
+  "started_at": "2026-09-09T16:55:25Z",
+  "platform": "macos-arm64",
+  "status": "passed",
+  "stage": "completed",
+  "native_binary_sha256": "ee0d8ef5b7e22db97efde7fbe3a7c315594d7b38b1b15702cac231abc6676d62",
+  "bank_binary_sha256": "c181b608fa12b1715211d7ff75b6454510c045ab82f62ed64718b4b37a599cb5",
+  "admission": {
+    "attempts": 3,
+    "last_transient_code": "window_missing"
+  },
+  "observation_attempts": 2,
+  "frame_width": 1760,
+  "frame_height": 1464,
+  "scale": 2,
+  "crop": {
+    "x": 19,
+    "y": 467,
+    "width": 120,
+    "height": 30
+  },
+  "search": {
+    "x": 19,
+    "y": 467,
+    "width": 844,
+    "height": 30
+  },
+  "resolved": {
+    "kind": "visual",
+    "visual": {
+      "target_id": "visual-1788972928994-3",
+      "anchor_sha256": "5be51500ffed14be642be38a6385865eb1789644602f450814dd4999f90b6fa7",
+      "frame_sha256": "",
+      "matched": {
+        "x": 19,
+        "y": 467,
+        "width": 120,
+        "height": 30
+      },
+      "screen_bounds": {
+        "x": 433.5,
+        "y": 334.5,
+        "width": 60,
+        "height": 15
+      }
+    }
+  },
+  "error_code": "approval_required",
+  "delivery": "not_sent",
+  "no_grant_refused": true,
+  "live_click_tested": false,
+  "raw_frame_digest_published": false,
+  "oracle_unchanged": true
+}

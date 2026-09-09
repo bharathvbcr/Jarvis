@@ -1,0 +1,449 @@
+{
+  "observation_id": "observation-1788968771646-3",
+  "epoch": 1,
+  "captured_at_ms": 1788968771638,
+  "tree_at_ms": 1788968771149,
+  "window": {
+    "pid": 97965,
+    "window_id": 17193,
+    "title": "Jarvis Bank — North Cooperative",
+    "process_identity": "97965:1788968768:295830:/Users/bharath/Code/devtools/Jarvis/build/jarvis-bank",
+    "bounds": {
+      "x": 424,
+      "y": 101,
+      "width": 880,
+      "height": 732
+    },
+    "foreground": true,
+    "scale": 2
+  },
+  "nodes": [
+    {
+      "id": "n0",
+      "role": "window",
+      "name": "Jarvis Bank — North Cooperative",
+      "bounds": {
+        "x": 424,
+        "y": 101,
+        "width": 880,
+        "height": 732
+      },
+      "enabled": false,
+      "editable": false,
+      "actions": null,
+      "native_path": null
+    },
+    {
+      "id": "n1",
+      "role": "group",
+      "name": "",
+      "parent": "n0",
+      "bounds": {
+        "x": 424,
+        "y": 133,
+        "width": 880,
+        "height": 700
+      },
+      "enabled": true,
+      "editable": false,
+      "actions": null,
+      "native_path": [
+        0
+      ]
+    },
+    {
+      "id": "n2",
+      "role": "text",
+      "name": "",
+      "value": "North Cooperative",
+      "parent": "n1",
+      "bounds": {
+        "x": 432,
+        "y": 153,
+        "width": 149.1875,
+        "height": 20.5
+      },
+      "enabled": true,
+      "editable": false,
+      "actions": [
+        "press"
+      ],
+      "native_path": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "n3",
+      "role": "text",
+      "name": "",
+      "value": "Member services · Synthetic demonstration environment",
+      "parent": "n1",
+      "bounds": {
+        "x": 432,
+        "y": 187.5,
+        "width": 327.21875,
+        "height": 15
+      },
+      "enabled": true,
+      "editable": false,
+      "actions": [
+        "press"
+      ],
+      "native_path": [
+        0,
+        1
+      ]
+    },
+    {
+      "id": "n4",
+      "role": "text",
+      "name": "",
+      "value": "Find a member",
+      "parent": "n1",
+      "bounds": {
+        "x": 432,
+        "y": 236.5,
+        "width": 425,
+        "height": 20.5
+      },
+      "enabled": true,
+      "editable": false,
+      "actions": [
+        "press"
+      ],
+      "native_path": [
+        0,
+        2
+      ]
+    },
+    {
+      "id": "n5",
+      "role": "text",
+      "name": "",
+      "value": "Member ID",
+      "parent": "n1",
+      "bounds": {
+        "x": 432,
+        "y": 271,
+        "width": 425,
+        "height": 15
+      },
+      "enabled": true,
+      "editable": false,
+      "actions": [
+        "press"
+      ],
+      "native_path": [
+        0,
+        3
+      ]
+    },
+    {
+      "id": "n6",
+      "role": "text_field",
+      "name": "Member ID",
+      "value": "[redacted]",
+      "parent": "n1",
+      "bounds": {
+        "x": 432,
+        "y": 300,
+        "width": 425,
+        "height": 19
+      },
+      "enabled": true,
+      "editable": true,
+      "actions": [
+        "press",
+        "set_value",
+        "type_text"
+      ],
+      "native_path": [
+        0,
+        4
+      ]
+    },
+    {
+      "id": "n7",
+      "role": "button",
+      "name": "Search",
+      "parent": "n1",
+      "bounds": {
+        "x": 432,
+        "y": 333,
+        "width": 425,
+        "height": 18
+      },
+      "enabled": true,
+      "editable": false,
+      "actions": [
+        "press"
+      ],
+      "native_path": [
+        0,
+        5
+      ]
+    },
+    {
+      "id": "n8",
+      "role": "text",
+      "name": "",
+      "value": "Account details",
+      "parent": "n1",
+      "bounds": {
+        "x": 871,
+        "y": 236.5,
+        "width": 425,
+        "height": 20.5
+      },
+      "enabled": true,
+      "editable": false,
+      "actions": [
+        "press"
+      ],
+      "native_path": [
+        0,
+        6
+      ]
+    },
+    {
+      "id": "n9",
+      "role": "text",
+      "name": "",
+      "value": "Balance",
+      "parent": "n1",
+      "bounds": {
+        "x": 871,
+        "y": 271,
+        "width": 425,
+        "height": 15
+      },
+      "enabled": true,
+      "editable": false,
+      "actions": [
+        "press"
+      ],
+      "native_path": [
+        0,
+        7
+      ]
+    },
+    {
+      "id": "n10",
+      "role": "text_field",
+      "name": "Balance",
+      "value": "—",
+      "parent": "n1",
+      "bounds": {
+        "x": 871,
+        "y": 300,
+        "width": 425,
+        "height": 19
+      },
+      "enabled": true,
+      "editable": true,
+      "actions": [
+        "press",
+        "set_value",
+        "type_text"
+      ],
+      "native_path": [
+        0,
+        8
+      ]
+    },
+    {
+      "id": "n11",
+      "role": "text",
+      "name": "",
+      "value": "Enter a member ID to view balances and manage savings subaccounts.",
+      "parent": "n1",
+      "bounds": {
+        "x": 432,
+        "y": 385,
+        "width": 403.875,
+        "height": 15
+      },
+      "enabled": true,
+      "editable": false,
+      "actions": [
+        "press"
+      ],
+      "native_path": [
+        0,
+        9
+      ]
+    },
+    {
+      "id": "n12",
+      "role": "text",
+      "name": "",
+      "value": "Status",
+      "parent": "n1",
+      "bounds": {
+        "x": 432,
+        "y": 434,
+        "width": 36.375,
+        "height": 15
+      },
+      "enabled": true,
+      "editable": false,
+      "actions": [
+        "press"
+      ],
+      "native_path": [
+        0,
+        10
+      ]
+    },
+    {
+      "id": "n13",
+      "role": "text_field",
+      "name": "Status",
+      "value": "Ready",
+      "parent": "n1",
+      "bounds": {
+        "x": 432,
+        "y": 463,
+        "width": 320,
+        "height": 19
+      },
+      "enabled": true,
+      "editable": true,
+      "actions": [
+        "press",
+        "set_value",
+        "type_text"
+      ],
+      "native_path": [
+        0,
+        11
+      ]
+    },
+    {
+      "id": "n14",
+      "role": "button",
+      "name": "",
+      "parent": "n0",
+      "bounds": {
+        "x": 432,
+        "y": 109,
+        "width": 16,
+        "height": 16
+      },
+      "enabled": true,
+      "editable": false,
+      "actions": [
+        "press"
+      ],
+      "native_path": [
+        1
+      ]
+    },
+    {
+      "id": "n15",
+      "role": "button",
+      "name": "",
+      "parent": "n0",
+      "bounds": {
+        "x": 478,
+        "y": 109,
+        "width": 16,
+        "height": 16
+      },
+      "enabled": true,
+      "editable": false,
+      "actions": [
+        "press"
+      ],
+      "native_path": [
+        2
+      ]
+    },
+    {
+      "id": "n16",
+      "role": "group",
+      "name": "",
+      "parent": "n15",
+      "bounds": {
+        "x": 479,
+        "y": 110,
+        "width": 14,
+        "height": 14
+      },
+      "enabled": false,
+      "editable": false,
+      "actions": null,
+      "native_path": [
+        2,
+        0
+      ]
+    },
+    {
+      "id": "n17",
+      "role": "group",
+      "name": "",
+      "parent": "n16",
+      "bounds": {
+        "x": 479,
+        "y": 110,
+        "width": 14,
+        "height": 14
+      },
+      "enabled": false,
+      "editable": false,
+      "actions": null,
+      "native_path": [
+        2,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "n18",
+      "role": "button",
+      "name": "",
+      "parent": "n0",
+      "bounds": {
+        "x": 455,
+        "y": 109,
+        "width": 16,
+        "height": 16
+      },
+      "enabled": true,
+      "editable": false,
+      "actions": [
+        "press"
+      ],
+      "native_path": [
+        3
+      ]
+    },
+    {
+      "id": "n19",
+      "role": "text",
+      "name": "",
+      "value": "Jarvis Bank — North Cooperative",
+      "parent": "n0",
+      "bounds": {
+        "x": 506,
+        "y": 109,
+        "width": 217,
+        "height": 16
+      },
+      "enabled": true,
+      "editable": false,
+      "actions": null,
+      "native_path": [
+        4
+      ]
+    }
+  ],
+  "screenshot": {
+    "mime_type": "image/png",
+    "base64": "",
+    "width": 1760,
+    "height": 1464
+  },
+  "complete": true
+}

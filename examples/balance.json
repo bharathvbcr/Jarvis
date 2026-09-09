@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "id": "bank.balance",
+  "revision": "1",
+  "application": "jarvis-bank",
+  "description": "Look up a member and return an independently verified USD balance.",
+  "parameters": [{"name": "member_id", "type": "string", "sensitive": true}],
+  "targets": {
+    "member": {"role": "text_field", "name": "Member ID"},
+    "search": {"role": "button", "name": "Search"},
+    "status": {"role": "text_field", "name": "Status"},
+    "balance": {"role": "text_field", "name": "Balance"}
+  },
+  "steps": [
+    {"id":"member", "kind":"set_value", "target":"member", "effect":"read", "input":{"source":"input","key":"member_id"}},
+    {"id":"search", "kind":"press", "target":"search", "effect":"read"},
+    {"id":"found", "kind":"wait", "target":"status", "effect":"read", "output_type":"string", "predicate":{"op":"equals", "expected":{"source":"literal", "literal":{"type":"string","text":"Member found"}}}},
+    {"id":"balance", "kind":"extract", "target":"balance", "effect":"read", "output":"balance", "output_type":"money", "currency":"USD"}
+  ],
+  "limits":{"max_actions":40,"active_seconds":300,"observation_attempts":3,"intervention_seconds":600}
+}
