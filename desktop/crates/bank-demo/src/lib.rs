@@ -1,4 +1,4 @@
 pub mod state;
 mod ui;
 
-pub use ui::{BankApp, Fault, Page};
+pub use ui::{BankApp, Fault, Page, SESSION_PASSCODE, Variant};

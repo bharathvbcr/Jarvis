@@ -24,11 +24,57 @@ pub struct Parameter {
 }
 
 #[derive(Clone, Deserialize)]
+pub struct OutputDecl {
+    pub name: String,
+    #[serde(rename = "type")]
+    pub kind: String,
+    #[serde(default)]
+    pub currency: String,
+    #[serde(default)]
+    pub description: String,
+}
+
+#[derive(Clone, Deserialize)]
+pub struct OutcomeDef {
+    pub id: String,
+    pub kind: String,
+    #[serde(default)]
+    pub description: String,
+    #[serde(default)]
+    pub outputs: Vec<String>,
+}
+
+#[derive(Clone, Deserialize)]
+pub struct Recovery {
+    pub id: String,
+    pub when: RecoveryWhen,
+    pub action: RecoveryAction,
+    pub max: u32,
+}
+
+#[derive(Clone, Deserialize)]
+pub struct RecoveryWhen {
+    pub target: String,
+    #[serde(default)]
+    pub predicate: Value,
+}
+
+#[derive(Clone, Deserialize)]
+pub struct RecoveryAction {
+    pub kind: String,
+    pub target: String,
+}
+
+#[derive(Clone, Deserialize)]
 pub struct Step {
     pub id: String,
     pub kind: String,
+    #[serde(default)]
     pub target: String,
+    #[serde(default)]
     pub effect: String,
+    #[serde(default)]
+    pub outcome: String,
 }
 
 #[derive(Clone, Deserialize)]
@@ -40,6 +86,12 @@ pub struct Capability {
     #[serde(default, deserialize_with = "null_vec")]
     pub parameters: Vec<Parameter>,
     #[serde(default, deserialize_with = "null_vec")]
+    pub outputs: Vec<OutputDecl>,
+    #[serde(default, deserialize_with = "null_vec")]
+    pub outcomes: Vec<OutcomeDef>,
+    #[serde(default, deserialize_with = "null_vec")]
+    pub recoveries: Vec<Recovery>,
+    #[serde(default, deserialize_with = "null_vec")]
     pub steps: Vec<Step>,
     #[serde(default, deserialize_with = "null_map")]
     pub targets: BTreeMap<String, ApprovalSelector>,
@@ -48,6 +100,30 @@ pub struct Capability {
 #[derive(Clone, Deserialize)]
 pub struct ApprovalSelector {
     pub visual: Option<VisualAnchor>,
+    #[serde(default)]
+    pub role: String,
+    #[serde(default)]
+    pub name: String,
+    #[serde(default)]
+    pub identifier: String,
+    #[serde(default)]
+    pub ancestor: String,
+    #[serde(default)]
+    pub strategies: Vec<ApprovalSelector>,
+    #[serde(default)]
+    pub rationale: String,
+    #[serde(default)]
+    pub stability: String,
+}
+
+impl ApprovalSelector {
+    pub fn visual_anchor(&self) -> Option<&VisualAnchor> {
+        self.visual.as_ref().or_else(|| {
+            self.strategies
+                .iter()
+                .find_map(ApprovalSelector::visual_anchor)
+        })
+    }
 }
 
 #[derive(Clone, Deserialize, Serialize)]
@@ -279,7 +355,7 @@ impl RunSnapshot {
     pub fn visual_anchor(&self) -> Option<&VisualAnchor> {
         let capability = self.capability.as_ref()?;
         let step = capability.steps.get(self.state.step_index)?;
-        capability.targets.get(&step.target)?.visual.as_ref()
+        capability.targets.get(&step.target)?.visual_anchor()
     }
     pub fn capture_id(&self) -> &str {
         self.observation

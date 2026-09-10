@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "application": "jarvis-bank",
+  "windows": [
+    "Jarvis Bank — North Cooperative",
+    "Jarvis Bank — South Mutual"
+  ],
+  "editable_fields": [
+    {"role": "text_field", "name": "Member ID"},
+    {"role": "text_field", "name": "Subaccount name"},
+    {"role": "text_field", "name": "Passcode"}
+  ],
+  "read_only_targets": [
+    {"role": "button", "name": "Search"},
+    {"role": "button", "name": "Find member"},
+    {"role": "button", "name": "New subaccount"},
+    {"role": "button", "name": "Review"},
+    {"role": "button", "name": "Back"},
+    {"role": "button", "name": "Dismiss"},
+    {"role": "button", "name": "Continue"},
+    {"role": "text_field", "name": "Member ID"},
+    {"role": "text_field", "name": "Subaccount name"},
+    {"role": "text_field", "name": "Passcode"}
+  ],
+  "permitted_step_kinds": [
+    "press",
+    "click",
+    "set_value",
+    "type_text",
+    "scroll",
+    "extract",
+    "assert",
+    "branch",
+    "wait",
+    "conclude"
+  ],
+  "permitted_effects": ["read", "change"],
+  "sensitive_targets": [
+    {"role": "text_field", "name": "Member ID"},
+    {"role": "text_field", "name": "Subaccount name"},
+    {"role": "text_field", "name": "Passcode"}
+  ],
+  "unattended_change": false
+}

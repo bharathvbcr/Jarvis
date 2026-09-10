@@ -1,0 +1,222 @@
+{
+  "provider": "fixture",
+  "capabilities": [
+    {
+      "provider": "fixture",
+      "model": "gemini-3.8-flash",
+      "context_window": 200000,
+      "max_output_tokens": 8192,
+      "supports_tools": true,
+      "supports_streaming": true,
+      "supports_images": false,
+      "supports_reasoning": false
+    }
+  ],
+  "turns": [
+    {
+      "chunks": [
+        {
+          "kind": "tool_call_start",
+          "block_index": 0,
+          "tool_call_id": "c1",
+          "tool_name": "desktop_observe"
+        }
+      ],
+      "message": {
+        "role": "assistant",
+        "content": [
+          {
+            "kind": "tool_call",
+            "id": "c1",
+            "name": "desktop_observe",
+            "arguments": {}
+          }
+        ]
+      },
+      "stop_reason": "tool_use",
+      "usage": {
+        "input_tokens": 20,
+        "output_tokens": 8
+      },
+      "decoding": {}
+    },
+    {
+      "chunks": [
+        {
+          "kind": "tool_call_start",
+          "block_index": 0,
+          "tool_call_id": "c2",
+          "tool_name": "desktop_step"
+        }
+      ],
+      "message": {
+        "role": "assistant",
+        "content": [
+          {
+            "kind": "tool_call",
+            "id": "c2",
+            "name": "desktop_step",
+            "arguments": {
+              "kind": "set_value",
+              "name": "Member ID",
+              "parameter": "member_id",
+              "rationale": "Labeled member identifier field on the lookup form",
+              "stability": "semantic"
+            }
+          }
+        ]
+      },
+      "stop_reason": "tool_use",
+      "usage": {
+        "input_tokens": 20,
+        "output_tokens": 8
+      },
+      "decoding": {}
+    },
+    {
+      "chunks": [
+        {
+          "kind": "tool_call_start",
+          "block_index": 0,
+          "tool_call_id": "c3",
+          "tool_name": "desktop_step"
+        }
+      ],
+      "message": {
+        "role": "assistant",
+        "content": [
+          {
+            "kind": "tool_call",
+            "id": "c3",
+            "name": "desktop_step",
+            "arguments": {
+              "kind": "press",
+              "name": "Search",
+              "rationale": "Primary search action for member lookup",
+              "stability": "semantic"
+            }
+          }
+        ]
+      },
+      "stop_reason": "tool_use",
+      "usage": {
+        "input_tokens": 20,
+        "output_tokens": 8
+      },
+      "decoding": {}
+    },
+    {
+      "chunks": [
+        {
+          "kind": "tool_call_start",
+          "block_index": 0,
+          "tool_call_id": "c4",
+          "tool_name": "desktop_step"
+        }
+      ],
+      "message": {
+        "role": "assistant",
+        "content": [
+          {
+            "kind": "tool_call",
+            "id": "c4",
+            "name": "desktop_step",
+            "arguments": {
+              "kind": "extract",
+              "name": "Balance",
+              "output": "balance",
+              "output_type": "money",
+              "rationale": "Balance field holds the verified USD amount",
+              "stability": "semantic"
+            }
+          }
+        ]
+      },
+      "stop_reason": "tool_use",
+      "usage": {
+        "input_tokens": 20,
+        "output_tokens": 8
+      },
+      "decoding": {}
+    },
+    {
+      "chunks": [
+        {
+          "kind": "tool_call_start",
+          "block_index": 0,
+          "tool_call_id": "c5",
+          "tool_name": "capability_publish"
+        }
+      ],
+      "message": {
+        "role": "assistant",
+        "content": [
+          {
+            "kind": "tool_call",
+            "id": "c5",
+            "name": "capability_publish",
+            "arguments": {
+              "id": "bank.balance",
+              "revision": "1",
+              "description": "Look up a member and return an independently verified USD balance.",
+              "outputs": [
+                {
+                  "name": "balance",
+                  "type": "money",
+                  "currency": "USD",
+                  "description": "Verified member balance in USD minor units"
+                }
+              ],
+              "outcomes": [
+                {
+                  "id": "success",
+                  "kind": "success",
+                  "description": "Member found and balance extracted",
+                  "outputs": [
+                    "balance"
+                  ]
+                },
+                {
+                  "id": "not_found",
+                  "kind": "business",
+                  "description": "Member ID does not exist",
+                  "outputs": []
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "stop_reason": "tool_use",
+      "usage": {
+        "input_tokens": 20,
+        "output_tokens": 8
+      },
+      "decoding": {}
+    },
+    {
+      "chunks": [
+        {
+          "kind": "text",
+          "block_index": 0,
+          "text": "Published bank.balance revision 1 with outcomes and ladder targets."
+        }
+      ],
+      "message": {
+        "role": "assistant",
+        "content": [
+          {
+            "kind": "text",
+            "text": "Published bank.balance revision 1 with outcomes and ladder targets."
+          }
+        ]
+      },
+      "stop_reason": "end_turn",
+      "usage": {
+        "input_tokens": 10,
+        "output_tokens": 5
+      },
+      "decoding": {}
+    }
+  ]
+}

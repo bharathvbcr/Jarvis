@@ -66,7 +66,7 @@ func (a *App) assist(e *runEntry) {
 		case <-ctx.Done():
 		}
 	}()
-	ledger, err := budget.Open(filepath.Join(a.cfg.Root, ".local", "gemini-campaign.json"), 25_000_000_000, budget.Prices{InputNanoUSD: 1500, OutputNanoUSD: 7500, MaxInputTokens: 1048576, MaxOutputTokens: 65536, Revision: "google-standard-2027-conservative-2026-09-09"})
+	ledger, err := openCampaignLedger(a.cfg.Root)
 	if err != nil {
 		failure = err
 		return

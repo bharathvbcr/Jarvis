@@ -1,5 +1,21 @@
 {
- "schema_version":1,"tenant":"south","application":"jarvis-bank",
- "platforms":["darwin","windows","linux"],"window_title":"Jarvis Bank — South Mutual",
- "read_only_targets":[{"role":"button","name":"Search"},{"role":"button","name":"New subaccount"},{"role":"button","name":"Review"},{"role":"button","name":"Back"},{"role":"button","name":"Dismiss"},{"role":"text_field","name":"Member ID"},{"role":"text_field","name":"Subaccount name"}]
+  "schema_version": 1,
+  "tenant": "south",
+  "application": "jarvis-bank",
+  "policy": "jarvis-bank",
+  "overlay": "overlays/south-balance.json",
+  "platforms": ["darwin", "windows", "linux"],
+  "window_title": "Jarvis Bank — South Mutual",
+  "read_only_targets": [
+    {"role": "button", "name": "Search"},
+    {"role": "button", "name": "Find member"},
+    {"role": "button", "name": "New subaccount"},
+    {"role": "button", "name": "Review"},
+    {"role": "button", "name": "Back"},
+    {"role": "button", "name": "Dismiss"},
+    {"role": "button", "name": "Continue"},
+    {"role": "text_field", "name": "Member ID"},
+    {"role": "text_field", "name": "Subaccount name"},
+    {"role": "text_field", "name": "Passcode"}
+  ]
 }

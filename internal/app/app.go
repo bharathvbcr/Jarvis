@@ -39,26 +39,29 @@ type StartRequest struct {
 	Inputs         map[string]workflow.Value `json:"inputs"`
 	PID            uint32                    `json:"pid,omitempty"`
 	Fault          string                    `json:"fault,omitempty"`
+	Variant        string                    `json:"variant,omitempty"`
 	Assisted       bool                      `json:"assisted,omitempty"`
 }
 type RunView struct {
-	Admission         computer.AttachmentReadiness `json:"admission"`
-	RunID             string                       `json:"run_id"`
-	State             workflow.State               `json:"state"`
-	PendingActionID   string                       `json:"pending_action_id"`
-	ProgramGeneration uint64                       `json:"program_generation"`
-	Capability        workflow.Capability          `json:"capability"`
-	EvidenceDir       string                       `json:"evidence_dir"`
-	Finished          bool                         `json:"finished"`
-	Error             string                       `json:"error,omitempty"`
-	Report            *devcouncil.EvidenceReport   `json:"report,omitempty"`
-	Observation       *computer.Observation        `json:"observation,omitempty"`
-	Records           []computer.Record            `json:"records"`
-	TotalRecords      int                          `json:"total_records"`
-	Assistance        string                       `json:"assistance,omitempty"`
-	Assisted          bool                         `json:"assisted"`
-	Reconciliation    *Reconciliation              `json:"reconciliation,omitempty"`
-	Matching          *computer.MatchDiagnostics   `json:"matching,omitempty"`
+	Admission         computer.AttachmentReadiness   `json:"admission"`
+	RunID             string                         `json:"run_id"`
+	State             workflow.State                 `json:"state"`
+	PendingActionID   string                         `json:"pending_action_id"`
+	ProgramGeneration uint64                         `json:"program_generation"`
+	Capability        workflow.Capability            `json:"capability"`
+	EvidenceDir       string                         `json:"evidence_dir"`
+	Finished          bool                           `json:"finished"`
+	Error             string                         `json:"error,omitempty"`
+	Report            *devcouncil.EvidenceReport     `json:"report,omitempty"`
+	Observation       *computer.Observation          `json:"observation,omitempty"`
+	Records           []computer.Record              `json:"records"`
+	TotalRecords      int                            `json:"total_records"`
+	Assistance        string                         `json:"assistance,omitempty"`
+	Assisted          bool                           `json:"assisted"`
+	Controller        string                         `json:"controller,omitempty"`
+	Interventions     []computer.InterventionRequest `json:"interventions,omitempty"`
+	Reconciliation    *Reconciliation                `json:"reconciliation,omitempty"`
+	Matching          *computer.MatchDiagnostics     `json:"matching,omitempty"`
 }
 type runEntry struct {
 	mu                sync.Mutex
@@ -165,25 +168,23 @@ func (a *App) Start(req StartRequest) (string, error) {
 		return "", errors.New("tenant must be north or south")
 	}
 	switch req.Fault {
-	case "", "none", "overlay", "delay", "missing-control", "duplicate-control", "commit-noop", "false-ack", "crash-after-commit":
+	case "", "none", "overlay", "delay", "missing-control", "duplicate-control", "commit-noop", "false-ack", "crash-after-commit", "permission-denied", "session-expired":
 	default:
 		return "", errors.New("unsupported bank fault")
 	}
-	p, err := a.Compile(req.CapabilityPath)
+	switch req.Variant {
+	case "", "none", "renamed-controls":
+	default:
+		return "", errors.New("unsupported bank variant")
+	}
+	if req.Variant == "renamed-controls" && req.Tenant != "south" {
+		return "", errors.New("renamed-controls variant requires south tenant")
+	}
+	p, binding, err := a.CompileForTenant(req.CapabilityPath, req.Tenant)
 	if err != nil {
 		return "", err
-	}
-	if p.Capability().Application != "jarvis-bank" {
-		return "", errors.New("this product profile only admits jarvis-bank capabilities")
 	}
 	if err = p.ValidateInputs(req.Inputs); err != nil {
-		return "", err
-	}
-	profile, _, err := a.profile(req.Tenant)
-	if err != nil {
-		return "", err
-	}
-	if err = validateBankProgram(p, profile); err != nil {
 		return "", err
 	}
 	contract, err := readBounded(a.resolve(req.ContractPath), workflow.MaxArtifactBytes)
@@ -224,10 +225,10 @@ func (a *App) Start(req StartRequest) (string, error) {
 	a.active = id
 	a.runs[id] = entry
 	a.mu.Unlock()
-	go a.execute(ctx, entry, p, contract, req)
+	go a.execute(ctx, entry, p, binding, contract, req)
 	return id, nil
 }
-func (a *App) execute(ctx context.Context, e *runEntry, p *workflow.Program, contract []byte, req StartRequest) {
+func (a *App) execute(ctx context.Context, e *runEntry, p *workflow.Program, binding tenantBinding, contract []byte, req StartRequest) {
 	var failure error
 	defer func() {
 		e.cancel()
@@ -249,11 +250,6 @@ func (a *App) execute(ctx context.Context, e *runEntry, p *workflow.Program, con
 		failure = err
 		return
 	}
-	profile, bindingBytes, err := a.profile(req.Tenant)
-	if err != nil {
-		failure = err
-		return
-	}
 	pid := req.PID
 	var bank *ownedBank
 	if pid == 0 {
@@ -263,8 +259,11 @@ func (a *App) execute(ctx context.Context, e *runEntry, p *workflow.Program, con
 			return
 		}
 		args := []string{"--tenant", req.Tenant, "--state", filepath.Join(bankDir, "state.json")}
-		if req.Fault != "" {
+		if req.Fault != "" && req.Fault != "none" {
 			args = append(args, "--fault", req.Fault)
+		}
+		if req.Variant != "" && req.Variant != "none" {
+			args = append(args, "--variant", req.Variant)
 		}
 		bank, err = startOwnedBank(ctx, a.cfg.Bank, args...)
 		if err != nil {
@@ -278,7 +277,7 @@ func (a *App) execute(ctx context.Context, e *runEntry, p *workflow.Program, con
 
 	}
 	attachCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	session, admission, err := client.AttachFocusedReady(attachCtx, e.view.RunID, pid, profile.ReadOnlyTargets)
+	session, admission, err := client.AttachFocusedReady(attachCtx, e.view.RunID, pid, binding.Profile.ReadOnlyTargets)
 	cancel()
 	e.mu.Lock()
 	e.view.Admission = admission
@@ -304,19 +303,36 @@ func (a *App) execute(ctx context.Context, e *runEntry, p *workflow.Program, con
 			failure = err
 		}
 	}()
-	if session.Window.Title != profile.WindowTitle {
+	if session.Window.Title != binding.Profile.WindowTitle {
 		failure = errors.New("attached window does not match the bank profile")
 		return
 	}
-	recorder, err := NewRecorder(e.view.EvidenceDir, p, contract, session)
+	recorder, err := NewRecorder(e.view.EvidenceDir, p, contract, session, binding.PolicySHA256)
 	if err != nil {
 		failure = err
 		return
 	}
-	if err = writeAtomic(filepath.Join(e.view.EvidenceDir, "binding.json"), bindingBytes); err != nil {
+	if err = writeAtomic(filepath.Join(e.view.EvidenceDir, "binding.json"), binding.BindingBytes); err != nil {
 		recorder.file.Close()
 		failure = err
 		return
+	}
+	if err = writeAtomic(filepath.Join(e.view.EvidenceDir, "policy.json"), binding.PolicyBytes); err != nil {
+		recorder.file.Close()
+		failure = err
+		return
+	}
+	if err = writeAtomic(filepath.Join(e.view.EvidenceDir, "policy.sha256"), []byte(binding.PolicySHA256+"\n")); err != nil {
+		recorder.file.Close()
+		failure = err
+		return
+	}
+	if len(binding.OverlayBytes) > 0 {
+		if err = writeAtomic(filepath.Join(e.view.EvidenceDir, "overlay.json"), binding.OverlayBytes); err != nil {
+			recorder.file.Close()
+			failure = err
+			return
+		}
 	}
 	e.mu.Lock()
 	e.session = session
@@ -342,7 +358,7 @@ func (a *App) execute(ctx context.Context, e *runEntry, p *workflow.Program, con
 		e.mu.Unlock()
 		return nil
 	}
-	privacy := bankPrivacy(req.Inputs)
+	privacy := bankPrivacy(binding.Policy, req.Inputs)
 	privacy.PID = session.Window.PID
 	privacy.WindowID = session.Window.ID
 	e.mu.Lock()
@@ -378,7 +394,7 @@ func (a *App) execute(ctx context.Context, e *runEntry, p *workflow.Program, con
 		e.view.Reconciliation = &reconciliation
 		e.mu.Unlock()
 	}
-	if err = recorder.Finish(result); err != nil {
+	if err = recorder.Finish(result, run.Interventions()); err != nil {
 		failure = err
 		return
 	}
@@ -401,16 +417,6 @@ func (a *App) execute(ctx context.Context, e *runEntry, p *workflow.Program, con
 	if runErr != nil && failure == nil {
 		failure = runErr
 	}
-}
-func bankReadTargets() []computer.Selector {
-	out := []computer.Selector{}
-	for _, name := range []string{"Search", "New subaccount", "Review", "Back", "Dismiss"} {
-		out = append(out, computer.Selector{Role: "button", Name: name})
-	}
-	for _, name := range []string{"Member ID", "Subaccount name"} {
-		out = append(out, computer.Selector{Role: "text_field", Name: name})
-	}
-	return out
 }
 
 // An interrupted admission may have created a session whose identity never
@@ -447,6 +453,8 @@ func (a *App) Get(id string) (RunView, error) {
 	if e.run != nil {
 		v.State = e.run.Snapshot()
 		v.Observation = e.run.Observation()
+		v.Controller = e.run.Controller()
+		v.Interventions = e.run.Interventions()
 	}
 	if v.State.StepIndex >= 0 && v.State.StepIndex < len(v.Capability.Steps) {
 		if e.program != nil {

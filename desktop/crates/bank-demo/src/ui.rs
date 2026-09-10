@@ -3,6 +3,10 @@ use eframe::egui;
 use jarvis_desktop_ui::{editable_text, readonly_text as readonly};
 use std::time::{Duration, Instant};
 
+/// Branch passcode for `--fault session-expired`. Not shown in the UI; only a
+/// human operator (or a test that embeds the same constant) can supply it.
+pub const SESSION_PASSCODE: &str = "BRANCH-7741";
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Fault {
     None,
@@ -13,15 +17,43 @@ pub enum Fault {
     CommitNoop,
     FalseAck,
     CrashAfterCommit,
+    PermissionDenied,
+    SessionExpired,
 }
 
 impl Fault {
     pub fn parse(value: &str) -> Result<Self, String> {
         match value {
-            "none" => Ok(Self::None), "overlay" => Ok(Self::Overlay), "delay" => Ok(Self::Delay),
-            "missing-control" => Ok(Self::MissingControl), "duplicate-control" => Ok(Self::DuplicateControl),
-            "commit-noop" => Ok(Self::CommitNoop), "false-ack" => Ok(Self::FalseAck), "crash-after-commit" => Ok(Self::CrashAfterCommit),
-            _ => Err("Unknown fault (expected none, overlay, delay, missing-control, duplicate-control, commit-noop, false-ack, crash-after-commit)".into()),
+            "none" => Ok(Self::None),
+            "overlay" => Ok(Self::Overlay),
+            "delay" => Ok(Self::Delay),
+            "missing-control" => Ok(Self::MissingControl),
+            "duplicate-control" => Ok(Self::DuplicateControl),
+            "commit-noop" => Ok(Self::CommitNoop),
+            "false-ack" => Ok(Self::FalseAck),
+            "crash-after-commit" => Ok(Self::CrashAfterCommit),
+            "permission-denied" => Ok(Self::PermissionDenied),
+            "session-expired" => Ok(Self::SessionExpired),
+            _ => Err(
+                "Unknown fault (expected none, overlay, delay, missing-control, duplicate-control, commit-noop, false-ack, crash-after-commit, permission-denied, session-expired)".into(),
+            ),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum Variant {
+    #[default]
+    None,
+    RenamedControls,
+}
+
+impl Variant {
+    pub fn parse(value: &str) -> Result<Self, String> {
+        match value {
+            "none" => Ok(Self::None),
+            "renamed-controls" => Ok(Self::RenamedControls),
+            _ => Err("Unknown variant (expected none, renamed-controls)".into()),
         }
     }
 }
@@ -38,27 +70,37 @@ pub enum Page {
 pub struct BankApp {
     store: BankStore,
     fault: Fault,
+    variant: Variant,
     page: Page,
     member_query: String,
     selected_member: Option<String>,
     subaccount_name: String,
     status: String,
     overlay_open: bool,
+    session_expired_open: bool,
+    session_passcode: String,
     pending_lookup: Option<Instant>,
     crash_requested: bool,
 }
 
 impl BankApp {
     pub fn new(store: BankStore, fault: Fault) -> Self {
+        Self::with_variant(store, fault, Variant::None)
+    }
+
+    pub fn with_variant(store: BankStore, fault: Fault, variant: Variant) -> Self {
         Self {
             store,
             fault,
+            variant,
             page: Page::Lookup,
             member_query: String::new(),
             selected_member: None,
             subaccount_name: String::new(),
             status: "Ready".into(),
             overlay_open: fault == Fault::Overlay,
+            session_expired_open: fault == Fault::SessionExpired,
+            session_passcode: String::new(),
             pending_lookup: None,
             crash_requested: false,
         }
@@ -75,6 +117,15 @@ impl BankApp {
     }
     pub fn crash_requested(&self) -> bool {
         self.crash_requested
+    }
+    pub fn search_label(&self) -> &'static str {
+        match self.variant {
+            Variant::RenamedControls => "Find member",
+            Variant::None => "Search",
+        }
+    }
+    pub fn blocked(&self) -> bool {
+        self.overlay_open || self.session_expired_open || self.pending_lookup.is_some()
     }
 
     pub fn tick(&mut self, now: Instant) {
@@ -96,6 +147,12 @@ impl BankApp {
     }
 
     fn finish_lookup(&mut self) {
+        if self.fault == Fault::PermissionDenied {
+            self.selected_member = None;
+            self.page = Page::Lookup;
+            self.status = "Permission denied".into();
+            return;
+        }
         let id = self.member_query.trim();
         if let Some(member) = self.store.state().member(id) {
             self.selected_member = Some(member.id.clone());
@@ -154,6 +211,16 @@ impl BankApp {
         self.status = "Subaccount created".into();
     }
 
+    fn try_unlock_session(&mut self) {
+        if self.session_passcode == SESSION_PASSCODE {
+            self.session_expired_open = false;
+            self.session_passcode.clear();
+            self.status = "Ready".into();
+        } else {
+            self.status = "Incorrect passcode".into();
+        }
+    }
+
     pub fn draw(&mut self, ui: &mut egui::Ui) {
         self.tick(Instant::now());
         let tenant = self.store.state().tenant;
@@ -167,7 +234,7 @@ impl BankApp {
             ui.heading(tenant.title());
             ui.label("Member services · Synthetic demonstration environment");
             ui.separator();
-            ui.add_enabled_ui(!self.overlay_open && self.pending_lookup.is_none(), |ui| {
+            ui.add_enabled_ui(!self.blocked(), |ui| {
                 match tenant {
                     Tenant::North => {
                         ui.columns(2, |columns| {
@@ -202,6 +269,23 @@ impl BankApp {
                 }
             });
         }
+        if self.session_expired_open {
+            egui::Modal::new(egui::Id::new("session-expired")).show(ui.ctx(), |ui| {
+                ui.heading("Session expired");
+                ui.label("Enter the branch passcode to continue. Automation does not know this value.");
+                editable_text(
+                    ui,
+                    "Passcode",
+                    "session-passcode",
+                    &mut self.session_passcode,
+                    64,
+                    false,
+                );
+                if ui.button("Continue").clicked() {
+                    self.try_unlock_session();
+                }
+            });
+        }
         if self.pending_lookup.is_some() {
             ui.ctx().request_repaint_after(Duration::from_millis(20));
         }
@@ -222,7 +306,8 @@ impl BankApp {
             self.page = Page::Lookup;
             self.status = "Ready".into();
         }
-        if ui.button("Search").clicked() {
+        let label = self.search_label();
+        if ui.button(label).clicked() {
             self.search();
         }
     }

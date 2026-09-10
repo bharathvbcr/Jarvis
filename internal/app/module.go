@@ -159,6 +159,26 @@ func (a *App) Configure(r *serve.Router) error {
 		}) (empty, error) {
 			return empty{}, a.Control(ctx, p.RunID, p.Control)
 		}),
+		"jarvis.intervention.list": handler(func(_ context.Context, p runID) (struct {
+			Interventions []computer.InterventionRequest `json:"interventions"`
+		}, error) {
+			list, err := a.ListInterventions(p.RunID)
+			return struct {
+				Interventions []computer.InterventionRequest `json:"interventions"`
+			}{list}, err
+		}),
+		"jarvis.run.takeover": handler(func(ctx context.Context, p runID) (empty, error) {
+			return empty{}, a.Takeover(ctx, p.RunID)
+		}),
+		"jarvis.run.handback": handler(func(ctx context.Context, p runID) (empty, error) {
+			return empty{}, a.Handback(ctx, p.RunID)
+		}),
+		"jarvis.run.act": handler(func(ctx context.Context, p struct {
+			RunID string `json:"run_id"`
+			Spec  string `json:"spec"`
+		}) (empty, error) {
+			return empty{}, a.ActHuman(ctx, p.RunID, p.Spec)
+		}),
 		"jarvis.doctor": asyncHandler(a, "jarvis.doctor", 10*time.Second, func(ctx context.Context, _ empty) (Diagnostic, error) {
 			d := a.Doctor(ctx)
 			if err := ctx.Err(); err != nil {

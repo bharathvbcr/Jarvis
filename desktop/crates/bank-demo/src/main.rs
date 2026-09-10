@@ -1,5 +1,5 @@
 use jarvis_bank::{
-    BankApp, Fault,
+    BankApp, Fault, Variant,
     state::{BankStore, Tenant},
 };
 use std::path::PathBuf;
@@ -8,13 +8,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().skip(1).collect();
     if args == ["--help"] {
         println!(
-            "jarvis-bank --tenant north|south --state PATH [--fault none|overlay|delay|missing-control|duplicate-control|commit-noop|false-ack|crash-after-commit]"
+            "jarvis-bank --tenant north|south --state PATH [--fault none|overlay|delay|missing-control|duplicate-control|commit-noop|false-ack|crash-after-commit|permission-denied|session-expired] [--variant none|renamed-controls]"
         );
         return Ok(());
     }
     let mut tenant = None;
     let mut state = None;
     let mut fault = None;
+    let mut variant = None;
     for pair in args.chunks(2) {
         if pair.len() != 2 {
             return Err("Every flag requires a value; use --help".into());
@@ -23,11 +24,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "--tenant" if tenant.is_none() => tenant = Some(Tenant::parse(&pair[1])?),
             "--state" if state.is_none() => state = Some(PathBuf::from(&pair[1])),
             "--fault" if fault.is_none() => fault = Some(Fault::parse(&pair[1])?),
+            "--variant" if variant.is_none() => variant = Some(Variant::parse(&pair[1])?),
             _ => return Err("Unknown or repeated flag; use --help".into()),
         }
     }
     let tenant = tenant.ok_or("--tenant is required")?;
     let state = state.ok_or("--state is required")?;
+    let variant = variant.unwrap_or(Variant::None);
+    if variant == Variant::RenamedControls && tenant != Tenant::South {
+        return Err("--variant renamed-controls requires --tenant south".into());
+    }
     let store = BankStore::open(&state, tenant)?;
     let title = format!("Jarvis Bank — {}", tenant.title());
     let options = eframe::NativeOptions {
@@ -42,7 +48,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         options,
         Box::new(move |cc| {
             cc.egui_ctx.set_visuals(eframe::egui::Visuals::light());
-            Ok(Box::new(BankApp::new(store, fault.unwrap_or(Fault::None))))
+            Ok(Box::new(BankApp::with_variant(
+                store,
+                fault.unwrap_or(Fault::None),
+                variant,
+            )))
         }),
     )?;
     Ok(())

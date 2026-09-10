@@ -17,6 +17,12 @@ pub struct Document {
     #[serde(default)]
     parameters: Option<Vec<Parameter>>,
     targets: BTreeMap<String, Target>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    outputs: Vec<OutputDecl>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    outcomes: Vec<OutcomeDef>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    recoveries: Vec<Recovery>,
     steps: Vec<Step>,
     limits: Limits,
 }
@@ -44,6 +50,74 @@ struct Target {
     identifier: String,
     #[serde(skip_serializing_if = "String::is_empty")]
     ancestor: String,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    strategies: Vec<Strategy>,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    rationale: String,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    stability: String,
+}
+
+#[derive(Clone, Default, Deserialize, Serialize)]
+#[serde(default, deny_unknown_fields)]
+struct Strategy {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    visual: Option<VisualAnchor>,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    role: String,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    name: String,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    identifier: String,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    ancestor: String,
+}
+
+#[derive(Clone, Default, Deserialize, Serialize)]
+#[serde(default, deny_unknown_fields)]
+struct OutputDecl {
+    name: String,
+    #[serde(rename = "type")]
+    kind: String,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    currency: String,
+    #[serde(default)]
+    description: String,
+}
+
+#[derive(Clone, Default, Deserialize, Serialize)]
+#[serde(default, deny_unknown_fields)]
+struct OutcomeDef {
+    id: String,
+    kind: String,
+    #[serde(default)]
+    description: String,
+    #[serde(default)]
+    outputs: Vec<String>,
+}
+
+#[derive(Clone, Default, Deserialize, Serialize)]
+#[serde(default, deny_unknown_fields)]
+struct Recovery {
+    id: String,
+    when: RecoveryWhen,
+    action: RecoveryAction,
+    max: u32,
+}
+
+#[derive(Clone, Default, Deserialize, Serialize)]
+#[serde(default, deny_unknown_fields)]
+struct RecoveryWhen {
+    target: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    predicate: Option<Predicate>,
+}
+
+#[derive(Clone, Default, Deserialize, Serialize)]
+#[serde(default, deny_unknown_fields)]
+struct RecoveryAction {
+    kind: String,
+    target: String,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
@@ -122,7 +196,9 @@ struct Predicate {
 struct Step {
     id: String,
     kind: String,
+    #[serde(skip_serializing_if = "String::is_empty")]
     target: String,
+    #[serde(skip_serializing_if = "String::is_empty")]
     effect: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     input: Option<Reference>,
@@ -134,6 +210,8 @@ struct Step {
     output_type: String,
     #[serde(skip_serializing_if = "String::is_empty")]
     currency: String,
+    #[serde(skip_serializing_if = "String::is_empty")]
+    outcome: String,
     #[serde(skip_serializing_if = "String::is_empty")]
     next: String,
     #[serde(skip_serializing_if = "String::is_empty")]
@@ -179,8 +257,11 @@ impl Document {
         if document.steps.len() > 128
             || document.targets.len() > 128
             || document.parameters.as_ref().is_some_and(|p| p.len() > 128)
+            || document.outputs.len() > 128
+            || document.outcomes.len() > 64
+            || document.recoveries.len() > 64
         {
-            return Err("The editor supports at most 128 steps, targets and parameters.".into());
+            return Err("The editor supports at most 128 steps, targets, parameters and outputs; 64 outcomes and recoveries.".into());
         }
         Ok(document)
     }
@@ -288,10 +369,54 @@ impl Document {
                             number(ui, "Click Y inside template", &mut visual.click.y, 0..=visual.height.saturating_sub(1));
                             ui.label("Only click steps with business effect change can use this target. Text extraction requires an accessibility target.");
                         } else {
-                            field(ui, "Role", &mut target.role, 512);
-                            field(ui, "Exact accessible name", &mut target.name, 512);
-                            field(ui, "Stable identifier", &mut target.identifier, 512);
-                            field(ui, "Ancestor name", &mut target.ancestor, 512);
+                            field(ui, "Rationale", &mut target.rationale, 512);
+                            choice(ui, "Stability", &mut target.stability, &["", "semantic", "identifier", "visual"]);
+                            if target.stability.is_empty() {
+                                target.stability.clear();
+                            }
+                            let mut remove_strategy = None;
+                            for (index, strategy) in target.strategies.iter_mut().enumerate() {
+                                ui.push_id(index, |ui| {
+                                    ui.group(|ui| {
+                                        ui.label(format!("Strategy {}", index + 1));
+                                        field(ui, "Role", &mut strategy.role, 512);
+                                        field(ui, "Exact accessible name", &mut strategy.name, 512);
+                                        field(ui, "Stable identifier", &mut strategy.identifier, 512);
+                                        field(ui, "Ancestor name", &mut strategy.ancestor, 512);
+                                        if ui.button("Remove strategy").clicked() {
+                                            remove_strategy = Some(index);
+                                        }
+                                    });
+                                });
+                            }
+                            if let Some(index) = remove_strategy {
+                                target.strategies.remove(index);
+                            }
+                            if ui
+                                .add_enabled(
+                                    target.strategies.len() < 8,
+                                    egui::Button::new("Add strategy rung"),
+                                )
+                                .clicked()
+                            {
+                                target.strategies.push(Strategy {
+                                    role: "button".into(),
+                                    name: "Control".into(),
+                                    ..Default::default()
+                                });
+                            }
+                            if target.strategies.is_empty() {
+                                ui.label("Flat selector (no ladder)");
+                                field(ui, "Role", &mut target.role, 512);
+                                field(ui, "Exact accessible name", &mut target.name, 512);
+                                field(ui, "Stable identifier", &mut target.identifier, 512);
+                                field(ui, "Ancestor name", &mut target.ancestor, 512);
+                            } else {
+                                target.role.clear();
+                                target.name.clear();
+                                target.identifier.clear();
+                                target.ancestor.clear();
+                            }
                         }
                         if ui.button("Remove target").clicked() { remove = Some(key.clone()); }
                     });
@@ -307,7 +432,159 @@ impl Document {
                 }
             }
             if ui.add_enabled(self.targets.len() < 128, egui::Button::new("Add semantic target")).clicked() {
-                self.targets.insert(unique("target", self.targets.keys().map(String::as_str)), Target { role: "button".into(), name: "Control".into(), ..Default::default() });
+                self.targets.insert(
+                    unique("target", self.targets.keys().map(String::as_str)),
+                    Target {
+                        strategies: vec![Strategy {
+                            role: "button".into(),
+                            name: "Control".into(),
+                            ..Default::default()
+                        }],
+                        rationale: "Primary control".into(),
+                        stability: "semantic".into(),
+                        ..Default::default()
+                    },
+                );
+            }
+        });
+        egui::CollapsingHeader::new("Outputs contract").show(ui, |ui| {
+            let mut remove = None;
+            for (index, output) in self.outputs.iter_mut().enumerate() {
+                ui.push_id(index, |ui| {
+                    ui.group(|ui| {
+                        field(ui, "Output name", &mut output.name, 96);
+                        choice(
+                            ui,
+                            "Output type",
+                            &mut output.kind,
+                            &["string", "integer", "money", "boolean"],
+                        );
+                        if output.kind == "money" {
+                            field(ui, "Currency", &mut output.currency, 3);
+                        } else {
+                            output.currency.clear();
+                        }
+                        field(ui, "Description", &mut output.description, 512);
+                        if ui.button("Remove output").clicked() {
+                            remove = Some(index);
+                        }
+                    });
+                });
+            }
+            if let Some(index) = remove {
+                self.outputs.remove(index);
+            }
+            if ui
+                .add_enabled(self.outputs.len() < 128, egui::Button::new("Add output"))
+                .clicked()
+            {
+                self.outputs.push(OutputDecl {
+                    name: unique("output", self.outputs.iter().map(|o| o.name.as_str())),
+                    kind: "string".into(),
+                    description: "Observed value".into(),
+                    ..Default::default()
+                });
+            }
+        });
+        egui::CollapsingHeader::new("Outcomes").show(ui, |ui| {
+            let mut remove = None;
+            for (index, outcome) in self.outcomes.iter_mut().enumerate() {
+                ui.push_id(index, |ui| {
+                    ui.group(|ui| {
+                        field(ui, "Outcome ID", &mut outcome.id, 96);
+                        choice(ui, "Outcome kind", &mut outcome.kind, &["success", "business"]);
+                        field(ui, "Description", &mut outcome.description, 512);
+                        let joined = outcome.outputs.join(",");
+                        let mut draft = joined.clone();
+                        if field(ui, "Output names (comma-separated)", &mut draft, 512) && draft != joined {
+                            outcome.outputs = draft
+                                .split(',')
+                                .map(str::trim)
+                                .filter(|s| !s.is_empty())
+                                .map(str::to_string)
+                                .collect();
+                        }
+                        if ui.button("Remove outcome").clicked() {
+                            remove = Some(index);
+                        }
+                    });
+                });
+            }
+            if let Some(index) = remove {
+                self.outcomes.remove(index);
+            }
+            if ui
+                .add_enabled(self.outcomes.len() < 64, egui::Button::new("Add outcome"))
+                .clicked()
+            {
+                self.outcomes.push(OutcomeDef {
+                    id: unique("outcome", self.outcomes.iter().map(|o| o.id.as_str())),
+                    kind: "success".into(),
+                    description: "Terminal outcome".into(),
+                    outputs: Vec::new(),
+                });
+            }
+        });
+        egui::CollapsingHeader::new("Recoveries").show(ui, |ui| {
+            let targets: Vec<_> = self.targets.keys().map(String::as_str).collect();
+            let mut remove = None;
+            for (index, recovery) in self.recoveries.iter_mut().enumerate() {
+                ui.push_id(index, |ui| {
+                    ui.group(|ui| {
+                        field(ui, "Recovery ID", &mut recovery.id, 96);
+                        choice(ui, "When target", &mut recovery.when.target, &targets);
+                        let predicate = recovery.when.predicate.get_or_insert_with(|| Predicate {
+                            op: "exists".into(),
+                            ..Default::default()
+                        });
+                        choice(
+                            ui,
+                            "When predicate",
+                            &mut predicate.op,
+                            &["exists", "equals", "not_equals", "contains"],
+                        );
+                        if predicate.op != "exists" {
+                            reference_ui(
+                                ui,
+                                "Expected",
+                                predicate.expected.get_or_insert_with(|| Reference {
+                                    source: "literal".into(),
+                                    ..Default::default()
+                                }),
+                            );
+                        }
+                        choice(ui, "Action kind", &mut recovery.action.kind, &["press"]);
+                        choice(ui, "Action target", &mut recovery.action.target, &targets);
+                        number(ui, "Max applications", &mut recovery.max, 1..=8);
+                        if ui.button("Remove recovery").clicked() {
+                            remove = Some(index);
+                        }
+                    });
+                });
+            }
+            if let Some(index) = remove {
+                self.recoveries.remove(index);
+            }
+            if ui
+                .add_enabled(self.recoveries.len() < 64, egui::Button::new("Add recovery"))
+                .clicked()
+            {
+                let default_target = self.targets.keys().next().cloned().unwrap_or_default();
+                self.recoveries.push(Recovery {
+                    id: unique("recovery", self.recoveries.iter().map(|r| r.id.as_str())),
+                    when: RecoveryWhen {
+                        target: default_target.clone(),
+                        predicate: Some(Predicate {
+                            op: "exists".into(),
+                            ..Default::default()
+                        }),
+                    },
+                    action: RecoveryAction {
+                        kind: "press".into(),
+                        target: default_target,
+                    },
+                    max: 1,
+                });
             }
         });
         egui::CollapsingHeader::new("Ordered steps")
@@ -343,6 +620,7 @@ impl Document {
                                     "assert",
                                     "wait",
                                     "branch",
+                                    "conclude",
                                 ],
                             );
                             if step.kind != previous_kind {
@@ -363,15 +641,46 @@ impl Document {
                                 if step.kind != "branch" {
                                     step.otherwise.clear();
                                 }
-                                if matches!(
-                                    step.kind.as_str(),
-                                    "extract" | "assert" | "wait" | "branch"
-                                ) {
-                                    step.effect = "read".into();
+                                if step.kind == "conclude" {
+                                    step.target.clear();
+                                    step.effect.clear();
+                                    step.input = None;
+                                    step.predicate = None;
+                                    step.output.clear();
+                                    step.output_type.clear();
+                                    step.currency.clear();
+                                    step.otherwise.clear();
+                                    if step.outcome.is_empty() {
+                                        step.outcome = self
+                                            .outcomes
+                                            .first()
+                                            .map(|o| o.id.clone())
+                                            .unwrap_or_else(|| "success".into());
+                                    }
+                                } else {
+                                    step.outcome.clear();
+                                    if matches!(
+                                        step.kind.as_str(),
+                                        "extract" | "assert" | "wait" | "branch"
+                                    ) {
+                                        step.effect = "read".into();
+                                    } else if step.effect.is_empty() {
+                                        step.effect = "read".into();
+                                    }
                                 }
                             }
-                            choice(ui, "Target", &mut step.target, &targets);
-                            choice(ui, "Business effect", &mut step.effect, &["read", "change"]);
+                            if step.kind == "conclude" {
+                                let outcomes: Vec<_> =
+                                    self.outcomes.iter().map(|o| o.id.as_str()).collect();
+                                if outcomes.is_empty() {
+                                    field(ui, "Outcome", &mut step.outcome, 96);
+                                } else {
+                                    choice(ui, "Outcome", &mut step.outcome, &outcomes);
+                                }
+                            } else {
+                                choice(ui, "Target", &mut step.target, &targets);
+                                choice(ui, "Business effect", &mut step.effect, &["read", "change"]);
+                            }
                             if matches!(step.kind.as_str(), "set_value" | "type_text" | "scroll") {
                                 reference_ui(
                                     ui,

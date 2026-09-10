@@ -48,7 +48,7 @@ func testRecorder(t *testing.T) *Recorder {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, err := NewRecorder(filepath.Join(t.TempDir(), "run"), p, contract, computer.Session{ID: "desktop", RunID: "run", Epoch: 1})
+	r, err := NewRecorder(filepath.Join(t.TempDir(), "run"), p, contract, computer.Session{ID: "desktop", RunID: "run", Epoch: 1}, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,7 +68,7 @@ func TestHumanReceiptUpdatesAdmissionAndEpochChain(t *testing.T) {
 	if len(r.bundle.EpochTransitions) != 2 || r.bundle.Epoch != 1 {
 		t.Fatal("admission epoch identity changed")
 	}
-	if err := r.Finish(computer.RunResult{State: workflow.State{Phase: workflow.Completed, Epoch: 3}}); err != nil {
+	if err := r.Finish(computer.RunResult{State: workflow.State{Phase: workflow.Completed, Epoch: 3}}, nil); err != nil {
 		t.Fatal(err)
 	}
 	var bundle devcouncil.EvidenceBundle

@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "capability_id": "bank.balance",
+  "revision": "1",
+  "tenant": "south",
+  "targets": {
+    "search": {
+      "strategies": [
+        {"role": "button", "name": "Find member"},
+        {"role": "button", "name": "Search"}
+      ],
+      "rationale": "South renamed-controls variant labels the lookup action Find member; Search remains a drift fallback for unmigrated layouts.",
+      "stability": "semantic"
+    }
+  },
+  "limits": {
+    "max_actions": 30,
+    "active_seconds": 300,
+    "observation_attempts": 3,
+    "intervention_seconds": 600
+  }
+}
