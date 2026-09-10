@@ -1,0 +1,153 @@
+{
+  "schema_version": 1,
+  "recorded_date": "2026-09-09",
+  "platform": "darwin/arm64",
+  "jarvis_source_revision": "1eaf987dadafddba69aabab7178892c3d1082956",
+  "jarvis_source_scope": "Executable source is unchanged from this revision; documentation, pins and evidence are being completed.",
+  "upstream": {
+    "manvi": "4818dc2081a53240eb8f4bde48026ad8d704e351",
+    "devcouncil": "4ccadc604f40e21a3a14471d0af3c7674265e15f"
+  },
+  "files": [
+    {
+      "path": "build/jarvis",
+      "sha256": "859f6596b17d608c3a7ab07958cff7f479e362d37671670361f1e25cd52f5a4c"
+    },
+    {
+      "path": "build/jarvis-bank",
+      "sha256": "f8ba7ed94bb164223653e6cea1d81085e74368d5363ef0caefcfef367ee2f2d4"
+    },
+    {
+      "path": "build/jarvis-workbench",
+      "sha256": "c5329204bffeac7d59230001b5bd7b2ae6a47d9ad56272b7cdfd0b93bc3053cd"
+    },
+    {
+      "path": "build/manvi-desktop",
+      "sha256": "48af525f0e8cc659efbeadbf589b857d3f9258cb3b7ce7ad9a376522dd018214"
+    },
+    {
+      "path": "build/dcverify",
+      "sha256": "1711f07f47af8508775d0b76e863eb90a04bf73501b20d6d45675c86c2433fab"
+    },
+    {
+      "path": "build/jarvis-qualify",
+      "sha256": "f437421c23bf7c1df52de162a78ba240100957fdbeda52cffa0ca0ded6c9cc25"
+    },
+    {
+      "path": "build/upstream/Manvi.bundle",
+      "sha256": "ab172f1f4443a2f15b8f646dde6b339c7160be41ce492917a0fd17c3fd224f1e"
+    },
+    {
+      "path": "build/upstream/DevCouncil.bundle",
+      "sha256": "0ba17be68ad1d89ae2f6cd96f4b69ef928ac2415851aefc252f08afafbb1635f"
+    },
+    {
+      "path": "upstream.lock.json",
+      "sha256": "b5f4554d7edabd073825ec8b73d41239cdcfbf65041a2e1f4ce9ab4518e98595"
+    }
+  ],
+  "checks": [
+    {
+      "command": "go test ./...",
+      "workspace": "Pinned Manvi/manvi",
+      "status": "passed",
+      "tested_packages": 50
+    },
+    {
+      "command": "go run ./cmd/dev build --manvi PINNED_MANVI --devcouncil PINNED_DEVCOUNCIL",
+      "status": "passed"
+    },
+    {
+      "command": "go run ./cmd/dev test --manvi PINNED_MANVI --devcouncil PINNED_DEVCOUNCIL",
+      "status": "passed",
+      "scope": "Jarvis Go; Manvi workflow, computer, budget, session, tools, replay, Gemini, transport, agent and serve; both Rust workspaces; evidence and verifier tests; offline dependency boundaries"
+    },
+    {
+      "command": "go test -race ./...",
+      "workspace": "Jarvis",
+      "status": "passed"
+    },
+    {
+      "command": "go vet ./...",
+      "workspace": "Jarvis",
+      "status": "passed"
+    },
+    {
+      "command": "cargo test --locked --workspace",
+      "workspace": "Jarvis/desktop",
+      "status": "passed",
+      "passed": 58,
+      "ignored": 1
+    },
+    {
+      "command": "cargo test -p jarvis-workbench real_backend_handshake_catalog_and_compiler_error -- --ignored --nocapture",
+      "status": "passed",
+      "scope": "Real backend, compiler, catalog, asynchronous failure jobs and native visual fixture; no input or provider"
+    },
+    {
+      "command": "cargo test --locked --workspace",
+      "workspace": "Manvi/native",
+      "status": "passed",
+      "passed": 40
+    },
+    {
+      "command": "cargo clippy --locked --workspace --all-targets -- -D warnings",
+      "workspaces": [
+        "Jarvis/desktop",
+        "Manvi/native"
+      ],
+      "status": "passed"
+    },
+    {
+      "command": "cargo fmt --all -- --check",
+      "workspaces": [
+        "Jarvis/desktop",
+        "Manvi/native"
+      ],
+      "status": "passed"
+    },
+    {
+      "command": "cargo check --locked -p manvi-desktop --target aarch64-pc-windows-msvc",
+      "status": "passed",
+      "runtime": false
+    },
+    {
+      "command": "cargo check --locked -p manvi-desktop --target aarch64-unknown-linux-gnu",
+      "status": "passed",
+      "runtime": false
+    },
+    {
+      "command": "GOOS=windows GOARCH=arm64 CGO_ENABLED=0 go build ./cmd/jarvis",
+      "status": "passed",
+      "runtime": false
+    },
+    {
+      "command": "GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build ./cmd/jarvis",
+      "status": "passed",
+      "runtime": false
+    },
+    {
+      "command": "DEVC_COUNCIL_EVIDENCE_ROOT=PINNED_DEVCOUNCIL go test ./devcouncil -run TestEvidenceRustCompatibility -count=1",
+      "status": "passed"
+    },
+    {
+      "command": "go run ./cmd/dev bundle-sources --manvi PINNED_MANVI --devcouncil PINNED_DEVCOUNCIL",
+      "status": "passed",
+      "scope": "Verified Git bundles"
+    },
+    {
+      "command": "GOWORK=off GOTOOLCHAIN=local GOPROXY=off GOSUMDB=off /installed/go1.26.6/bin/go run ./cmd/dev bootstrap",
+      "status": "passed",
+      "scope": "Fresh actual checkouts restored from local Git bundles, followed by check-pins. The system Go launcher initially failed because disabling the checksum database prevents automatic toolchain acquisition; invoking installed Go 1.26.6 fixed the setup."
+    }
+  ],
+  "native_qualification": "Separate campaign reports bind their own executable hashes; build checks are not desktop qualification.",
+  "open_gates": [
+    "Live Gemini multimodal continuation and assisted recovery",
+    "Genuine human-approved creation, takeover, visual click and post-commit fault campaigns",
+    "Workbench Accessibility and Screen Recording permissions",
+    "Linux refreshed runtime blocked by UTM startup crash",
+    "Windows runtime deferred by user",
+    "Continuous external-input monitoring and Windows/X11 listener implementation"
+  ]
+}

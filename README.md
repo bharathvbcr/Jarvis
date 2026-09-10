@@ -1,22 +1,23 @@
 # Jarvis
 
-Jarvis discovers desktop capabilities with Gemini, freezes them into typed Manvi artifacts, replays those artifacts with zero model decisions, and asks DevCouncil to evaluate an independent acceptance contract. The native bank has two tenant layouts (North / South); the workbench exposes catalog, editing, execution, approvals, takeover, diagnostics, and evidence inspection.
+Jarvis discovers desktop capabilities with Gemini, freezes them into typed artifacts, and executes those artifacts through Manvi with zero model decisions. DevCouncil evaluates an independent acceptance contract against the resulting evidence. The native bank has two tenant layouts; the native workbench exposes catalog, editing, execution, approvals, takeover, diagnostics, and evidence inspection.
 
-This repository is public and buildable against pinned upstream commits. It does **not** claim a live Gemini discovery bundle or newly re-recorded Phase-6 macOS campaign bundles until those runs complete on a machine with Screen Recording granted and `GEMINI_API_KEY` set.
-
-Pinned upstream (see `upstream.lock.json`):
-
-| Upstream | Revision |
-|---|---|
-| [Manvi](https://github.com/bharathvbcr/Manvi) | `adeb253a76f20c279b820f63cc340743bec25ef2` |
-| [DevCouncil](https://github.com/bharathvbcr/DevCouncil) | `5818ac55e51ef4209d305758fa9034ceb99faee5` |
+The pinned build passes its automated suites. Its fresh macOS campaign completed
+**23/40 read-only replays**, with **17 safe suspensions after input-counter changes**;
+all 40 independent saved-state checks passed. This is not a clean stability pass.
+Earlier macOS and Linux X11 campaigns each passed 20/20 per tenant on their recorded
+executables. First-attempt successes were zero on macOS and one on Linux; retries
+are reported separately. The Linux refresh is blocked by a UTM startup crash.
+Live Gemini and human-approved account changes remain unqualified; Windows
+runtime qualification is deferred by the user. See the exact results in
+[`evidence/`](evidence/README.md) and the remaining [acceptance gates](docs/requirements-evidence.md).
 
 ## Ownership
 
 ```mermaid
 flowchart LR
   W[Jarvis workbench and CLI] --> H[Manvi host module]
-  H --> D[Gemini or fixture discovery]
+  H --> D[Gemini discovery]
   H --> C[Canonical compiler]
   C --> E[Pure workflow reducer]
   E --> B[Native desktop broker]
@@ -28,174 +29,93 @@ flowchart LR
   J --> V
 ```
 
-Manvi owns workflow/compiler/catalog, native broker, provider integration, journal privacy, and budget ledger. DevCouncil owns evidence validation. Jarvis owns bank/workbench composition, `policies/*.json`, profiles, overlays, scenarios, and packaging.
+Manvi owns the workflow/compiler/catalog, native broker/client, provider integration, journal privacy, cancellation and per-attempt budget ledger. DevCouncil owns evidence validation and acceptance predicates. Jarvis owns bank/workbench composition, reviewed tenant profiles, independent scenario expectations, qualification and packaging. Generic components are developed in their upstream worktrees, not copied here.
 
-## Setup
+## Build and run
 
-Prerequisites: Go 1.26.6, Rust/Cargo for the host platform, Accessibility permission, and (for live capture) **Screen Recording** granted to Terminal / Cursor and `build/manvi-desktop`. Platform notes: `docs/platforms.md`.
+Prerequisites: Rust and Cargo with the target platform toolchain, Go 1.26.6, platform accessibility and capture permissions, and the pinned Manvi/DevCouncil checkouts. `cmd/dev` uses Go/Rust only. Platform-specific prerequisites are in `docs/platforms.md`.
 
-### Reviewer build from pins (no local replaces)
+The assignment archive includes `build/upstream/Manvi.bundle` and
+`build/upstream/DevCouncil.bundle`. Restore the exact reviewed revisions without
+depending on unpublished remote branches:
 
 ```sh
-git clone https://github.com/bharathvbcr/Jarvis.git
-cd Jarvis
-# Optional: clone pinned upstreams beside the repo, or let bootstrap fetch them
-go run ./cmd/dev bootstrap \
-  --manvi ../Manvi \
-  --devcouncil ../DevCouncil
-go run ./cmd/dev check-pins --manvi ../Manvi --devcouncil ../DevCouncil
-go run ./cmd/dev build --manvi ../Manvi --devcouncil ../DevCouncil
-./build/jarvis doctor
+GOWORK=off go run ./cmd/dev bootstrap
+go run ./cmd/dev check-pins
+go run ./cmd/dev build
+go run ./cmd/dev test
 ```
 
-`go.mod` requires Manvi at the pinned commit. A generated local `go.work` (gitignored) may replace Manvi for day-to-day hacking; reviewers should build with `GOWORK=off` or without a `go.work` so the module pin is what resolves.
+Bootstrap creates `.local/upstream/` and the ignored Go workspace. It refuses a
+different or dirty existing upstream checkout. Go 1.26.6 must already be installed
+for a fully offline bootstrap; automatic Go toolchain acquisition needs network
+access. Rust/Go dependency downloads are separate from restoring source bundles.
+
+For existing checkouts at the exact revisions in `upstream.lock.json`:
 
 ```sh
-GOWORK=off go build -trimpath -o build/jarvis ./cmd/jarvis
-```
-
-### Keys and credentials
-
-- Live discovery: set `GEMINI_API_KEY` in the process environment, or enter a credential in the workbench memory field.
-- Do **not** put credentials in capabilities, repository files, command arguments, or chat logs.
-- Fixture discovery needs **no** API key.
-- DevCouncil task verification that calls OpenRouter critics needs that provider configured separately; absence of OpenRouter does not block offline Go/Rust tests.
-
-### Offline / fixture mode
-
-| Mode | Command surface | Network | Evidence class |
-|---|---|---|---|
-| Fixture discovery | `discover --provider fixture` | none | `not live` |
-| Offline trace replay | `trace replay` | none | reconstructs reducer state |
-| Independent verify | `verify` / `dcverify evidence-check` | none | contract vs bundle bytes |
-| Live Gemini discovery | `discover --provider gemini` | Gemini | `live` (after you run it) |
-| Live bank replay | `replay` | none (local UI) | needs Screen Recording |
-
-Default fixture transcript: `internal/app/testdata/discovery/balance-tool-transcript.json` (override with `--fixture PATH`).
-
-## Demo commands
-
-Build once:
-
-```sh
+go run ./cmd/dev workspace --manvi /path/to/Manvi --devcouncil /path/to/DevCouncil
 go run ./cmd/dev build --manvi /path/to/Manvi --devcouncil /path/to/DevCouncil
 ./build/jarvis doctor
+./build/jarvis-workbench --backend ./build/jarvis --root .
 ```
 
-### Fixture discovery (no API key; not live)
-
-```sh
-./build/jarvis discover --provider fixture --tenant north \
-  --task 'Observe the bank, find the member using the member_id parameter reference, search, extract Balance as USD money, declare outcomes/outputs/ladder, and publish bank.balance at revision 1.'
-```
-
-### Drift (read-only ladder resolve)
-
-```sh
-./build/jarvis drift --capability examples/balance.json --tenant north
-./build/jarvis drift --capability examples/balance.json --tenant south
-```
-
-South with renamed controls needs the overlay profile bind; without Screen Recording the broker still reports `capture_permission` and drift cannot complete live resolve.
-
-### Compile, register, unattended gate
+The generated local `go.work` is ignored. Build outputs are under `build/`. The Go host builds with `CGO_ENABLED=0`; platform FFI is confined to Manvi's Rust native adapters. Qualification builds disable egui inspection controls. Do not treat a Rust cross-check as proof of native execution on that OS.
 
 ```sh
 ./build/jarvis compile --capability examples/balance.json --register
-./build/jarvis catalog
-# Unattended refuses draft/revoked/missing catalog approval:
-./build/jarvis replay --unattended --capability examples/balance.json \
-  --contract scenarios/balance-m1001.contract.json \
-  --inputs scenarios/m1001.inputs.json --tenant north
+./build/jarvis replay --capability examples/balance.json --tenant north
+./build/jarvis replay --capability examples/balance.json --tenant south
+./build/jarvis codegen --capability examples/balance.json --out examples/generated/balance/capability.go
+go run ./cmd/qualify --n 20 --out evidence/platform-fresh-40.json
 ```
 
-Approve the catalog entry via the workbench (`jarvis.catalog.promote` / catalog Approve APIs) before `--unattended` succeeds.
+The default typed input is the synthetic member M-1001. Use `--inputs scenarios/m1002.inputs.json --contract scenarios/balance-m1002.contract.json` for the second independent expectation. `--pid` attaches an existing bank process; absent `--pid`, Jarvis starts and owns a new bank process. Each interactive desktop has one input owner, including cooperating broker processes.
 
-### Scenario matrix (live replay; needs Screen Recording)
-
-Grant Screen Recording to the native helper, then:
+Account-changing replay:
 
 ```sh
-# success
-./build/jarvis replay --capability examples/balance.json \
-  --contract scenarios/balance-m1001.contract.json \
-  --inputs scenarios/m1001.inputs.json --tenant north
-
-# not_found
-./build/jarvis replay --capability examples/balance.json \
-  --contract scenarios/balance-m9999.contract.json \
-  --inputs scenarios/m9999.inputs.json --tenant north
-
-# permission_denied
-./build/jarvis replay --capability examples/balance.json \
-  --contract scenarios/balance-permission-denied.contract.json \
-  --inputs scenarios/m1001.inputs.json --tenant north --fault permission-denied
-
-# declared overlay recovery
-./build/jarvis replay --capability examples/balance.json \
-  --contract scenarios/balance-overlay.contract.json \
-  --inputs scenarios/m1001.inputs.json --tenant north --fault overlay
-
-# south tenant overlay (renamed Search → Find member)
-./build/jarvis replay --capability examples/balance.json \
-  --contract scenarios/balance-south-overlay.contract.json \
-  --inputs scenarios/m1001.inputs.json --tenant south --variant renamed-controls
-
-# hard failure
-./build/jarvis replay --capability examples/create-subaccount.json \
-  --contract scenarios/missing-control.contract.json \
-  --inputs scenarios/subaccount.inputs.json --tenant north --fault missing-control
-
-# session-expired handoff — when paused, type:
-#   takeover
-#   act set_value Passcode BRANCH-7741
-#   act press Continue
-#   handback
-# then approve when prompted
-./build/jarvis replay --capability examples/create-subaccount.json \
-  --contract scenarios/subaccount-session-expired.contract.json \
-  --inputs scenarios/subaccount.inputs.json --tenant north --fault session-expired
+./build/jarvis replay --capability examples/create-subaccount.json --inputs scenarios/subaccount.inputs.json --contract scenarios/subaccount.contract.json
 ```
 
-Account-changing create (approval required):
+The workflow pauses for a human approval of the exact action, revision, input binding and observed form. In the CLI, type `approve` or `deny`; the workbench provides the corresponding reviewed action controls. Approval is consumed once. After uncertain delivery the engine fences input, attempts one bounded same-session observation, and retains `outcome_unknown`. The reconciliation report records observed UI facts without asserting a durable account change. Automatic mutation retry and terminal-run resume remain prohibited.
+
+## Discovery and assisted mode
+
+Enter a Gemini credential in the workbench, or set `GEMINI_API_KEY` in the process environment yourself. Do not put credentials in capabilities, repository configuration or command arguments. Workbench credentials remain in memory. `discover` registers only scoped desktop observation, typed steps, and capability publication; the model receives no shell, filesystem, oracle, or unrelated network tools.
 
 ```sh
-./build/jarvis replay --capability examples/create-subaccount.json \
-  --inputs scenarios/subaccount.inputs.json \
-  --contract scenarios/subaccount.contract.json
+./build/jarvis discover --tenant north --task 'Look up the member balance, extract USD money, and publish bank.balance.'
+./build/jarvis discover --tenant north --resume-session .local/discovery/RUN_ID/session.json --task 'Continue from a fresh scoped observation.'
 ```
 
-### Offline evidence checks
+The initial model is `gemini-3.8-flash`, prompt revision `jarvis-desktop-v1`. A durable $25 campaign ledger reserves the maximum configured input/output charge before every actual HTTP attempt, including transport retries. Unknown/rejected attempts retain reservations; validated usage settles the successful attempt. The conservative rates are $1.50/M input and $7.50/M output including thinking, above the September 2026 promotional rates. This governs this campaign's admission, not unrelated account spending. [Google pricing](https://ai.google.dev/gemini-api/docs/pricing)
+
+Enable `--assisted` or the workbench checkbox for one explicitly requested safe model recovery while paused. The only recovery choices are a unique enabled Back or Dismiss button. Recovery stays paused, records actor `model_recovery`, and requires canonical checkpoint resume. Matching scores never grant approval.
+
+## Evidence and offline replay
+
+Run bundles live in `evidence/private/RUN_ID/`: exact capability and contract bytes, tenant binding, sanitized screenshots and accessibility trees, action/event journal, deterministic trace, Perfetto-compatible trace and the independent verification report. The workbench exports an explicit completed run as a ZIP. Provider-private signed continuation is kept separately under `.local/discovery/`; public journals remove opaque continuation and signatures.
+
+Discovery uses the same durable desktop journal and frame writer as replay. Its `desktop-artifacts.json` hashes the journal and retained frames and explicitly says `not_evaluated`; discovering a proposed capability does not satisfy an independent acceptance contract. An unsuccessful executed discovery step cancels the outer model loop. Run history and program generations keep controls bound to the selected invocation even when discovery advances between microprograms.
+
+The structured editor edits parameters, targets, ordered steps, references and limits through the canonical compiler. Bounded visual anchors can be cropped from the current trusted masked frame for controls without accessibility semantics. Their templates are immutable inline PNGs; protected search regions, ambiguous matches and changed frame geometry are refused. Every visual click requires fresh approval, and visual matches cannot supply extracted text.
 
 ```sh
-./build/jarvis trace replay \
-  --capability evidence/examples/macos-balance/capability.json \
-  --trace evidence/examples/macos-balance/trace.json
+./build/jarvis trace replay --capability evidence/private/RUN_ID/capability.json --trace evidence/private/RUN_ID/trace.json
+./build/jarvis verify --contract CONTRACT --bundle BUNDLE --contract-sha256 EXPECTED_CONTRACT_HASH --capability-sha256 EXPECTED_CAPABILITY_HASH --run-id EXPECTED_RUN --session-id EXPECTED_SESSION --epoch 1
+```
 
+`trace replay` uses the exported pure workflow reducer and has no desktop backend. `verify` requires independent expected identities; it does not read a runner's `passed` flag. Missing prerequisites produce `incomplete`. Hashes identify exact bytes and detect inconsistency, not truthful observation by an untrusted coordinator. A separate qualification-only oracle checks saved bank state and is unavailable to discovery.
+
+## Validation
+
+```sh
 go run ./cmd/dev test --manvi /path/to/Manvi --devcouncil /path/to/DevCouncil
+DEVC_COUNCIL_EVIDENCE_ROOT=/path/to/DevCouncil go test github.com/bharathvbcr/Manvi/manvi/devcouncil -run TestEvidenceRustCompatibility -count=1
+go run ./cmd/qualify --check-boundaries
 ```
 
-### Live Gemini discovery (your machine)
+Read-only qualification never approves a business change. The denial scenario records denied approval and checks that saved state stayed unchanged. Successful account-changing qualification requires real human approval on every OS/tenant combination. All-success 20/20 results have an approximately 86.1% one-sided 95% exact-binomial lower bound under independence; repeated desktop runs are regression evidence, not proof of independent reliability. [Exact-binomial method](https://itl.nist.gov/div898/software/dataplot/refman2/auxillar/exacbino.htm)
 
-Follow `docs/live-discovery-runbook.md`. Short form:
-
-```sh
-export GEMINI_API_KEY=...   # in your shell only
-./build/jarvis discover --provider gemini --tenant north \
-  --task 'Observe the bank, find the member using the member_id parameter reference, search, extract Balance as USD money, declare outcomes outputs and ladder rationale, and publish bank.balance at revision 1.'
-```
-
-Sanitized public copy belongs under `evidence/discovery/<RUN_ID>/`. Private journals stay in `.local/discovery/` (gitignored).
-
-## Evidence honesty
-
-- Historical curated bundles under `evidence/examples/macos-*` are real macOS runs from earlier revisions (pre-outcome-field shape). Keep them; do not treat them as Phase-6 re-records.
-- Phase-6 contracts and bank faults are in-tree; live re-record was blocked when Screen Recording was not granted to `manvi-desktop`.
-- No live Gemini discovery artifact is published in this tree yet.
-- See `evidence/README.md`, `REPORT.md`, and `docs/requirements-evidence.md`.
-
-## Workbench
-
-```sh
-./build/jarvis-workbench --backend ./build/jarvis --root .
-```
+See `REPORT.md` for the required assignment narrative and `docs/requirements-evidence.md` for the acceptance matrix.

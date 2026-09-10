@@ -4,13 +4,21 @@ Compilation, permissions, native execution, and a complete tenant campaign are s
 
 ## Current evidence
 
+The pinned macOS rebuild has a separate `evidence/macos-pinned-40.json` campaign:
+23 passed, 17 suspended after native input-counter changes, all 40 saved-state
+oracles unchanged. It does not pass the clean stability gate. The current denial
+campaign reached denial on South; North suspended before approval. UTM now crashes
+before guest startup, so Linux refresh attempted zero runs; see
+`evidence/linux-refresh-blocked.json`. The historical successful campaigns below
+remain bound to their original binary hashes.
+
 | Platform | Compilation | Native desktop execution | Qualification |
 | --- | --- | --- | --- |
-| macOS ARM64 | Local build, 39 collected Rust tests, Clippy with warnings denied | Scoped ScreenCaptureKit/AX lookup and visual resolution with unapproved-click refusal verified; raw pixels stayed in memory | Baseline 40-run stress campaign retained; see current campaign reports in `evidence/` |
-| Linux ARM64 X11 | `cargo check` from macOS passes; guest builds tracked separately | Ubuntu cloud-init reports no errors; `loginctl` confirms an active X11 session for `jarvis` | Pending a real X11 bank campaign |
+| macOS ARM64 | Local build and 40 native-workspace tests pass | Scoped ScreenCaptureKit/AX lookup and visual resolution with unapproved-click refusal verified; raw pixels stayed in memory | Retained readiness campaign: 20/20 per tenant; zero first-attempt successes; exact tested binary hashes in report |
+| Linux ARM64 X11 | ARM cross-check and real guest native/bank/verifier builds pass | Real AT-SPI observation, X11 capture and fenced XTest editable-field input in Ubuntu/Xfce | Retained campaign: 20/20 per tenant; one first-attempt success; denial/overlay/missing/duplicate cases each 2/2 expected safety behavior |
 | Windows ARM64 | Rust `cargo check` and Jarvis Go ARM64 cross-build pass | Not executed | User explicitly deferred Windows qualification |
 
-The owned macOS Rust check collected 15 core tests, three macOS adapter tests, and 21 broker/process tests (including one subprocess fixture). Linux-native tests are reported separately. A successful cross-check does not prove linking, desktop accessibility, capture, permissions, graphics, or native event delivery on the destination OS. Process supervision FFI lives in `Manvi/native/crates/manvi-desktop/src/platform/`; the broker module forbids unsafe Rust.
+The macOS-hosted Rust check collected 15 core tests, one portable Linux-adapter test, three macOS adapter tests, and 21 broker/process tests (including one subprocess fixture). Linux-native tests are reported separately. A successful cross-check does not prove linking, desktop accessibility, capture, permissions, graphics, or native event delivery on the destination OS. Process supervision FFI lives in `Manvi/native/crates/manvi-desktop/src/platform/`; the broker module forbids unsafe Rust.
 
 The macOS hardware admission guard compares fifteen native HID event counters around observations and immediately before input, then suspends for reconciliation on a mismatch. Counters remain private to the broker, and epoch transfer is explicit. Tests cover comparison/wrap refusal, privacy and pause/resume fencing, and use the real CoreGraphics API to verify a private event source differs from the HID source without posting any input. Actual hardware-versus-injected classification is not qualified. This guard is not continuous monitoring, does not classify other programs' synthetic input, and has no Windows/X11 listener implementation. Those requirements remain explicit runtime/implementation gates; ordinary semantic replay still uses native state, recipient and foreground checks.
 

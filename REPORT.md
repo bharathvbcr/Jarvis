@@ -2,53 +2,37 @@
 
 ## Architecture
 
-Jarvis is a thin product host over two upstream owners. Manvi owns discovery tools, the pure workflow reducer, the computer runner, catalog storage, journal privacy, and the Rust native desktop broker. DevCouncil owns the independent evidence schema and `dcverify` evaluator. Jarvis owns the bank demo, tenant profiles, reviewed policy documents, overlays, scenarios, the workbench, and packaging.
-
-That split is deliberate. Reusable automation mechanics stay out of the product tree so a bank-specific policy or layout change cannot fork the reducer or the verifier. The Go host stays CGO-free; platform FFI lives only in Manvi’s native workspace. Reviewers build against pinned Manvi and DevCouncil commits in `upstream.lock.json` and `go.mod`, not against an ignored local `go.work` replace.
-
-Gemini’s native `computer_use` tool surface was evaluated and **not adopted**. Typed semantic steps (observe → decide tool → admit action → observe again) produce a reviewable capability artifact with ladders, outcomes, and outputs. Pixel-level `computer_use` remains a future seam for visual anchors that lack accessibility names; it is not on the discovery path today because it would weaken the artifact contract without improving replay determinism.
+Three owners keep reusable behavior upstream: Manvi controls discovery, deterministic execution, journal privacy and the native broker; DevCouncil independently evaluates evidence; Jarvis composes the bank, tenant profiles, scenarios and native workbench. The Go host remains CGO-free. A separate Rust workspace confines platform FFI to macOS/Windows/Linux adapters. Each interactive desktop has one input owner; independent guest desktops may run concurrently.
 
 ## Artifact schema
 
-Capabilities keep `schema_version: 1` and evolve in place. Each target is a locator ladder: ordered selector strategies with a robustness rationale and a stability class (`semantic`, `identifier`, or `visual`). Resolution walks rungs until one unique match; a hit above index zero is recorded drift, never a silent success. Ambiguity on a rung fails closed.
-
-Business results are first-class. Top-level `outcomes` declare success and business kinds; terminal `conclude` steps bind an outcome id; `branch.otherwise` routes to conclude so “Member not found” is not a hard failure. An `outputs` contract lists typed fields every success path must produce. Declared `recoveries` name read-only interstitial handling (for example dismiss overlay) with a bounded `max`; applied recoveries are journaled.
-
-Overlays compile partial ladder replacements for a tenant without widening policy. Catalog entries carry `draft` / `approved` / `revoked` status and stability signals derived from qualification reports. Unattended replay refuses anything that is not approved.
+An application contains capabilities with immutable revisions. Each revision declares typed parameters, semantic or bounded visual targets, ordered bounded steps, explicit business effects and output types. Money uses integer minor units and currency. Visual templates contain exact hashed PNG bytes and geometry; they support approved clicks, not text extraction. Tenant/platform bindings can narrow reviewed input policy. An invocation adds run/session identities, control epoch, independent expected contract and a byte hash of the exact capability. No credentials, executable expressions or arbitrary code appear in capabilities.
 
 ## Determinism & error handling
 
-The reducer is pure: it consumes recorded events and emits commands. Live replay executes those commands with no model in the loop. Offline `trace replay` reconstructs state from the exported journal without a desktop client or LLM. Input dispatch, later observation, and the independent acceptance verdict remain separate facts.
-
-Failure is typed. Results distinguish success, business outcome, recoverable exhausted, hard failure, cancelled, and outcome unknown. Unknown delivery admits one bounded same-session observation, stays incomplete, and never invents a durable mutation. Cancellation fences future input. Observation retries and predicate waits absorb asynchronous UI without replaying a delivered action. Shared durable admissions and masked frame storage cover both discovery and replay.
+The pure reducer consumes recorded events and emits commands. Live replay executes its commands without model decisions; offline replay reconstructs state without importing a desktop client or provider. Input dispatch, subsequent observation and acceptance verdict remain separate facts. Cancellation fences future input and late responses. Unknown delivery permits a bounded same-session observation, remains incomplete, and stops automatic recovery. The bank survives action cancellation until reconciliation and bounded process cleanup finish. Bounded observation retries and predicate waits handle asynchronous UI updates without replaying a delivered action. Discovery and replay share durable action admissions and masked frame storage.
 
 ## Heterogeneity & multi-tenant
 
-North Cooperative and South Mutual expose the same banking tasks in different native layouts. Semantic ladders survive most renames; when South uses `Find member` instead of `Search`, the base artifact fails dry-resolve and the South overlay restores the ladder. `jarvis drift` reports rung index and ambiguity per target without sending input.
-
-Reviewed profiles select window titles and platforms and may only narrow the hashed policy document. macOS uses AX plus scoped ScreenCaptureKit; Windows and Linux adapters exist in Manvi but live runtime qualification for those OS guests remains deferred or open. Native qualification reports bind executable hashes so a later build cannot quietly inherit an older pass.
+North Cooperative and South Mutual present the same canonical banking tasks in distinct native layouts. Reviewed tenant profiles select the exact window and supported platforms without widening policy. macOS uses AX and scoped ScreenCaptureKit; Windows uses UI Automation and per-monitor/virtual-desktop handling; Linux uses AT-SPI/X11, with checked XTest input for editable fields when semantic setting is unavailable. Genuine read-only campaigns completed 20/20 runs per tenant on macOS and Linux, with unchanged saved-state oracles and zero model requests/cost. Observation retries meant first-attempt success was 0/40 on macOS and 1/40 on Linux. These reports bind historical executables, not later source rebuilds. Windows runtime qualification is deferred by the user.
 
 ## Escalation & handoff
 
-Stuck detection emits a typed `InterventionRequest` (ladder exhausted, not actionable after budget, recoveries exhausted, approval pending, deadline near) with controller metadata exposed on the host. CLI replay supports `takeover`, `act <step>`, and `handback` in the same live session; the workbench keeps the richer timeline and approval UI. Epoch, observation, and program-generation binding reject stale controls.
-
-Assisted recovery remains explicit and narrow: one safe Back/Dismiss while paused, actor `model_recovery`, checkpoint resume required. Matching scores never grant approval. Session-expired bank faults pause for a human passcode, then hand back so the independent contract can assert `human_control_returned`.
+The workbench exposes typed invocation, structured editing through the canonical compiler, revision history, current desktop ownership, pending approvals, a sanitized live view, timeline frames, accessibility differences, locator refusals and evidence gaps. Human takeover uses the broker in the same live session. Epoch/observation/program-generation binding rejects stale controls. Optional assisted recovery is explicitly enabled per invocation, admits at most one safe Back/Dismiss action and requires checkpoint-based resume. A score cannot replace required human approval.
 
 ## Safety
 
-Policy is data: windows, editable fields, read-only targets, permitted step kinds and effects, sensitive targets, and `unattended_change: false`, hashed into admission and the evidence bundle. Profiles and overlays cannot widen that allowlist. Privacy masks selected regions before image persistence; uncertain capture is withheld. Provider-private Gemini continuation stays under `.local/discovery/`; public exports omit opaque continuation and signatures.
-
-The broker enforces trusted input policy independently of the host. DevCouncil checks independently supplied contract and capability hashes; missing prerequisites yield `incomplete`, never `passed`. A qualification-only saved-state oracle is unavailable to discovery. Credentials never appear in capabilities, repository config, or CLI arguments—only process environment or in-memory workbench fields.
+Privacy operates before projections, observers, persisted evidence and provider input. Selected sensitive regions are masked before image persistence; uncertain capture is withheld. Provider-private continuation remains in a separate private journal, while public exports omit it. Approval binds the reviewed action and form state, is single-use, and is revalidated after focus changes. The broker independently applies its trusted input policy. DevCouncil checks independently supplied expectations and missing evidence cannot pass. The qualification oracle checks saved state independently of UI acknowledgment. The bank's `false-ack` fault displays real success without writing state; semantic tests verify both tenants and unchanged exact file bytes. The qualifier keeps UI evidence PASS separate from the failed durable task outcome; its live human-approved campaign remains open. Native denial passed its expected safety behavior for both tenants on macOS/Linux; Linux overlay, missing-control and duplicate-control scenarios each safely terminated for both tenants without accepted account changes.
 
 ## Cuts
 
-Wayland unattended input, arbitrary inaccessible-canvas OCR, distributed orchestration, and extra runtime frameworks are out of scope. Gemini native `computer_use` is deferred as noted above. Windows runtime qualification is deferred by the user; Linux guest qualification remains a separate gate.
+The pinned build, consolidated tests and offline source-bundle restoration passed.
+Its fresh macOS campaign passed 23/40, with 17 input-counter suspensions and all 40
+saved-state checks unchanged. It does not pass clean stability qualification.
+The Linux refresh is blocked before guest startup by a UTM crash. Earlier 40/40
+campaigns remain valid for their recorded binaries. The stable workbench still
+reports Accessibility and Screen Recording denied under its own application identity.
 
-**Verified gaps, not claimed complete:**
+Wayland unattended input, arbitrary inaccessible-canvas text extraction, distributed orchestration and extra runtime frameworks are excluded. All six optional features have implemented surfaces; qualification status is tracked in [the requirement matrix](docs/requirements-evidence.md). Live Gemini discovery/save-restore and assisted recovery require a locally supplied credential. Successful creation, false acknowledgment, uncertain post-commit delivery, completed takeover and approved visual clicks still require genuine native qualification. macOS has a bounded HID-counter guard, but hardware-versus-injected classification is unqualified; continuous monitoring and Windows/X11 external-input listeners are not implemented. Packaging does not complete those acceptance gates. Fixtures and semantic UI tests do not replace these checks.
 
-- Live Gemini discovery under `evidence/discovery/` has not been run in this checkout; use `docs/live-discovery-runbook.md` with `GEMINI_API_KEY`.
-- Phase-6 curated macOS campaign bundles for the new scenarios were blocked by Screen Recording denial to the native helper; historical `evidence/examples/macos-*` bundles remain pre-outcome-field shape.
-- Successful human-approved account-changing qualification across tenants is still open.
-- Local `dev verify` against OpenRouter-backed DevCouncil critics may be unavailable without network or API access; task closure is therefore partial where the council cannot run.
-
-What is implemented and offline-proven: ladder/outcome/recovery schema and tests in Manvi, policy narrowing and unattended catalog gating in Jarvis, evidence field extensions and fixtures in DevCouncil, fixture discovery (`--provider fixture`, labelled `not live`), drift reporting, bank faults (`permission-denied`, `session-expired`, `overlay`, `missing-control`) and the `renamed-controls` variant, plus independent contract files for the new scenarios.
+The two optional features highlighted for submission are the native capability catalog with typed invocation, and generated Go callers that delegate to the canonical executor. Matching diagnostics and approval policy, assisted recovery, tenant bindings, and N-run diagnostic reports provide the other four source surfaces. The Linux refresh is currently blocked before guest startup by a recorded UTM host failure, with zero new trials attempted. The packaged workbench requires its own Accessibility and Screen Recording grants. Submission readiness depends on completing the evidence matrix, not on feature names or a successful build alone.
