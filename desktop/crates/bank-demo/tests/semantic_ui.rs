@@ -2,7 +2,7 @@ use eframe::egui::accesskit::Role;
 use egui_kittest::kittest::NodeT;
 use egui_kittest::{Harness, kittest::Queryable};
 use jarvis_bank::{
-    BankApp, Fault, Page,
+    BankApp, Fault, Page, SESSION_PASSCODE, Variant,
     state::{BankStore, Tenant},
 };
 use std::path::PathBuf;
@@ -29,9 +29,19 @@ impl Drop for Fixture {
 }
 
 fn harness(tenant: Tenant, fault: Fault, fixture: &Fixture) -> Harness<'static, BankApp> {
-    let app = BankApp::new(
+    harness_variant(tenant, fault, Variant::None, fixture)
+}
+
+fn harness_variant(
+    tenant: Tenant,
+    fault: Fault,
+    variant: Variant,
+    fixture: &Fixture,
+) -> Harness<'static, BankApp> {
+    let app = BankApp::with_variant(
         BankStore::open(&fixture.0.join("state.json"), tenant).unwrap(),
         fault,
+        variant,
     );
     Harness::builder()
         .with_size(eframe::egui::vec2(880.0, 700.0))
@@ -39,6 +49,10 @@ fn harness(tenant: Tenant, fault: Fault, fixture: &Fixture) -> Harness<'static, 
 }
 
 fn search(harness: &mut Harness<'_, BankApp>) {
+    search_labeled(harness, "Search");
+}
+
+fn search_labeled(harness: &mut Harness<'_, BankApp>, button: &str) {
     harness
         .get_by_role_and_label(Role::TextInput, "Member ID")
         .focus();
@@ -48,7 +62,7 @@ fn search(harness: &mut Harness<'_, BankApp>) {
         .type_text("M-1001");
     harness.run();
     harness
-        .get_by_role_and_label(Role::Button, "Search")
+        .get_by_role_and_label(Role::Button, button)
         .click();
     if harness.state().status() == "Searching" {
         harness.run_steps(1);
@@ -420,4 +434,138 @@ fn native_accesskit_set_value_updates_editable_field_before_search() {
             .as_deref(),
         Some("Native savings")
     );
+}
+
+#[test]
+fn permission_denied_sets_status_and_keeps_member_closed() {
+    let fixture = Fixture::new();
+    let mut harness = harness(Tenant::North, Fault::PermissionDenied, &fixture);
+    search(&mut harness);
+    assert_eq!(harness.state().page(), Page::Lookup);
+    assert_eq!(
+        harness
+            .get_by_role_and_label(Role::TextInput, "Status")
+            .value()
+            .as_deref(),
+        Some("Permission denied")
+    );
+    assert!(
+        harness
+            .query_by_role_and_label(Role::Button, "New subaccount")
+            .is_none()
+    );
+    assert_eq!(harness.state().state().revision, 0);
+}
+
+#[test]
+fn session_expired_blocks_until_human_passcode() {
+    let fixture = Fixture::new();
+    let mut harness = harness(Tenant::South, Fault::SessionExpired, &fixture);
+    let member = harness.get_by_role_and_label(Role::TextInput, "Member ID");
+    assert!(member.accesskit_node().is_disabled());
+    assert!(
+        harness
+            .query_by_role_and_label(Role::Button, "Search")
+            .is_some_and(|b| b.accesskit_node().is_disabled())
+    );
+    harness
+        .get_by_role_and_label(Role::TextInput, "Passcode")
+        .focus();
+    harness.run();
+    let (target_node, target_tree) = harness
+        .get_by_role_and_label(Role::TextInput, "Passcode")
+        .accesskit_node()
+        .locate();
+    harness.event(eframe::egui::Event::AccessKitActionRequest(
+        eframe::egui::accesskit::ActionRequest {
+            action: eframe::egui::accesskit::Action::SetValue,
+            target_node,
+            target_tree,
+            data: Some(eframe::egui::accesskit::ActionData::Value("wrong".into())),
+        },
+    ));
+    harness.run();
+    harness
+        .get_by_role_and_label(Role::Button, "Continue")
+        .click();
+    harness.run();
+    assert_eq!(harness.state().status(), "Incorrect passcode");
+    assert!(
+        harness
+            .query_by_role_and_label(Role::Button, "Continue")
+            .is_some()
+    );
+    let (target_node, target_tree) = harness
+        .get_by_role_and_label(Role::TextInput, "Passcode")
+        .accesskit_node()
+        .locate();
+    harness.event(eframe::egui::Event::AccessKitActionRequest(
+        eframe::egui::accesskit::ActionRequest {
+            action: eframe::egui::accesskit::Action::SetValue,
+            target_node,
+            target_tree,
+            data: Some(eframe::egui::accesskit::ActionData::Value(
+                SESSION_PASSCODE.into(),
+            )),
+        },
+    ));
+    harness.run();
+    harness
+        .get_by_role_and_label(Role::Button, "Continue")
+        .click();
+    harness.run();
+    assert!(
+        harness
+            .query_by_role_and_label(Role::Button, "Continue")
+            .is_none()
+    );
+    search(&mut harness);
+    assert_eq!(harness.state().page(), Page::Member);
+    assert_eq!(harness.state().status(), "Member found");
+}
+
+#[test]
+fn south_renamed_controls_exposes_find_member_instead_of_search() {
+    let fixture = Fixture::new();
+    let mut harness = harness_variant(
+        Tenant::South,
+        Fault::None,
+        Variant::RenamedControls,
+        &fixture,
+    );
+    assert!(
+        harness
+            .query_by_role_and_label(Role::Button, "Search")
+            .is_none()
+    );
+    search_labeled(&mut harness, "Find member");
+    assert_eq!(harness.state().page(), Page::Member);
+    assert_eq!(harness.state().status(), "Member found");
+    assert_eq!(
+        harness
+            .get_by_role_and_label(Role::TextInput, "Balance")
+            .value()
+            .as_deref(),
+        Some("1250.00 USD")
+    );
+}
+
+#[test]
+fn member_not_found_status_is_unchanged_without_permission_fault() {
+    let fixture = Fixture::new();
+    let mut harness = harness(Tenant::North, Fault::None, &fixture);
+    harness
+        .get_by_role_and_label(Role::TextInput, "Member ID")
+        .focus();
+    harness.run();
+    harness
+        .get_by_role_and_label(Role::TextInput, "Member ID")
+        .type_text("M-9999");
+    harness.run();
+    harness
+        .get_by_role_and_label(Role::Button, "Search")
+        .click();
+    harness.run();
+    assert_eq!(harness.state().status(), "Member not found");
+    assert_eq!(harness.state().page(), Page::Lookup);
 }

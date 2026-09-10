@@ -1,13 +1,25 @@
 {
-  "schema_version":1,"id":"bank.create-subaccount","revision":"1","application":"jarvis-bank",
+  "schema_version":1,
+  "id":"bank.create-subaccount",
+  "revision":"1",
+  "application":"jarvis-bank",
   "description":"Create a simulated subaccount after a human approves the exact reviewed form.",
   "parameters":[{"name":"member_id","type":"string","sensitive":true},{"name":"subaccount_name","type":"string","sensitive":true}],
   "targets":{
-    "member":{"role":"text_field","name":"Member ID"},"search":{"role":"button","name":"Search"},
-    "new":{"role":"button","name":"New subaccount"},"name":{"role":"text_field","name":"Subaccount name"},
-    "review":{"role":"button","name":"Review"},"confirm":{"role":"button","name":"Confirm creation"},
-    "status":{"role":"text_field","name":"Status"}
+    "member":{"strategies":[{"role":"text_field","name":"Member ID"}],"rationale":"Member identifier field on the lookup form","stability":"semantic"},
+    "search":{"strategies":[{"role":"button","name":"Search"}],"rationale":"Search control that loads the member record","stability":"semantic"},
+    "new":{"strategies":[{"role":"button","name":"New subaccount"}],"rationale":"Starts subaccount creation for the loaded member","stability":"semantic"},
+    "name":{"strategies":[{"role":"text_field","name":"Subaccount name"}],"rationale":"Name field for the new subaccount","stability":"semantic"},
+    "review":{"strategies":[{"role":"button","name":"Review"}],"rationale":"Moves the draft into the review screen","stability":"semantic"},
+    "confirm":{"strategies":[{"role":"button","name":"Confirm creation"}],"rationale":"Change-effect confirmation after human approval","stability":"semantic"},
+    "status":{"strategies":[{"role":"text_field","name":"Status"}],"rationale":"Status text confirms subaccount creation","stability":"semantic"}
   },
+  "outputs":[
+    {"name":"status","type":"string","description":"Creation status text observed after confirm"}
+  ],
+  "outcomes":[
+    {"id":"success","kind":"success","description":"Subaccount created after approved confirm","outputs":["status"]}
+  ],
   "steps":[
     {"id":"member","kind":"set_value","target":"member","effect":"read","input":{"source":"input","key":"member_id"}},
     {"id":"search","kind":"press","target":"search","effect":"read"},
@@ -15,7 +27,9 @@
     {"id":"name","kind":"set_value","target":"name","effect":"read","input":{"source":"input","key":"subaccount_name"}},
     {"id":"review","kind":"press","target":"review","effect":"read"},
     {"id":"confirm","kind":"press","target":"confirm","effect":"change"},
-    {"id":"created","kind":"wait","target":"status","effect":"read","output_type":"string","predicate":{"op":"contains","expected":{"source":"literal","literal":{"type":"string","text":"created"}}}}
+    {"id":"created","kind":"wait","target":"status","effect":"read","predicate":{"op":"contains","expected":{"source":"literal","literal":{"type":"string","text":"created"}}}},
+    {"id":"capture","kind":"extract","target":"status","effect":"read","output":"status","output_type":"string","next":"ok"},
+    {"id":"ok","kind":"conclude","outcome":"success"}
   ],
   "limits":{"max_actions":40,"active_seconds":300,"observation_attempts":3,"intervention_seconds":600}
 }

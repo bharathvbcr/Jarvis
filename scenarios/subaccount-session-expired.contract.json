@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "id": "bank.create-subaccount.session-expired",
+  "criteria": [
+    {
+      "id": "human-returned",
+      "fact": "human_control_returned",
+      "required": true,
+      "predicate": {"op": "equals", "value": true}
+    },
+    {
+      "id": "acknowledgment",
+      "fact": "ui.Status",
+      "required": true,
+      "predicate": {"op": "contains", "value": "created"}
+    }
+  ]
+}

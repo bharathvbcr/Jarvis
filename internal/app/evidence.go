@@ -16,14 +16,22 @@ import (
 
 type Recorder struct {
 	*desktopJournal
-	mu       sync.Mutex
-	bundle   devcouncil.EvidenceBundle
-	sequence uint64
-	contract []byte
-	program  *workflow.Program
+	mu            sync.Mutex
+	bundle        devcouncil.EvidenceBundle
+	sequence      uint64
+	sideSequence  uint64
+	contract      []byte
+	program       *workflow.Program
+	pendingHuman  []pendingHumanAction
+	seenRecovery  map[string]bool
 }
 
-func NewRecorder(dir string, program *workflow.Program, contract []byte, session computer.Session) (*Recorder, error) {
+type pendingHumanAction struct {
+	ID   string
+	Kind string
+}
+
+func NewRecorder(dir string, program *workflow.Program, contract []byte, session computer.Session, policySHA256 string) (*Recorder, error) {
 	var expected devcouncil.EvidenceContract
 	if err := workflow.DecodeStrict(contract, &expected); err != nil {
 		return nil, err
@@ -41,7 +49,29 @@ func NewRecorder(dir string, program *workflow.Program, contract []byte, session
 	if err != nil {
 		return nil, err
 	}
-	r := &Recorder{desktopJournal: journal, contract: append([]byte(nil), contract...), program: program, bundle: devcouncil.EvidenceBundle{SchemaVersion: 1, RunID: session.RunID, SessionID: session.ID, Epoch: session.Epoch, ContractSHA256: digest(contract), CapabilitySHA256: program.Digest(), Degraded: []string{}, Actions: []devcouncil.EvidenceAction{}, Observations: []devcouncil.EvidenceObservation{}, Artifacts: []devcouncil.EvidenceArtifact{}}}
+	r := &Recorder{
+		desktopJournal: journal,
+		contract:       append([]byte(nil), contract...),
+		program:        program,
+		seenRecovery:   map[string]bool{},
+		bundle: devcouncil.EvidenceBundle{
+			SchemaVersion:    1,
+			RunID:            session.RunID,
+			SessionID:        session.ID,
+			Epoch:            session.Epoch,
+			ContractSHA256:   digest(contract),
+			CapabilitySHA256: program.Digest(),
+			PolicySHA256:     policySHA256,
+			Degraded:         []string{},
+			Actions:          []devcouncil.EvidenceAction{},
+			Observations:     []devcouncil.EvidenceObservation{},
+			Artifacts:        []devcouncil.EvidenceArtifact{},
+			Interventions:    []devcouncil.EvidenceIntervention{},
+			HumanActions:     []devcouncil.EvidenceHumanAction{},
+			Recoveries:       []devcouncil.EvidenceRecoveryApplied{},
+			LocatorHits:      []devcouncil.EvidenceLocatorHit{},
+		},
+	}
 	if err := writeAtomic(filepath.Join(dir, "contract.json"), contract); err != nil {
 		journal.file.Close()
 		return nil, err
@@ -79,6 +109,15 @@ func (r *Recorder) Record(record computer.Record) error {
 		if r.actionIndex(record.ActionID) < 0 {
 			r.appendAction(record.ActionID, "unknown")
 		}
+		if record.RecoveryID != "" && !r.seenRecovery[record.RecoveryID] {
+			r.seenRecovery[record.RecoveryID] = true
+			r.sideSequence++
+			r.bundle.Recoveries = append(r.bundle.Recoveries, devcouncil.EvidenceRecoveryApplied{
+				ID:       record.RecoveryID,
+				Sequence: r.sideSequence,
+				StepID:   stepIDFromAction(record.ActionID, r.bundle.RunID),
+			})
+		}
 	}
 	if record.Kind == "event" && record.Event != nil && record.Event.NextEpoch > record.Event.Epoch {
 		r.sequence++
@@ -108,6 +147,14 @@ func (r *Recorder) Record(record computer.Record) error {
 				r.bundle.Actions[i].Disposition = "succeeded"
 			}
 		}
+		if target := record.Event.Observation.Target; target != "" {
+			r.sideSequence++
+			r.bundle.LocatorHits = append(r.bundle.LocatorHits, devcouncil.EvidenceLocatorHit{
+				Target:        target,
+				StrategyIndex: uint64(record.Event.Observation.StrategyIndex),
+				Sequence:      r.sideSequence,
+			})
+		}
 	}
 	if record.Kind == "human_action" && record.Receipt != nil {
 		disposition := "unknown"
@@ -119,9 +166,32 @@ func (r *Recorder) Record(record computer.Record) error {
 			return errors.New("human receipt has no durable action admission")
 		}
 		r.bundle.Actions[i].Disposition = disposition
+		kind := record.StepKind
+		if kind == "" {
+			kind = "press"
+		}
+		r.pendingHuman = append(r.pendingHuman, pendingHumanAction{ID: record.ActionID, Kind: kind})
 	}
 	if record.Kind == "observation" && record.Observation != nil {
 		r.sequence++
+		if record.StrategyIndex > 0 || (record.RecoveryID == "" && record.Stage != "" && record.Stage != "outcome_reconciliation") {
+			// Ladder hits are authoritative on observed events; observation
+			// StrategyIndex still records drift when the runner resolves a fallback rung.
+			if record.StrategyIndex > 0 {
+				target := ""
+				if record.ActionID != "" {
+					target = stepIDFromAction(record.ActionID, r.bundle.RunID)
+				}
+				if target != "" {
+					r.sideSequence++
+					r.bundle.LocatorHits = append(r.bundle.LocatorHits, devcouncil.EvidenceLocatorHit{
+						Target:        target,
+						StrategyIndex: uint64(record.StrategyIndex),
+						Sequence:      r.sideSequence,
+					})
+				}
+			}
+		}
 	}
 	stored, artifacts, err := r.desktopJournal.append(record, r.sequence)
 	if err != nil {
@@ -138,6 +208,16 @@ func (r *Recorder) Record(record computer.Record) error {
 		}
 	}
 	return nil
+}
+func stepIDFromAction(actionID, runID string) string {
+	prefix := runID + ":"
+	if strings.HasPrefix(actionID, prefix) {
+		return strings.TrimPrefix(actionID, prefix)
+	}
+	if i := strings.LastIndex(actionID, ":"); i >= 0 {
+		return actionID[i+1:]
+	}
+	return actionID
 }
 func factsFromObservation(o computer.Observation) map[string]json.RawMessage {
 	facts := map[string]json.RawMessage{}
@@ -172,15 +252,61 @@ func factsFromObservation(o computer.Observation) map[string]json.RawMessage {
 	}
 	return facts
 }
-func (r *Recorder) Finish(result computer.RunResult) error {
+func (r *Recorder) Finish(result computer.RunResult, interventions []computer.InterventionRequest) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	r.bundle.JournalComplete = result.Error == "" && result.State.Phase == workflow.Completed
+	terminalOK := result.Error == "" && (result.State.Phase == workflow.Completed || result.State.Phase == workflow.Concluded)
+	r.bundle.JournalComplete = terminalOK
 	if r.bundle.EpochTransitions == nil {
 		r.bundle.EpochTransitions = []devcouncil.EvidenceEpochTransition{}
 	}
 	if !r.bundle.JournalComplete {
 		r.bundle.Degraded = append(r.bundle.Degraded, string(result.State.Phase))
+	}
+	if outcomeID := result.State.Outcome; outcomeID != "" {
+		kind := "success"
+		for _, o := range r.program.Capability().Outcomes {
+			if o.ID == outcomeID {
+				kind = o.Kind
+				break
+			}
+		}
+		if kind != "success" && kind != "business" {
+			kind = "success"
+		}
+		r.bundle.Outcome = &devcouncil.EvidenceOutcome{ID: outcomeID, Kind: kind}
+	}
+	returnedID := ""
+	for _, iv := range interventions {
+		r.sideSequence++
+		status := iv.Status
+		if status == "" {
+			status = computer.InterventionRequested
+		}
+		id := iv.ID
+		if id == "" {
+			id = fmt.Sprintf("%s:intervention:%d", r.bundle.RunID, r.sideSequence)
+		}
+		r.bundle.Interventions = append(r.bundle.Interventions, devcouncil.EvidenceIntervention{
+			ID:         id,
+			Sequence:   r.sideSequence,
+			ReasonCode: iv.ReasonCode,
+			Status:     status,
+		})
+		if status == computer.InterventionReturned {
+			returnedID = id
+		}
+	}
+	if returnedID != "" {
+		for _, h := range r.pendingHuman {
+			r.sideSequence++
+			r.bundle.HumanActions = append(r.bundle.HumanActions, devcouncil.EvidenceHumanAction{
+				ID:             h.ID,
+				Sequence:       r.sideSequence,
+				Kind:           h.Kind,
+				InterventionID: returnedID,
+			})
+		}
 	}
 	if err := r.file.Close(); err != nil {
 		return err

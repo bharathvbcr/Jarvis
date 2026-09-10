@@ -35,7 +35,7 @@ func output(v interface{}) error {
 }
 func run() error {
 	if len(os.Args) < 2 {
-		return errors.New("commands: doctor, discover, compile, replay, trace replay, verify, catalog, codegen, serve")
+		return errors.New("commands: doctor, discover, compile, replay, drift, trace replay, verify, catalog, codegen, serve")
 	}
 	command := os.Args[1]
 	args := os.Args[2:]
@@ -57,12 +57,16 @@ func run() error {
 	tenant := f.String("tenant", "north", "north or south")
 	pid := f.Uint("pid", 0, "attach existing bank PID")
 	fault := f.String("fault", "none", "seeded bank fault")
+	variant := f.String("variant", "none", "bank UI variant (none|renamed-controls)")
 	destination := f.String("out", "", "output file")
 	register := f.Bool("register", false, "register immutable revision")
 	task := f.String("task", "Look up the member balance, extract it as money in USD, and publish a reusable balance capability.", "discovery objective")
+	provider := f.String("provider", "gemini", "discovery LLM: gemini (live) or fixture (recorded Manvi mock-wire transcript; evidence labelled not live)")
+	fixture := f.String("fixture", "", "path to recorded discovery tool transcript for --provider fixture (default: bundled testdata)")
 	tracePath := f.String("trace", "", "offline trace path")
 	resumeSession := f.String("resume-session", "", "private saved Gemini journal for continuation")
 	assisted := f.Bool("assisted", false, "enable one explicitly requested safe model recovery")
+	unattended := f.Bool("unattended", false, "refuse draft/revoked catalog capabilities")
 	bundle := f.String("bundle", "", "evidence bundle path")
 	runID := f.String("run-id", "", "independently expected run ID")
 	sessionID := f.String("session-id", "", "independently expected session ID")
@@ -145,6 +149,12 @@ func run() error {
 			SHA256     string              `json:"sha256"`
 			Capability workflow.Capability `json:"capability"`
 		}{p.Digest(), p.Capability()})
+	case "drift":
+		report, err := a.Drift(ctx, *capability, *tenant, uint32(*pid))
+		if err != nil {
+			return err
+		}
+		return output(report)
 	case "catalog":
 		entries, err := a.Catalog().List()
 		if err != nil {
@@ -188,9 +198,14 @@ func run() error {
 		}
 		var id string
 		if command == "replay" {
-			id, err = a.Start(app.StartRequest{CapabilityPath: *capability, ContractPath: *contract, Tenant: *tenant, Inputs: inputs, PID: uint32(*pid), Fault: *fault, Assisted: *assisted})
+			if *unattended {
+				if err = a.RequireApprovedForUnattended(*capability); err != nil {
+					return err
+				}
+			}
+			id, err = a.Start(app.StartRequest{CapabilityPath: *capability, ContractPath: *contract, Tenant: *tenant, Inputs: inputs, PID: uint32(*pid), Fault: *fault, Variant: *variant, Assisted: *assisted})
 		} else {
-			id, err = a.Discover(app.DiscoveryRequest{Tenant: *tenant, Task: *task, Inputs: inputs, PID: uint32(*pid), ResumeSession: *resumeSession})
+			id, err = a.Discover(app.DiscoveryRequest{Tenant: *tenant, Task: *task, Inputs: inputs, PID: uint32(*pid), ResumeSession: *resumeSession, Provider: *provider, Fixture: *fixture})
 		}
 		if err != nil {
 			return err
@@ -221,9 +236,28 @@ func run() error {
 				if err != nil {
 					return err
 				}
-				kind := strings.TrimSpace(strings.ToLower(text))
+				line := strings.TrimSpace(text)
+				kind := strings.ToLower(line)
 				if kind == "assist" {
 					if err = a.Assist(id); err != nil {
+						fmt.Fprintln(os.Stderr, err)
+					}
+					continue
+				}
+				if kind == "takeover" {
+					if err = a.Takeover(ctx, id); err != nil {
+						fmt.Fprintln(os.Stderr, err)
+					}
+					continue
+				}
+				if kind == "handback" {
+					if err = a.Handback(ctx, id); err != nil {
+						fmt.Fprintln(os.Stderr, err)
+					}
+					continue
+				}
+				if strings.HasPrefix(kind, "act ") {
+					if err = a.ActHuman(ctx, id, strings.TrimSpace(line[3:])); err != nil {
 						fmt.Fprintln(os.Stderr, err)
 					}
 					continue
@@ -253,7 +287,7 @@ func run() error {
 				key := string(v.State.Phase) + v.PendingActionID + v.State.Observation.ID
 				if (v.State.Phase == workflow.AwaitingApproval || v.State.Phase == workflow.Paused) && key != prompted {
 					prompted = key
-					fmt.Fprintf(os.Stderr, "%s: action=%s observation=%s epoch=%d reason=%s\nType approve, deny, cancel, pause, refresh, focus, or resume.\n", v.State.Phase, v.PendingActionID, v.State.Observation.ID, v.State.Epoch, v.State.Reason)
+					fmt.Fprintf(os.Stderr, "%s: action=%s observation=%s epoch=%d controller=%s reason=%s\nType approve, deny, cancel, pause, takeover, act <kind name>, handback, refresh, focus, or resume.\n", v.State.Phase, v.PendingActionID, v.State.Observation.ID, v.State.Epoch, v.Controller, v.State.Reason)
 				}
 			}
 		}

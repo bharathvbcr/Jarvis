@@ -6,16 +6,38 @@
   "description": "Look up a member and return an independently verified USD balance.",
   "parameters": [{"name": "member_id", "type": "string", "sensitive": true}],
   "targets": {
-    "member": {"role": "text_field", "name": "Member ID"},
-    "search": {"role": "button", "name": "Search"},
-    "status": {"role": "text_field", "name": "Status"},
-    "balance": {"role": "text_field", "name": "Balance"}
+    "member": {"strategies":[{"role":"text_field","name":"Member ID"}],"rationale":"Labeled member identifier field on the lookup form","stability":"semantic"},
+    "search": {"strategies":[{"role":"button","name":"Search"}],"rationale":"Primary search action for member lookup","stability":"semantic"},
+    "dismiss": {"strategies":[{"role":"button","name":"Dismiss"}],"rationale":"Session notice dismiss control for declared overlay recovery","stability":"semantic"},
+    "status": {"strategies":[{"role":"text_field","name":"Status"}],"rationale":"Status text reports member found, not found, or permission denial","stability":"semantic"},
+    "balance": {"strategies":[{"role":"text_field","name":"Balance"}],"rationale":"Balance field holds the verified USD amount","stability":"semantic"}
   },
+  "outputs": [
+    {"name":"balance","type":"money","currency":"USD","description":"Verified member balance in USD minor units"}
+  ],
+  "outcomes": [
+    {"id":"success","kind":"success","description":"Member found and balance extracted","outputs":["balance"]},
+    {"id":"not_found","kind":"business","description":"Member ID does not exist","outputs":[]},
+    {"id":"permission_denied","kind":"business","description":"Lookup refused by bank permission policy","outputs":[]}
+  ],
+  "recoveries": [
+    {
+      "id": "dismiss_overlay",
+      "when": {"target": "search", "predicate": {"op": "exists"}},
+      "action": {"kind": "press", "target": "dismiss"},
+      "max": 1
+    }
+  ],
   "steps": [
-    {"id":"member", "kind":"set_value", "target":"member", "effect":"read", "input":{"source":"input","key":"member_id"}},
-    {"id":"search", "kind":"press", "target":"search", "effect":"read"},
-    {"id":"found", "kind":"wait", "target":"status", "effect":"read", "output_type":"string", "predicate":{"op":"equals", "expected":{"source":"literal", "literal":{"type":"string","text":"Member found"}}}},
-    {"id":"balance", "kind":"extract", "target":"balance", "effect":"read", "output":"balance", "output_type":"money", "currency":"USD"}
+    {"id":"member","kind":"set_value","target":"member","effect":"read","input":{"source":"input","key":"member_id"}},
+    {"id":"search","kind":"press","target":"search","effect":"read"},
+    {"id":"settle","kind":"wait","target":"status","effect":"read","predicate":{"op":"not_equals","expected":{"source":"literal","literal":{"type":"string","text":"Ready"}}}},
+    {"id":"route","kind":"branch","target":"status","effect":"read","predicate":{"op":"equals","expected":{"source":"literal","literal":{"type":"string","text":"Member found"}}},"next":"balance","otherwise":"route_denied"},
+    {"id":"route_denied","kind":"branch","target":"status","effect":"read","predicate":{"op":"equals","expected":{"source":"literal","literal":{"type":"string","text":"Permission denied"}}},"next":"denied","otherwise":"not_found"},
+    {"id":"balance","kind":"extract","target":"balance","effect":"read","output":"balance","output_type":"money","currency":"USD","next":"ok"},
+    {"id":"ok","kind":"conclude","outcome":"success"},
+    {"id":"not_found","kind":"conclude","outcome":"not_found"},
+    {"id":"denied","kind":"conclude","outcome":"permission_denied"}
   ],
   "limits":{"max_actions":40,"active_seconds":300,"observation_attempts":3,"intervention_seconds":600}
 }

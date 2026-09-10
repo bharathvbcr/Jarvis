@@ -29,7 +29,12 @@ func reconciliationFixture(t *testing.T) (computer.Session, computer.PrivacyPoli
 	t.Helper()
 	window := computer.Window{PID: 1, ID: 2, Bounds: computer.Bounds{Width: 100, Height: 80}}
 	s := computer.Session{ID: "desktop", RunID: "run", Epoch: 1, Window: window}
-	p := bankPrivacy(map[string]workflow.Value{"member_id": {Type: "string", Text: "synthetic-secret"}})
+	p := bankPrivacy(PolicyDocument{
+		SensitiveTargets: []PolicySelector{
+			{Role: "text_field", Name: "Member ID"},
+			{Role: "text_field", Name: "Subaccount name"},
+		},
+	}, map[string]workflow.Value{"member_id": {Type: "string", Text: "synthetic-secret"}})
 	p.PID, p.WindowID = window.PID, window.ID
 	state := workflow.State{RunID: s.RunID, SessionID: s.ID, Epoch: s.Epoch, Phase: workflow.Unknown, Observation: workflow.Observation{ID: "before"}}
 	var b bytes.Buffer
@@ -84,7 +89,7 @@ func TestUnknownReobservationKeepsDispositionAndMasksBeforeEvidence(t *testing.T
 	if err = r.RecordReconciliation(report); err != nil {
 		t.Fatal(err)
 	}
-	if err = r.Finish(computer.RunResult{State: state}); err != nil {
+	if err = r.Finish(computer.RunResult{State: state}, nil); err != nil {
 		t.Fatal(err)
 	}
 	var bundle devcouncil.EvidenceBundle

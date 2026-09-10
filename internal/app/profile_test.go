@@ -15,6 +15,9 @@ func TestTenantBindingsCannotWidenBusinessPolicy(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(root, "profiles"), 0700); err != nil {
 		t.Fatal(err)
 	}
+	if err := copyPolicyFixture(root); err != nil {
+		t.Fatal(err)
+	}
 	raw, err := os.ReadFile("../../profiles/north.json")
 	if err != nil {
 		t.Fatal(err)
@@ -36,10 +39,11 @@ func TestTenantBindingsCannotWidenBusinessPolicy(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer a.Close()
-	if _, _, err = a.profile("north"); err == nil {
+	if _, err = a.profile("north"); err == nil {
 		t.Fatal("binding widened account-changing authorization")
 	}
 }
+
 func TestBothProfilesBindCanonicalCapability(t *testing.T) {
 	a, err := New(context.Background(), Config{Root: "../.."})
 	if err != nil {
@@ -51,12 +55,23 @@ func TestBothProfilesBindCanonicalCapability(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, tenant := range []string{"north", "south"} {
-		p, _, err := a.profile(tenant)
+		binding, err := a.profile(tenant)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err = validateBankProgram(program, p); err != nil {
+		if err = validateBankProgram(program, binding.Profile, binding.Policy); err != nil {
 			t.Fatal(err)
 		}
 	}
+}
+
+func copyPolicyFixture(root string) error {
+	if err := os.MkdirAll(filepath.Join(root, "policies"), 0700); err != nil {
+		return err
+	}
+	raw, err := os.ReadFile("../../policies/jarvis-bank.json")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(root, "policies", "jarvis-bank.json"), raw, 0600)
 }

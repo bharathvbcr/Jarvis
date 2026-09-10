@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "manvi": {
+    "url": "https://github.com/bharathvbcr/Manvi.git",
+    "revision": "adeb253a76f20c279b820f63cc340743bec25ef2"
+  },
+  "devcouncil": {
+    "url": "https://github.com/bharathvbcr/DevCouncil.git",
+    "revision": "5818ac55e51ef4209d305758fa9034ceb99faee5"
+  }
+}

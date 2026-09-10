@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "id": "bank.create-subaccount.missing-control",
+  "criteria": [
+    {
+      "id": "outcome-success",
+      "fact": "outcome.id",
+      "required": true,
+      "predicate": {"op": "equals", "value": "success"}
+    },
+    {
+      "id": "acknowledgment",
+      "fact": "ui.Status",
+      "required": true,
+      "predicate": {"op": "contains", "value": "created"}
+    }
+  ]
+}

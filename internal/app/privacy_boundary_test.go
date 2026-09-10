@@ -145,7 +145,39 @@ func diagnosticApp(t *testing.T, title string) (*App, StartRequest) {
 	if err := os.Mkdir(filepath.Join(root, "profiles"), 0700); err != nil {
 		t.Fatal(err)
 	}
-	profile := Profile{SchemaVersion: 1, Tenant: "north", Application: "jarvis-bank", Platforms: []string{runtime.GOOS}, WindowTitle: title, ReadOnlyTargets: bankReadTargets()}
+	if err := os.Mkdir(filepath.Join(root, "policies"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	policyRaw, err := os.ReadFile("../../policies/jarvis-bank.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var policy PolicyDocument
+	if err = json.Unmarshal(policyRaw, &policy); err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, w := range policy.Windows {
+		if w == title {
+			found = true
+			break
+		}
+	}
+	if !found {
+		policy.Windows = append(policy.Windows, title)
+	}
+	policyRaw, err = json.Marshal(policy)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = os.WriteFile(filepath.Join(root, "policies", "jarvis-bank.json"), policyRaw, 0600); err != nil {
+		t.Fatal(err)
+	}
+	targets := make([]computer.Selector, 0, len(policy.ReadOnlyTargets))
+	for _, s := range policy.ReadOnlyTargets {
+		targets = append(targets, s.toComputer())
+	}
+	profile := Profile{SchemaVersion: 1, Tenant: "north", Application: "jarvis-bank", Policy: "jarvis-bank", Platforms: []string{runtime.GOOS}, WindowTitle: title, ReadOnlyTargets: targets}
 	raw, err := json.Marshal(profile)
 	if err != nil {
 		t.Fatal(err)

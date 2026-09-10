@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "id": "bank.balance.m9999",
+  "criteria": [
+    {
+      "id": "outcome-id",
+      "fact": "outcome.id",
+      "required": true,
+      "predicate": {"op": "equals", "value": "not_found"}
+    },
+    {
+      "id": "outcome-kind",
+      "fact": "outcome.kind",
+      "required": true,
+      "predicate": {"op": "equals", "value": "business"}
+    },
+    {
+      "id": "status",
+      "fact": "ui.Status",
+      "required": true,
+      "predicate": {"op": "equals", "value": "Member not found"}
+    }
+  ]
+}
