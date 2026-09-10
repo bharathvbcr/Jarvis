@@ -6,7 +6,7 @@ Recorded 2026-09-10 for TASK-010 / `p7-docs-publish`.
 
 | Repo | SHA | Notes |
 |---|---|---|
-| https://github.com/bharathvbcr/Jarvis | `e816e5a1e03f1d89c51506e4862ec8abbabcd0ea` (`main`) | Public; Assignment PDF, `.local/`, `evidence/private/` excluded by `.gitignore` |
+| https://github.com/bharathvbcr/Jarvis | `59f69ff9fd75ef4b5c5dc5f63811bcc06801b961` (`main`) | Public; Assignment PDF, `.local/`, `evidence/private/` excluded by `.gitignore` |
 | https://github.com/bharathvbcr/Manvi | `adeb253a76f20c279b820f63cc340743bec25ef2` | Schema/runner/catalog/evidence Go changes pushed; unrelated local dirty files remain uncommitted |
 | https://github.com/bharathvbcr/DevCouncil | `5818ac55e51ef4209d305758fa9034ceb99faee5` | `dc-evidence` / `dc-verify` / protocol only; local `rust-port` dirty tree left alone |
 
