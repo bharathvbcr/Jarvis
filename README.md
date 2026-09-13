@@ -4,7 +4,13 @@ Jarvis discovers desktop capabilities with Gemini, freezes them into typed artif
 
 The pinned build passes its automated suites. Its fresh macOS campaign completed
 **23/40 read-only replays**, with **17 safe suspensions after input-counter changes**;
-all 40 independent saved-state checks passed. This is not a clean stability pass.
+all 40 independent saved-state checks passed. Those suspensions were attributed to
+bare pointer motion by a [controlled experiment](evidence/guard-partition/) and the
+admission guard was narrowed to the input that can actually commit a change. The
+campaign that followed completed **35/40**, again with all 40 saved-state checks
+unchanged, and its four remaining refusals are attributed by input category — all
+genuine human keyboard and pointer-button activity during the run, none of it
+pointer motion. Neither is a clean stability pass.
 Earlier macOS and Linux X11 campaigns each passed 20/20 per tenant on their recorded
 executables. First-attempt successes were zero on macOS and one on Linux; retries
 are reported separately. The Linux refresh is blocked by a UTM startup crash.

@@ -6,6 +6,17 @@ The pinned build is recorded in [build-verification.json](build-verification.jso
 North passed 14/20 and South 9/20. This campaign is not a clean stability pass.
 [macos-pinned-denial.json](macos-pinned-denial.json) reached and denied approval on
 South; North suspended before approval. Both saved-state checks passed.
+Those 17 suspensions were attributed to bare pointer motion and the guard was
+narrowed. [guard-partition/](guard-partition/) records the controlled experiment:
+with one variable changed on one host under identical injected pointer motion, the
+strict guard cancelled the run and escalated to a human operator while the
+partitioned guard completed it and recorded the motion.
+[macos-guard-partition-40.json](macos-guard-partition-40.json) is the campaign that
+followed — 35/40 passed, all 40 independent saved-state checks unchanged, zero model
+requests. It is **not** a clean 40/40 pass. Its four `external_interaction` refusals
+are now attributed by category (two `pointer_button`, one `keyboard`, one
+`keyboard, pointer_button`) and are all genuine human input during the run; none was
+pointer motion. A fifth run stopped on an unsatisfied wait predicate.
 The exact current-binary [success bundle](examples/macos-pinned-balance/) and
 [input-counter refusal bundle](examples/macos-input-counter-refusal/) were copied
 without changing artifact bytes and rechecked with the independent verifier.

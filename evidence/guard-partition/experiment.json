@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "experiment": "macOS external-interaction guard: strict equality versus partition by what the input can commit",
+  "question": "Did the 17 external_interaction suspensions in macos-pinned-40.json come from bare pointer motion, and does the partition remove them without admitting state-changing input?",
+  "method": "One variable changed in one source tree: the observe path used the strict comparison in the control arm and the partitioned classification in the treatment arm. Both arms ran examples/balance.json against tenant north on the same host while synthetic pointer motion was posted continuously to the HID event tap.",
+  "motion_source": {
+    "posted_via": "CGEvent::post(HIDEventTap) with CGEventSourceStateID::CombinedSessionState",
+    "counter_index_changed": 4,
+    "counter_name": "MouseMoved",
+    "observed_delta_example": "656774 -> 658710 over 45 s; no other counter moved",
+    "caveat": "Injected motion, not hardware motion. It is used because it demonstrably moves the same HIDSystemState counter the guard reads. It does not qualify hardware-versus-injected classification, which remains untested."
+  },
+  "control_strict_guard": {
+    "run_id": "031edbcfe5c9d209b666aa5f5001aefa",
+    "phase": "cancelled",
+    "refusal": "external_interaction: Hardware input changed since admission; automation requires reconciliation",
+    "escalation": [
+      {
+        "id": "031edbcfe5c9d209b666aa5f5001aefa:intervention:1",
+        "run": "031edbcfe5c9d209b666aa5f5001aefa",
+        "capability": "bank.balance",
+        "step": "member",
+        "reason_code": "observation_budget",
+        "controller": "automation",
+        "status": "abandoned",
+        "reason": "external interaction requires human reconciliation: external_interaction: Hardware input changed since admission; automation requires reconciliation",
+        "sequence": 1
+      }
+    ],
+    "terminal_error": "intervention deadline exceeded",
+    "outputs": {},
+    "observations_recording_pointer_motion": 0
+  },
+  "treatment_partitioned_guard": {
+    "run_id": "a3efc1f61cfd518ad30ed1914fbbeafc",
+    "phase": "completed",
+    "outputs": {
+      "balance": {
+        "type": "money",
+        "integer": 125000,
+        "currency": "USD"
+      }
+    },
+    "observations_recording_pointer_motion": 7
+  },
+  "result": "Under identical injected pointer motion the strict guard refused, raised an intervention request to a human operator carrying capability, step and reason, and cancelled when no operator answered. The partitioned guard completed the same flow, produced the declared output and recorded the motion on seven observations. The control arm's refusal text matches the 17 suspended runs in macos-pinned-40.json.",
+  "binaries": {
+    "broker": {
+      "path": "build/manvi-desktop",
+      "sha256": "25bb0ae02597cfbe2e2140c4ecfe22a319dbb5a9bad58bc8a81bb89ce09f1164"
+    },
+    "host": {
+      "path": "build/jarvis",
+      "sha256": "8017b104d0908a68cf8cf1a8baf7a6ec6a4d8b8bab5c1bcece6164f5f024dbd4"
+    },
+    "bank": {
+      "path": "build/jarvis-bank",
+      "sha256": "a9a1908e4c6d65ceb43b6acb62ca5732ade383d8ba40cdb4381510fb2c049d9a"
+    }
+  },
+  "manvi_revision": "b60485949fa224c38bab3e1cb1d53cd0a8dd02fa",
+  "jarvis_revision": "aa3994162515048210f2ad9d2330971addedf6fc",
+  "note": "The treatment binaries predate the refusal-category diagnostic added afterwards; macos-guard-partition-40.json was produced with the diagnostic present."
+}

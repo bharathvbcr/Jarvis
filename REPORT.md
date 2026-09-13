@@ -10,6 +10,15 @@ An application contains capabilities with immutable revisions. Each revision dec
 
 ## Determinism & error handling
 
+Recorded state has to survive serialization exactly, because replay compares a decoded
+trace against a recomputed canonical admission. `workflow.State` briefly did not:
+`NewState` allocated an `omitempty` map eagerly, so encoding dropped it and decoding
+returned nil, and offline replay rejected its own valid journals. The fix is at the
+canonical owner, with a reflective invariant test that fails any `omitempty` map or
+slice allocated empty. `check-pins` now also refuses a `go.mod` that names a different
+Manvi revision than `upstream.lock.json`, because the Go host and the native Rust
+workspace had drifted onto different revisions of the same dependency.
+
 The pure reducer consumes recorded events and emits commands. Live replay executes its commands without model decisions; offline replay reconstructs state without importing a desktop client or provider. Input dispatch, subsequent observation and acceptance verdict remain separate facts. Cancellation fences future input and late responses. Unknown delivery permits a bounded same-session observation, remains incomplete, and stops automatic recovery. The bank survives action cancellation until reconciliation and bounded process cleanup finish. Bounded observation retries and predicate waits handle asynchronous UI updates without replaying a delivered action. Discovery and replay share durable action admissions and masked frame storage.
 
 ## Heterogeneity & multi-tenant
@@ -28,7 +37,16 @@ Privacy operates before projections, observers, persisted evidence and provider 
 
 The pinned build, consolidated tests and offline source-bundle restoration passed.
 Its fresh macOS campaign passed 23/40, with 17 input-counter suspensions and all 40
-saved-state checks unchanged. It does not pass clean stability qualification.
+saved-state checks unchanged. A controlled experiment attributed those suspensions to
+bare pointer motion: the admission guard demanded exact equality across fifteen
+`HIDSystemState` counters, `MouseMoved` among them, so any person touching the mouse
+aborted a valid run. The guard now partitions counters by what the input behind them
+can commit — buttons, keys, modifiers, scroll and drags still refuse; bare motion is
+tolerated on element-addressed accessibility work, recorded as `pointer_motion`, and
+still revalidated before dispatch — while coordinate-addressed input keeps the strict
+contract. The campaign that followed passed 35/40 with all 40 saved-state checks
+unchanged and every refusal attributed by input category. It does not pass clean
+stability qualification.
 The Linux refresh is blocked before guest startup by a UTM crash. Earlier 40/40
 campaigns remain valid for their recorded binaries. The stable workbench still
 reports Accessibility and Screen Recording denied under its own application identity.
