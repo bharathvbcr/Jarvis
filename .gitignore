@@ -62,6 +62,9 @@ dump/
 *_log.txt
 *_output.txt
 
+# Generated coverage reports (cargo-llvm-cov; embed absolute local paths)
+lcov.info
+
 # Environment, dependency, and cache directories
 __pycache__/
 *.py[cod]
