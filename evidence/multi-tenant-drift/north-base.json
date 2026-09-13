@@ -1,0 +1,45 @@
+{
+  "tenant": "north",
+  "capability_id": "bank.balance",
+  "revision": "1",
+  "digest": "12396b8c6cd5bc9881fd2dd8720d131bd6948ed2572a86e8848600438d6cdeaa",
+  "window_title": "Jarvis Bank \u2014 North Cooperative",
+  "targets": [
+    {
+      "target": "balance",
+      "strategy_index": 0,
+      "matches": 1,
+      "ambiguous": false,
+      "found": true
+    },
+    {
+      "target": "dismiss",
+      "strategy_index": -1,
+      "matches": 0,
+      "ambiguous": false,
+      "found": false,
+      "reason": "missing"
+    },
+    {
+      "target": "member",
+      "strategy_index": 0,
+      "matches": 1,
+      "ambiguous": false,
+      "found": true
+    },
+    {
+      "target": "search",
+      "strategy_index": 0,
+      "matches": 1,
+      "ambiguous": false,
+      "found": true
+    },
+    {
+      "target": "status",
+      "strategy_index": 0,
+      "matches": 1,
+      "ambiguous": false,
+      "found": true
+    }
+  ]
+}

@@ -124,11 +124,31 @@ func (a *App) Drift(ctx context.Context, capabilityPath, tenant string, pid uint
 	if session.Window.Title != binding.Profile.WindowTitle {
 		return out, fmt.Errorf("attached window %q does not match profile", session.Window.Title)
 	}
-	obsCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	obs, err := client.Observe(obsCtx, session)
-	cancel()
-	if err != nil {
-		return out, err
+	// A freshly launched window is usually still settling, and replay handles
+	// that with bounded re-observation. Observing once here made the diagnostic
+	// fail where execution succeeds: every campaign run needed exactly one
+	// retry, so drift reported observation_inconsistent almost every time. Reuse
+	// the engine's own definition of a transient capture failure and its budget.
+	attempts := p.Capability().Limits.ObservationAttempts
+	if attempts < 1 {
+		attempts = 1
+	}
+	var obs computer.Observation
+	for attempt := 1; ; attempt++ {
+		obsCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		obs, err = client.Observe(obsCtx, session)
+		cancel()
+		if err == nil {
+			break
+		}
+		if _, transient := computer.TransientObservation(err); !transient || attempt >= attempts {
+			return out, err
+		}
+		select {
+		case <-ctx.Done():
+			return out, ctx.Err()
+		case <-time.After(250 * time.Millisecond):
+		}
 	}
 	return BuildDriftReport(p, tenant, binding.OverlayPath, binding.Profile.WindowTitle, obs), nil
 }

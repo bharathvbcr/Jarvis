@@ -1,0 +1,46 @@
+{
+  "tenant": "south",
+  "capability_id": "bank.balance",
+  "revision": "1",
+  "digest": "f43d6fe841e1eda5452263336883dadb3403cba8c444dd84590babe661367742",
+  "overlay": "overlays/south-balance.json",
+  "window_title": "Jarvis Bank — South Mutual",
+  "targets": [
+    {
+      "target": "balance",
+      "strategy_index": 0,
+      "matches": 1,
+      "ambiguous": false,
+      "found": true
+    },
+    {
+      "target": "dismiss",
+      "strategy_index": -1,
+      "matches": 0,
+      "ambiguous": false,
+      "found": false,
+      "reason": "missing"
+    },
+    {
+      "target": "member",
+      "strategy_index": 0,
+      "matches": 1,
+      "ambiguous": false,
+      "found": true
+    },
+    {
+      "target": "search",
+      "strategy_index": 0,
+      "matches": 1,
+      "ambiguous": false,
+      "found": true
+    },
+    {
+      "target": "status",
+      "strategy_index": 0,
+      "matches": 1,
+      "ambiguous": false,
+      "found": true
+    }
+  ]
+}
