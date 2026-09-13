@@ -1,0 +1,177 @@
+{
+  "schema_version": 3,
+  "platform": "darwin",
+  "architecture": "arm64",
+  "desktop_session": "",
+  "started_at": "2026-09-13T03:39:30Z",
+  "mode": "fresh_process",
+  "scenario": "denial",
+  "requested_per_tenant": 2,
+  "tenants": [
+    "north",
+    "south"
+  ],
+  "results": [
+    {
+      "run_id": "b52fd7c2208fb5e9b68dbccfd6cf6d74",
+      "tenant": "north",
+      "index": 1,
+      "scenario": "denial",
+      "attempted": true,
+      "phase": "cancelled",
+      "verdict": "incomplete",
+      "outcome": "blocked",
+      "latency_millis": 12103,
+      "observation_retries": 1,
+      "input_retries": 0,
+      "error": "human denied action",
+      "evidence_dir": "/Users/bharath/Code/devtools/Jarvis/.claude/worktrees/computer-use-automation-assignment-41fdeb/evidence/private/b52fd7c2208fb5e9b68dbccfd6cf6d74",
+      "oracle": "seeded balances, members and subaccounts unchanged",
+      "oracle_verified": true,
+      "ui_acknowledgment_observed": false,
+      "approval_denied": true,
+      "approved_action_ids": [],
+      "fault_reached": true,
+      "expected_behavior_verified": true
+    },
+    {
+      "run_id": "1decc785911dc0f4f62317008fbc627e",
+      "tenant": "north",
+      "index": 2,
+      "scenario": "denial",
+      "attempted": true,
+      "phase": "cancelled",
+      "verdict": "incomplete",
+      "outcome": "blocked",
+      "latency_millis": 12104,
+      "observation_retries": 1,
+      "input_retries": 0,
+      "error": "human denied action",
+      "evidence_dir": "/Users/bharath/Code/devtools/Jarvis/.claude/worktrees/computer-use-automation-assignment-41fdeb/evidence/private/1decc785911dc0f4f62317008fbc627e",
+      "oracle": "seeded balances, members and subaccounts unchanged",
+      "oracle_verified": true,
+      "ui_acknowledgment_observed": false,
+      "approval_denied": true,
+      "approved_action_ids": [],
+      "fault_reached": true,
+      "expected_behavior_verified": true
+    },
+    {
+      "run_id": "4a0e3259736887d7a8fddb26c8fd7a38",
+      "tenant": "south",
+      "index": 1,
+      "scenario": "denial",
+      "attempted": true,
+      "phase": "cancelled",
+      "verdict": "incomplete",
+      "outcome": "blocked",
+      "latency_millis": 10503,
+      "observation_retries": 1,
+      "input_retries": 0,
+      "error": "human denied action",
+      "evidence_dir": "/Users/bharath/Code/devtools/Jarvis/.claude/worktrees/computer-use-automation-assignment-41fdeb/evidence/private/4a0e3259736887d7a8fddb26c8fd7a38",
+      "oracle": "seeded balances, members and subaccounts unchanged",
+      "oracle_verified": true,
+      "ui_acknowledgment_observed": false,
+      "approval_denied": true,
+      "approved_action_ids": [],
+      "fault_reached": true,
+      "expected_behavior_verified": true
+    },
+    {
+      "run_id": "2b400ef7b257a1a690583f2e62f1ccf1",
+      "tenant": "south",
+      "index": 2,
+      "scenario": "denial",
+      "attempted": true,
+      "phase": "cancelled",
+      "verdict": "incomplete",
+      "outcome": "blocked",
+      "latency_millis": 17003,
+      "observation_retries": 1,
+      "input_retries": 0,
+      "error": "human denied action",
+      "evidence_dir": "/Users/bharath/Code/devtools/Jarvis/.claude/worktrees/computer-use-automation-assignment-41fdeb/evidence/private/2b400ef7b257a1a690583f2e62f1ccf1",
+      "oracle": "seeded balances, members and subaccounts unchanged",
+      "oracle_verified": true,
+      "ui_acknowledgment_observed": false,
+      "approval_denied": true,
+      "approved_action_ids": [],
+      "fault_reached": true,
+      "expected_behavior_verified": true
+    }
+  ],
+  "by_tenant": {
+    "north": {
+      "requested": 2,
+      "attempted": 2,
+      "passed": 0,
+      "failed": 0,
+      "blocked": 2,
+      "fault_reached": 2
+    },
+    "south": {
+      "requested": 2,
+      "attempted": 2,
+      "passed": 0,
+      "failed": 0,
+      "blocked": 2,
+      "fault_reached": 2
+    }
+  },
+  "matrix_complete": true,
+  "qualified": false,
+  "passed": 0,
+  "failed": 0,
+  "blocked": 4,
+  "first_attempt_successes": 0,
+  "model_requests": 0,
+  "cost_nano_usd": 0,
+  "one_sided_95_lower_bound": 0,
+  "independence_assumed": false,
+  "interactive": false,
+  "expected_behavior_passes": 4,
+  "campaign_passed": true,
+  "provenance": {
+    "files": {
+      "bank": {
+        "path": "/Users/bharath/Code/devtools/Jarvis/.claude/worktrees/computer-use-automation-assignment-41fdeb/build/jarvis-bank",
+        "resolved_path": "/Users/bharath/Code/devtools/Jarvis/.claude/worktrees/computer-use-automation-assignment-41fdeb/build/jarvis-bank",
+        "sha256": "a9a1908e4c6d65ceb43b6acb62ca5732ade383d8ba40cdb4381510fb2c049d9a",
+        "size": 39120800
+      },
+      "broker": {
+        "path": "/Users/bharath/Code/devtools/Jarvis/.claude/worktrees/computer-use-automation-assignment-41fdeb/build/manvi-desktop",
+        "resolved_path": "/Users/bharath/Code/devtools/Jarvis/.claude/worktrees/computer-use-automation-assignment-41fdeb/build/manvi-desktop",
+        "sha256": "25bb0ae02597cfbe2e2140c4ecfe22a319dbb5a9bad58bc8a81bb89ce09f1164",
+        "size": 7046256
+      },
+      "capability": {
+        "path": "/Users/bharath/Code/devtools/Jarvis/.claude/worktrees/computer-use-automation-assignment-41fdeb/examples/create-subaccount.json",
+        "resolved_path": "/Users/bharath/Code/devtools/Jarvis/.claude/worktrees/computer-use-automation-assignment-41fdeb/examples/create-subaccount.json",
+        "sha256": "1a1ae2205500adbc718d7c3485de18a76dbda2c8ff5b83efd727438a9409ffa6",
+        "size": 2654
+      },
+      "contract": {
+        "path": "/Users/bharath/Code/devtools/Jarvis/.claude/worktrees/computer-use-automation-assignment-41fdeb/scenarios/subaccount.contract.json",
+        "resolved_path": "/Users/bharath/Code/devtools/Jarvis/.claude/worktrees/computer-use-automation-assignment-41fdeb/scenarios/subaccount.contract.json",
+        "sha256": "0fd7b3d12d29e94ef36e5dfacc67427b6c68e543208823f2f01dd473c34132b1",
+        "size": 171
+      },
+      "qualifier": {
+        "path": "/var/folders/wl/qc_0nnp91cd5kfy179krkjxr0000gn/T/go-build4050931705/b001/exe/qualify",
+        "resolved_path": "/private/var/folders/wl/qc_0nnp91cd5kfy179krkjxr0000gn/T/go-build4050931705/b001/exe/qualify",
+        "sha256": "ea12bd2fd1acc33155bcba71be070766173345ca2ec9b8e46e2b4f44eef22ed4",
+        "size": 5404146
+      },
+      "verifier": {
+        "path": "/Users/bharath/Code/devtools/Jarvis/.claude/worktrees/computer-use-automation-assignment-41fdeb/build/dcverify",
+        "resolved_path": "/Users/bharath/Code/devtools/Jarvis/.claude/worktrees/computer-use-automation-assignment-41fdeb/build/dcverify",
+        "sha256": "abced980ef58d0bb7a89c0fd0afc11ac58cbd0a768cd3032f6e8274bffeafbf2",
+        "size": 3816904
+      }
+    },
+    "source_revision": "d827889e5775535f14ea7d2afa397371bc32f601",
+    "source_status": "dirty"
+  }
+}

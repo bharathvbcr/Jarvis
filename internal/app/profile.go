@@ -12,7 +12,12 @@ import (
 
 // Profiles select a tenant/platform surface. Their policy can only narrow the
 // reviewed application policy loaded from policies/<application>.json.
-// Overlay, when set, is a path relative to the product root applied at compile.
+//
+// A tenant runs many capabilities but an overlay specializes exactly one, which
+// it names by capability_id and revision. Profiles therefore carry a set of
+// overlays and each compile applies only the one naming that capability; a
+// capability no overlay names compiles from the reviewed base. Overlay is the
+// single-entry shorthand and is equivalent to a one-element Overlays.
 type Profile struct {
 	SchemaVersion   int                 `json:"schema_version"`
 	Tenant          string              `json:"tenant"`
@@ -22,16 +27,42 @@ type Profile struct {
 	WindowTitle     string              `json:"window_title"`
 	ReadOnlyTargets []computer.Selector `json:"read_only_targets"`
 	Overlay         string              `json:"overlay,omitempty"`
+	Overlays        []string            `json:"overlays,omitempty"`
+}
+
+// tenantOverlay is one reviewed specialization and the exact bytes it was read
+// from, so evidence records what was applied rather than a re-serialization.
+type tenantOverlay struct {
+	Path    string
+	Bytes   []byte
+	Overlay workflow.Overlay
 }
 
 type tenantBinding struct {
-	Profile        Profile
-	Policy         PolicyDocument
-	PolicyBytes    []byte
-	PolicySHA256   string
-	BindingBytes   []byte
-	OverlayBytes   []byte
-	Overlay        *workflow.Overlay
+	Profile      Profile
+	Policy       PolicyDocument
+	PolicyBytes  []byte
+	PolicySHA256 string
+	BindingBytes []byte
+	// Overlays holds every reviewed specialization this tenant declares.
+	Overlays []tenantOverlay
+	// The remaining fields describe the overlay selected for one compile and
+	// stay empty until compileForTenant chooses one.
+	OverlayPath  string
+	OverlayBytes []byte
+	Overlay      *workflow.Overlay
+}
+
+// overlayFor returns the reviewed specialization naming this exact capability
+// revision. Selection is by identity, never by position, so adding an overlay
+// for one capability cannot change how another compiles.
+func (b tenantBinding) overlayFor(id, revision string) (tenantOverlay, bool) {
+	for _, o := range b.Overlays {
+		if o.Overlay.CapabilityID == id && o.Overlay.Revision == revision {
+			return o, true
+		}
+	}
+	return tenantOverlay{}, false
 }
 
 func (a *App) profile(tenant string) (tenantBinding, error) {
@@ -81,8 +112,12 @@ func (a *App) profile(tenant string) (tenantBinding, error) {
 		}
 	}
 	out = tenantBinding{Profile: p, Policy: policy, PolicyBytes: policyBytes, PolicySHA256: policySHA, BindingBytes: raw}
+	paths := p.Overlays
 	if p.Overlay != "" {
-		overlayRaw, err := readBounded(a.resolve(p.Overlay), workflow.MaxArtifactBytes)
+		paths = append([]string{p.Overlay}, paths...)
+	}
+	for _, path := range paths {
+		overlayRaw, err := readBounded(a.resolve(path), workflow.MaxArtifactBytes)
 		if err != nil {
 			return out, err
 		}
@@ -96,8 +131,12 @@ func (a *App) profile(tenant string) (tenantBinding, error) {
 		if err = assertOverlayWithinPolicy(o, policy); err != nil {
 			return out, err
 		}
-		out.OverlayBytes = overlayRaw
-		out.Overlay = &o
+		// Two overlays naming one capability revision would make the applied
+		// specialization depend on ordering. Refuse rather than pick.
+		if _, duplicate := out.overlayFor(o.CapabilityID, o.Revision); duplicate {
+			return out, fmt.Errorf("tenant declares two overlays for %s revision %s", o.CapabilityID, o.Revision)
+		}
+		out.Overlays = append(out.Overlays, tenantOverlay{Path: path, Bytes: overlayRaw, Overlay: o})
 	}
 	return out, nil
 }

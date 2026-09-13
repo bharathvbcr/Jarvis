@@ -34,14 +34,23 @@ func (a *App) CompileForTenant(path, tenant string) (*workflow.Program, tenantBi
 	if err != nil {
 		return nil, binding, err
 	}
-	var p *workflow.Program
-	if len(binding.OverlayBytes) > 0 {
-		p, err = workflow.CompileWithOverlay(raw, binding.OverlayBytes)
-	} else {
-		p, err = workflow.Compile(raw)
-	}
+	// Identify the base first so the tenant's specialization for this exact
+	// capability revision can be selected. Applying a tenant's only overlay to
+	// whatever was being compiled meant a tenant that specialized one capability
+	// could not run any other.
+	base, err := workflow.Compile(raw)
 	if err != nil {
 		return nil, binding, err
+	}
+	p := base
+	if selected, ok := binding.overlayFor(base.Capability().ID, base.Capability().Revision); ok {
+		binding.OverlayPath = selected.Path
+		binding.OverlayBytes = selected.Bytes
+		overlay := selected.Overlay
+		binding.Overlay = &overlay
+		if p, err = workflow.CompileWithOverlay(raw, selected.Bytes); err != nil {
+			return nil, binding, err
+		}
 	}
 	if p.Capability().Application != "jarvis-bank" {
 		return nil, binding, errors.New("this product profile only admits jarvis-bank capabilities")
@@ -121,5 +130,5 @@ func (a *App) Drift(ctx context.Context, capabilityPath, tenant string, pid uint
 	if err != nil {
 		return out, err
 	}
-	return BuildDriftReport(p, tenant, binding.Profile.Overlay, binding.Profile.WindowTitle, obs), nil
+	return BuildDriftReport(p, tenant, binding.OverlayPath, binding.Profile.WindowTitle, obs), nil
 }

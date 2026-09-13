@@ -187,3 +187,92 @@ func mustRead(t *testing.T, path string) []byte {
 	}
 	return raw
 }
+
+// A tenant runs many capabilities but an overlay specializes exactly one. The
+// tenant's only overlay used to be applied to whatever was being compiled, so
+// South — which specializes bank.balance — could not compile bank.create-subaccount
+// at all and every non-balance scenario failed with an overlay identity mismatch.
+func TestCompileForTenantAppliesOnlyTheOverlayNamingThatCapability(t *testing.T) {
+	root := t.TempDir()
+	if err := seedOverlayFixture(root); err != nil {
+		t.Fatal(err)
+	}
+	other, err := os.ReadFile("../../examples/create-subaccount.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "examples", "create-subaccount.json"), other, 0600); err != nil {
+		t.Fatal(err)
+	}
+	a, err := New(context.Background(), Config{Root: root})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer a.Close()
+
+	// The specialized capability still gets its overlay.
+	balance, binding, err := a.CompileForTenant("examples/balance.json", "south")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if binding.Overlay == nil || binding.OverlayPath == "" {
+		t.Fatal("south did not apply the bank.balance overlay")
+	}
+	if balance.Capability().Targets["search"].Primary().Name != "Find member" {
+		t.Fatalf("overlay not applied: %+v", balance.Capability().Targets["search"])
+	}
+
+	// A capability no overlay names compiles from the reviewed base instead of
+	// failing, and reports no applied overlay.
+	sub, subBinding, err := a.CompileForTenant("examples/create-subaccount.json", "south")
+	if err != nil {
+		t.Fatalf("unspecialized capability refused for a tenant that overlays another: %v", err)
+	}
+	if subBinding.Overlay != nil || len(subBinding.OverlayBytes) != 0 || subBinding.OverlayPath != "" {
+		t.Fatalf("overlay applied to a capability it does not name: %+v", subBinding.Overlay)
+	}
+	if sub.Capability().ID != "bank.create-subaccount" {
+		t.Fatalf("unexpected capability %q", sub.Capability().ID)
+	}
+	base, err := a.Compile("examples/create-subaccount.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sub.Digest() != base.Digest() {
+		t.Fatal("unspecialized tenant compile diverged from the reviewed base")
+	}
+}
+
+// Two overlays naming one capability revision would make the applied
+// specialization depend on declaration order, so the binding refuses both.
+func TestProfileRefusesTwoOverlaysForOneCapabilityRevision(t *testing.T) {
+	root := t.TempDir()
+	if err := seedOverlayFixture(root); err != nil {
+		t.Fatal(err)
+	}
+	duplicate := filepath.Join(root, "overlays", "south-balance-copy.json")
+	if err := os.WriteFile(duplicate, mustRead(t, filepath.Join(root, "overlays", "south-balance.json")), 0600); err != nil {
+		t.Fatal(err)
+	}
+	profilePath := filepath.Join(root, "profiles", "south.json")
+	var p Profile
+	if err := json.Unmarshal(mustRead(t, profilePath), &p); err != nil {
+		t.Fatal(err)
+	}
+	p.Overlays = append(p.Overlays, "overlays/south-balance-copy.json")
+	raw, err := json.Marshal(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(profilePath, raw, 0600); err != nil {
+		t.Fatal(err)
+	}
+	a, err := New(context.Background(), Config{Root: root})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer a.Close()
+	if _, _, err := a.CompileForTenant("examples/balance.json", "south"); err == nil {
+		t.Fatal("duplicate overlays for one capability revision accepted")
+	}
+}
