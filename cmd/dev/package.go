@@ -52,6 +52,56 @@ func git(ctx context.Context, dir string, args ...string) (string, error) {
 	return strings.TrimSpace(string(out)), nil
 }
 
+// goModuleRevision reports the Manvi commit that go.mod resolves to. The Go
+// host builds from this version while the Rust native side builds from the
+// pinned checkout, so a divergence silently ships two different Manvi revisions
+// in one artifact. Returns the commit for a pseudo-version directly and
+// resolves a tagged version against the checkout.
+func goModuleRevision(ctx context.Context, manvi string) (string, error) {
+	raw, err := os.ReadFile("go.mod")
+	if err != nil {
+		return "", err
+	}
+	const module = "github.com/bharathvbcr/Manvi/manvi"
+	version := ""
+	for _, line := range strings.Split(string(raw), "\n") {
+		if i := strings.Index(line, "//"); i >= 0 {
+			line = line[:i]
+		}
+		fields := strings.Fields(line)
+		// Accept both the single-line "require mod ver" form and a require block.
+		if len(fields) >= 3 && fields[0] == "require" {
+			fields = fields[1:]
+		}
+		if len(fields) >= 2 && fields[0] == module {
+			version = fields[1]
+			break
+		}
+	}
+	if version == "" {
+		return "", fmt.Errorf("go.mod does not require %s", module)
+	}
+	// A pseudo-version ends in -<12 hex digits of the commit>.
+	if i := strings.LastIndex(version, "-"); i >= 0 && len(version)-i-1 == 12 {
+		if _, err := hex.DecodeString(version[i+1:]); err == nil {
+			return version[i+1:], nil
+		}
+	}
+	return git(ctx, manvi, "rev-parse", version+"^{commit}")
+}
+
+// checkGoModuleMatchesPin fails when go.mod and upstream.lock.json disagree.
+func checkGoModuleMatchesPin(ctx context.Context, manvi string, pin source) error {
+	rev, err := goModuleRevision(ctx, manvi)
+	if err != nil {
+		return err
+	}
+	if !strings.HasPrefix(pin.Revision, rev) && rev != pin.Revision {
+		return fmt.Errorf("go.mod builds Manvi %s but upstream.lock.json pins %s; the Go host and the native workspace would not share a revision", rev, pin.Revision)
+	}
+	return nil
+}
+
 func checkPins(ctx context.Context, manvi, dc string) error {
 	pins, err := readPins()
 	if err != nil {
@@ -76,7 +126,7 @@ func checkPins(ctx context.Context, manvi, dc string) error {
 			return fmt.Errorf("upstream contains changes outside pinned revision: %s", p.path)
 		}
 	}
-	return nil
+	return checkGoModuleMatchesPin(ctx, manvi, pins.Manvi)
 }
 
 func bootstrap(ctx context.Context, manvi, dc, bundles string) error {

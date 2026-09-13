@@ -213,6 +213,17 @@ func TestBootstrapRunsOfflineWithoutWorkspaceOrUpstreamModules(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	// The fixture pins freshly created repositories, so its go.mod has to name
+	// the same Manvi revision. Copying the product's go.mod verbatim would leave
+	// the pair inconsistent and check-pins would rightly refuse to bootstrap it.
+	lines := strings.Split(string(mod), "\n")
+	for i, line := range lines {
+		fields := strings.Fields(line)
+		if len(fields) >= 3 && fields[0] == "require" && fields[1] == "github.com/bharathvbcr/Manvi/manvi" {
+			lines[i] = "require github.com/bharathvbcr/Manvi/manvi v0.0.0-00010101000000-" + pins.Manvi.Revision[:12]
+		}
+	}
+	writeFixture(t, root, "go.mod", []byte(strings.Join(lines, "\n")))
 	raw, err := json.Marshal(pins)
 	if err != nil {
 		t.Fatal(err)
@@ -297,5 +308,51 @@ func TestBuildFindsBinariesWithInheritedCargoTargetDirectory(t *testing.T) {
 		if err != nil || !info.Mode().IsRegular() || info.Size() == 0 {
 			t.Fatalf("missing built fixture %s: %v", bin, err)
 		}
+	}
+}
+
+// The Go host builds Manvi from go.mod while the native workspace builds from
+// the pinned checkout. Nothing compared the two, so they drifted onto different
+// revisions and shipped a Go host and a Rust broker from different sources in
+// one artifact. check-pins must refuse that.
+func TestCheckPinsRefusesAGoModuleThatDisagreesWithThePin(t *testing.T) {
+	dir := t.TempDir()
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(cwd) })
+
+	pinned := "4818dc2081a53240eb8f4bde48026ad8d704e351"
+	write := func(version string) {
+		if err := os.WriteFile("go.mod", []byte(
+			"module example.com/host\n\ngo 1.26.6\n\nrequire github.com/bharathvbcr/Manvi/manvi "+version+"\n"), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	pin := source{URL: "https://github.com/bharathvbcr/Manvi.git", Revision: pinned}
+
+	write("v0.0.0-20260910143105-adeb253a76f2")
+	err = checkGoModuleMatchesPin(context.Background(), dir, pin)
+	if err == nil {
+		t.Fatal("divergent go.mod accepted")
+	}
+	if !strings.Contains(err.Error(), "adeb253a76f2") || !strings.Contains(err.Error(), pinned) {
+		t.Fatalf("error should name both revisions: %v", err)
+	}
+
+	write("v0.0.0-20260910143105-" + pinned[:12])
+	if err := checkGoModuleMatchesPin(context.Background(), dir, pin); err != nil {
+		t.Fatalf("matching pseudo-version rejected: %v", err)
+	}
+
+	if err := os.WriteFile("go.mod", []byte("module example.com/host\n\ngo 1.26.6\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := checkGoModuleMatchesPin(context.Background(), dir, pin); err == nil {
+		t.Fatal("go.mod without the module accepted")
 	}
 }
