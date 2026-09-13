@@ -141,7 +141,7 @@ func TestDiscoveryFixtureTranscriptDrivesPublishAssembly(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer ledger.Close()
-	provider, _, err := newDiscoveryLLMProvider(DiscoveryProviderFixture, defaultDiscoveryFixturePath(), nil, ledger)
+	provider, _, err := newDiscoveryLLMProvider(DiscoveryProviderFixture, "", nil, ledger)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -271,5 +271,47 @@ func TestDiscoverySystemPromptMentionsOutcomesAndLadder(t *testing.T) {
 	}
 	if !strings.Contains(desktopStepSchema, "rationale") || !strings.Contains(capabilityPublishSchema, "outcomes") {
 		t.Fatal("tool schemas missing contract fields")
+	}
+}
+
+// The shipped binary is built with -trimpath, so deriving the default fixture
+// path from runtime.Caller named a module-relative path that does not exist on
+// disk and `--provider fixture` failed outside `go test`. The transcript is
+// embedded instead; this pins that the default needs no source tree and no
+// particular working directory.
+func TestDefaultDiscoveryFixtureNeedsNoSourceTree(t *testing.T) {
+	if len(defaultDiscoveryFixture) == 0 {
+		t.Fatal("default discovery fixture was not embedded")
+	}
+	dir := t.TempDir()
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(cwd) })
+
+	ledger, err := openCampaignLedger(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ledger.Close()
+	provider, source, err := newDiscoveryLLMProvider(DiscoveryProviderFixture, "", nil, ledger)
+	if err != nil {
+		t.Fatalf("embedded fixture unavailable from an unrelated directory: %v", err)
+	}
+	if _, ok := provider.(*replay.Provider); !ok {
+		t.Fatalf("provider type %T", provider)
+	}
+	if source != defaultDiscoveryFixtureName {
+		t.Fatalf("source = %q, want the embedded name", source)
+	}
+
+	// An explicitly supplied path must still be read from disk, and a missing
+	// one must fail loudly rather than silently falling back to the embedded copy.
+	if _, _, err := newDiscoveryLLMProvider(DiscoveryProviderFixture, filepath.Join(dir, "absent.json"), nil, ledger); err == nil {
+		t.Fatal("missing explicit fixture accepted")
 	}
 }

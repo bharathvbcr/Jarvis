@@ -64,8 +64,12 @@ func (a *App) Discover(req DiscoveryRequest) (string, error) {
 		if _, err := a.credentials.Resolve("gemini"); err != nil {
 			return "", errors.New("Gemini credential unavailable; enter it locally in the workbench or set GEMINI_API_KEY for this process")
 		}
-	} else if _, err := resolveDiscoveryFixture(req.Fixture); err != nil {
-		return "", err
+	} else if req.Fixture != "" {
+		// An empty fixture path means the embedded transcript, which needs no
+		// admission check. Only an explicitly supplied file is validated here.
+		if _, err := resolveDiscoveryFixture(req.Fixture); err != nil {
+			return "", err
+		}
 	}
 	for k, v := range req.Inputs {
 		if k != "member_id" && k != "subaccount_name" {

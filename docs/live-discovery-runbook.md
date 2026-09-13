@@ -38,9 +38,21 @@ Must prove: discovery path loads Manvi's recorded tool transcript without
 `"provider":"fixture"`, `"live":false`, `"evidence_class":"not live"`. This
 stage never counts as live discovery qualification.
 
-Default transcript:
-`internal/app/testdata/discovery/balance-tool-transcript.json`
-(override with `--fixture PATH`).
+Default transcript: `internal/app/testdata/discovery/balance-tool-transcript.json`,
+embedded in the binary (override with `--fixture PATH`). It is embedded rather than
+located at runtime because the shipped binary is built with `-trimpath`, which made a
+`runtime.Caller`-derived path resolve to a file that does not exist; `--provider
+fixture` then worked under `go test` and failed everywhere else.
+
+**Verified on macOS against the current source.** Stage 1 published
+`discovered-capability.json` from a real scoped observation of the bank — the
+transcript supplies only the model's decisions, the desktop work is genuine — and
+`discovery.json` correctly recorded `"provider":"fixture"`, `"live":false`,
+`"evidence_class":"not live"`. Replaying that discovered capability through Stage 4
+completed with `balance = 125000` minor USD and the independent DevCouncil verifier
+returned `passed` on all four contract criteria. The discovery → artifact → replay →
+independent verification thread is therefore exercised end to end; only the live model
+leg below still needs a credential.
 
 ## Stage 2 — Live Gemini discovery
 
