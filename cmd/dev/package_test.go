@@ -302,7 +302,10 @@ func TestBuildFindsBinariesWithInheritedCargoTargetDirectory(t *testing.T) {
 		}
 	}
 	// --engine=false: the fixture has no gusset checkout and a stub host.
-	// The linked build is covered by TestBuildLinksTheEngine.
+	// No unit test covers the linked build: it needs real Manvi, DevCouncil
+	// and gusset checkouts and a Rust toolchain. `dev build` proves it on
+	// every run instead, by running the built host's gusset-check and failing
+	// the build if it does not pass.
 	cmd := exec.CommandContext(ctx, "go", "run", "./cmd/dev", "build", "--engine=false", "--manvi", manvi, "--devcouncil", dc)
 	cmd.Dir = root
 	cmd.Env = append(os.Environ(), "GOWORK=off", "GOPROXY=off", "GOSUMDB=off", "GOTOOLCHAIN=local", "CARGO_NET_OFFLINE=true", "CARGO_TARGET_DIR="+filepath.Join(root, "redirected-target"))

@@ -2,7 +2,7 @@ module github.com/bharathvbcr/Jarvis
 
 go 1.26.6
 
-require github.com/bharathvbcr/Manvi/manvi v0.0.0-20260928142422-81c50b7a02f4
+require github.com/bharathvbcr/Manvi/manvi v0.0.0-20260928163624-46b33970a8df
 
 require (
 	github.com/awnumar/memcall v0.4.0 // indirect
