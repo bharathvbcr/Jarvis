@@ -301,7 +301,9 @@ func TestBuildFindsBinariesWithInheritedCargoTargetDirectory(t *testing.T) {
 			t.Fatalf("fixture Cargo.lock: %v\n%s", err, out)
 		}
 	}
-	cmd := exec.CommandContext(ctx, "go", "run", "./cmd/dev", "build", "--manvi", manvi, "--devcouncil", dc)
+	// --engine=false: the fixture has no gusset checkout and a stub host.
+	// The linked build is covered by TestBuildLinksTheEngine.
+	cmd := exec.CommandContext(ctx, "go", "run", "./cmd/dev", "build", "--engine=false", "--manvi", manvi, "--devcouncil", dc)
 	cmd.Dir = root
 	cmd.Env = append(os.Environ(), "GOWORK=off", "GOPROXY=off", "GOSUMDB=off", "GOTOOLCHAIN=local", "CARGO_NET_OFFLINE=true", "CARGO_TARGET_DIR="+filepath.Join(root, "redirected-target"))
 	if output, err := cmd.CombinedOutput(); err != nil {

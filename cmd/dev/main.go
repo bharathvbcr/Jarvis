@@ -59,6 +59,7 @@ func run() error {
 	dc := f.String("devcouncil", os.Getenv("JARVIS_DEVCOUNCIL_SOURCE"), "DevCouncil checkout root")
 	gusset := f.String("gusset", os.Getenv("JARVIS_GUSSET_SOURCE"), "gusset checkout root (default: next to the Manvi checkout, where Manvi's go.mod replace looks)")
 	release := f.Bool("release", false, "optimized Rust build")
+	engine := f.Bool("engine", runtime.GOOS == "linux" || runtime.GOOS == "darwin", "build: link the Gusset engine into the jarvis host, so policy decisions run on it (unix only)")
 	bundles := f.String("bundles", "build/upstream", "directory containing portable upstream Git bundles")
 	if err := f.Parse(os.Args[2:]); err != nil {
 		return err
@@ -90,9 +91,9 @@ func run() error {
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
-	// commandEnv runs one step. The shipped configuration is cgo-off, so every
-	// step gets CGO_ENABLED=0 unless extra overrides it: exec keeps the last
-	// value of a repeated key, and extra comes last. Only `dev gusset` does.
+	// commandEnv runs one step. Every step gets CGO_ENABLED=0 unless extra
+	// overrides it: exec keeps the last value of a repeated key, and extra
+	// comes last. `dev gusset` and the jarvis host in `dev build` do.
 	commandEnv := func(extra []string, dir, name string, args ...string) error {
 		fmt.Fprintln(os.Stderr, name, strings.Join(args, " "))
 		cmd := exec.CommandContext(ctx, name, args...)
@@ -160,8 +161,28 @@ func run() error {
 				return err
 			}
 		}
-		if err := command(root, "go", "build", "-trimpath", "-o", filepath.Join("build", "jarvis"+suffix), "./cmd/jarvis"); err != nil {
+		// The host links the Gusset engine on unix, so the Manvi policy gates
+		// it runs decide through it; gusset is unix-only, so Windows stays
+		// cgo-off and decides with fnmatch. The binary proves the link and
+		// the I2 panic firewall before the build counts.
+		var hostEnv []string
+		if *engine {
+			if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
+				return fmt.Errorf("--engine: gusset is unix-only; build with --engine=false on %s", runtime.GOOS)
+			}
+			reportRevisions(ctx, *manvi, *dc, *gusset)
+			if hostEnv, err = gussetEnv(ctx, *manvi, *dc, *gusset); err != nil {
+				return err
+			}
+		}
+		host := filepath.Join(root, "build", "jarvis"+suffix)
+		if err := commandEnv(hostEnv, root, "go", "build", "-trimpath", "-o", host, "./cmd/jarvis"); err != nil {
 			return err
+		}
+		if *engine {
+			if err := command(root, host, "gusset-check"); err != nil {
+				return fmt.Errorf("built host failed its engine check: %w", err)
+			}
 		}
 		if runtime.GOOS == "darwin" {
 			return bundleMacApp(root)
@@ -181,9 +202,9 @@ func run() error {
 		}
 		return command(root, "go", "run", "./cmd/qualify", "--check-boundaries")
 	case "gusset":
-		// The one cgo leg. Everything `dev build` ships is cgo-off, so the
-		// Rust engine behind Manvi's serve-plane health gate is never linked
-		// into the product; this builds a Jarvis that links it and proves it.
+		// The engine's test leg: `dev build` links the engine into the host
+		// and runs its gusset-check; this runs the race detector over the
+		// packages that call it, against the same cgo environment.
 		if err := workspace(); err != nil {
 			return err
 		}

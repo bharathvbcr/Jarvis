@@ -71,7 +71,7 @@ go run ./cmd/dev build --manvi /path/to/Manvi --devcouncil /path/to/DevCouncil
 The generated local `go.work` is ignored, and it is required: Manvi's `go.mod`
 replaces DevCouncil and gusset with sibling checkouts, and Go applies those
 `replace` lines only inside a workspace, so a `GOWORK=off` build does not
-resolve. Build outputs are under `build/`. The Go host builds with `CGO_ENABLED=0`; platform FFI is confined to Manvi's Rust native adapters. Qualification builds disable egui inspection controls. Do not treat a Rust cross-check as proof of native execution on that OS.
+resolve. Build outputs are under `build/`. On Linux and macOS the Go host links the Gusset engine (see below); on Windows, or with `--engine=false`, it builds with `CGO_ENABLED=0`. Other platform FFI is confined to Manvi's Rust native adapters. Qualification builds disable egui inspection controls. Do not treat a Rust cross-check as proof of native execution on that OS.
 
 ```sh
 ./build/jarvis compile --capability examples/balance.json --register
@@ -127,14 +127,17 @@ DEVC_COUNCIL_EVIDENCE_ROOT=/path/to/DevCouncil go test github.com/bharathvbcr/Ma
 go run ./cmd/qualify --check-boundaries
 ```
 
-### Gusset engine (opt-in cgo leg)
+### Gusset engine
 
-Manvi's `serve` policy plane health-gates its answers on an in-process Rust
-engine (DevCouncil's dc-glob on [Gusset](https://github.com/bharathvbcr/gusset))
-when the binary links it; the policy decisions themselves are Go fnmatch. `dev build` ships the cgo-off host, so the product binary does not:
-`./build/jarvis gusset-check` exits non-zero with "engine is not linked", and
-`doctor` reports `"gusset": "not_linked"`. That is a fact about the build, not
-a fault. To build and prove a Jarvis that links the engine:
+Manvi's policy gates make every pattern decision on an in-process Rust engine
+(DevCouncil's dc-glob on [Gusset](https://github.com/bharathvbcr/gusset)) when
+the binary links it, and deny under `path.engine_unavailable` /
+`command.engine_unavailable` if it cannot answer. On Linux and macOS `dev build`
+links it into `build/jarvis` and runs `build/jarvis gusset-check` (parity and
+the panic firewall) before the build counts. A Windows build, or
+`--engine=false`, is cgo-off: it decides with Go's fnmatch, `gusset-check`
+exits non-zero with "engine is not linked", and `doctor` reports
+`"gusset": "not_linked"`. To run the engine's own tests with the race detector:
 
 ```sh
 go run ./cmd/dev gusset --manvi /path/to/Manvi --devcouncil /path/to/DevCouncil
