@@ -30,7 +30,7 @@ func readPins() (lock, error) {
 	if pins.SchemaVersion != 1 {
 		return pins, errors.New("unsupported source pin schema")
 	}
-	for _, s := range []source{pins.Manvi, pins.DevCouncil} {
+	for _, s := range []source{pins.Manvi, pins.DevCouncil, pins.Gusset} {
 		hash, err := hex.DecodeString(s.Revision)
 		if err != nil || len(hash) != 20 || !strings.HasPrefix(s.URL, "https://github.com/bharathvbcr/") {
 			return pins, errors.New("invalid source revision or origin")
@@ -102,15 +102,12 @@ func checkGoModuleMatchesPin(ctx context.Context, manvi string, pin source) erro
 	return nil
 }
 
-func checkPins(ctx context.Context, manvi, dc string) error {
+func checkPins(ctx context.Context, manvi, dc, gusset string) error {
 	pins, err := readPins()
 	if err != nil {
 		return err
 	}
-	for _, p := range []struct {
-		path string
-		pin  source
-	}{{manvi, pins.Manvi}, {dc, pins.DevCouncil}} {
+	for _, p := range pins.checkouts(manvi, dc, gusset) {
 		head, err := git(ctx, p.path, "rev-parse", "HEAD")
 		if err != nil {
 			return err
@@ -129,15 +126,12 @@ func checkPins(ctx context.Context, manvi, dc string) error {
 	return checkGoModuleMatchesPin(ctx, manvi, pins.Manvi)
 }
 
-func bootstrap(ctx context.Context, manvi, dc, bundles string) error {
+func bootstrap(ctx context.Context, manvi, dc, gusset, bundles string) error {
 	pins, err := readPins()
 	if err != nil {
 		return err
 	}
-	for _, p := range []struct {
-		name, path string
-		pin        source
-	}{{"Manvi", manvi, pins.Manvi}, {"DevCouncil", dc, pins.DevCouncil}} {
+	for _, p := range pins.checkouts(manvi, dc, gusset) {
 		if _, err := os.Stat(p.path); err == nil {
 			continue
 		} else if !errors.Is(err, os.ErrNotExist) {
@@ -177,17 +171,21 @@ func bootstrap(ctx context.Context, manvi, dc, bundles string) error {
 			return err
 		}
 	}
-	return checkPins(ctx, manvi, dc)
+	return checkPins(ctx, manvi, dc, gusset)
 }
 
-func bundleSources(ctx context.Context, manvi, dc, bundles string) error {
-	if err := checkPins(ctx, manvi, dc); err != nil {
+func bundleSources(ctx context.Context, manvi, dc, gusset, bundles string) error {
+	pins, err := readPins()
+	if err != nil {
+		return err
+	}
+	if err := checkPins(ctx, manvi, dc, gusset); err != nil {
 		return err
 	}
 	if err := os.MkdirAll(bundles, 0700); err != nil {
 		return err
 	}
-	for _, p := range []struct{ name, path string }{{"Manvi", manvi}, {"DevCouncil", dc}} {
+	for _, p := range pins.checkouts(manvi, dc, gusset) {
 		out, err := filepath.Abs(filepath.Join(bundles, p.name+".bundle"))
 		if err != nil {
 			return err

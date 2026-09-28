@@ -43,8 +43,8 @@ Manvi owns the workflow/compiler/catalog, native broker/client, provider integra
 
 Prerequisites: Rust and Cargo with the target platform toolchain, Go 1.26.6, platform accessibility and capture permissions, and the pinned Manvi/DevCouncil checkouts. `cmd/dev` uses Go/Rust only. Platform-specific prerequisites are in `docs/platforms.md`.
 
-The assignment archive includes `build/upstream/Manvi.bundle` and
-`build/upstream/DevCouncil.bundle`. Restore the exact reviewed revisions without
+The assignment archive includes `build/upstream/Manvi.bundle`,
+`build/upstream/DevCouncil.bundle` and `build/upstream/gusset.bundle`. Restore the exact reviewed revisions without
 depending on unpublished remote branches:
 
 ```sh
@@ -123,6 +123,29 @@ go run ./cmd/dev test --manvi /path/to/Manvi --devcouncil /path/to/DevCouncil
 DEVC_COUNCIL_EVIDENCE_ROOT=/path/to/DevCouncil go test github.com/bharathvbcr/Manvi/manvi/devcouncil -run TestEvidenceRustCompatibility -count=1
 go run ./cmd/qualify --check-boundaries
 ```
+
+### Gusset engine (opt-in cgo leg)
+
+Manvi's `serve` policy plane consults an in-process Rust engine (DevCouncil's
+dc-glob on [Gusset](https://github.com/bharathvbcr/gusset)) when the binary
+links it. `dev build` ships the cgo-off host, so the product binary does not:
+`./build/jarvis gusset-check` exits non-zero with "engine is not linked", and
+`doctor` reports `"gusset": "not_linked"`. That is a fact about the build, not
+a fault. To build and prove a Jarvis that links the engine:
+
+```sh
+go run ./cmd/dev gusset --manvi /path/to/Manvi --devcouncil /path/to/DevCouncil
+```
+
+Manvi's `go.mod` replaces DevCouncil and gusset with the siblings of its own
+checkout, so gusset must sit next to Manvi (`--gusset` defaults there, and
+`bootstrap` restores it from `upstream.lock.json`). The leg builds the umbrella
+archive through DevCouncil's `rust/gusset-engine/cgo-env.sh`, which keys Go's
+caches on the archive's hash — Go otherwise relinks a stale archive after a Rust
+rebuild — then race-tests `cmd/jarvis` and `internal/app`, runs Manvi's
+`gussetcheck` and `serve` suites, and runs `jarvis gusset-check`: CPython
+fnmatch parity across the boundary, the batched match-any path, and a real Rust
+panic caught at the boundary. The panic line on stderr is that proof running.
 
 Read-only qualification never approves a business change. The denial scenario records denied approval and checks that saved state stayed unchanged. Successful account-changing qualification requires real human approval on every OS/tenant combination. All-success 20/20 results have an approximately 86.1% one-sided 95% exact-binomial lower bound under independence; repeated desktop runs are regression evidence, not proof of independent reliability. [Exact-binomial method](https://itl.nist.gov/div898/software/dataplot/refman2/auxillar/exacbino.htm)
 

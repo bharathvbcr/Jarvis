@@ -188,7 +188,7 @@ func TestBootstrapRunsOfflineWithoutWorkspaceOrUpstreamModules(t *testing.T) {
 	for _, item := range []struct {
 		name string
 		pin  *source
-	}{{"Manvi", &pins.Manvi}, {"DevCouncil", &pins.DevCouncil}} {
+	}{{"Manvi", &pins.Manvi}, {"DevCouncil", &pins.DevCouncil}, {"gusset", &pins.Gusset}} {
 		repo := t.TempDir()
 		if item.name == "Manvi" {
 			writeFixture(t, repo, "manvi/go.mod", []byte("module github.com/bharathvbcr/Manvi/manvi\n\ngo 1.26.6\n"))
@@ -243,7 +243,7 @@ func TestBootstrapRunsOfflineWithoutWorkspaceOrUpstreamModules(t *testing.T) {
 	for _, item := range []struct {
 		name string
 		pin  source
-	}{{"Manvi", pins.Manvi}, {"DevCouncil", pins.DevCouncil}} {
+	}{{"Manvi", pins.Manvi}, {"DevCouncil", pins.DevCouncil}, {"gusset", pins.Gusset}} {
 		head, err := git(ctx, filepath.Join(root, ".local", "upstream", item.name), "rev-parse", "HEAD")
 		if err != nil || head != item.pin.Revision {
 			t.Fatalf("wrong restored pin %s: %s %v", item.name, head, err)

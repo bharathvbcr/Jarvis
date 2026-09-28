@@ -17,6 +17,7 @@ import (
 	offline "github.com/bharathvbcr/Jarvis/internal/trace"
 	"github.com/bharathvbcr/Manvi/manvi/computer"
 	"github.com/bharathvbcr/Manvi/manvi/devcouncil"
+	"github.com/bharathvbcr/Manvi/manvi/gussetcheck"
 	"github.com/bharathvbcr/Manvi/manvi/serve"
 	"github.com/bharathvbcr/Manvi/manvi/workflow"
 	"github.com/bharathvbcr/Manvi/manvi/workflow/catalog"
@@ -35,7 +36,7 @@ func output(v interface{}) error {
 }
 func run() error {
 	if len(os.Args) < 2 {
-		return errors.New("commands: doctor, discover, compile, replay, drift, trace replay, verify, catalog, codegen, serve")
+		return errors.New("commands: doctor, discover, compile, replay, drift, trace replay, verify, catalog, codegen, serve, gusset-check")
 	}
 	command := os.Args[1]
 	args := os.Args[2:]
@@ -103,6 +104,10 @@ func run() error {
 		err = workflow.DecodeStrict(raw, &values)
 		return values, err
 	}
+	// The engine check needs no product host, broker, or bank either.
+	if command == "gusset-check" {
+		return gussetCheck(ctx, os.Stdout)
+	}
 	// Offline reconstruction never creates the product host, broker, or provider.
 	if command == "trace-replay" {
 		raw, err := os.ReadFile(resolve(*tracePath))
@@ -130,7 +135,9 @@ func run() error {
 	defer a.Close()
 	switch command {
 	case "serve":
-		return serve.New(os.Stdout, serve.Options{HardRules: true, Modules: []serve.Module{a}}).Serve(ctx, os.Stdin)
+		err := serve.New(os.Stdout, serve.Options{HardRules: true, Modules: []serve.Module{a}}).Serve(ctx, os.Stdin)
+		// The policy plane's engine handle, when this build links one.
+		return errors.Join(err, gussetcheck.Close())
 	case "doctor":
 		return output(a.Doctor(ctx))
 	case "compile":

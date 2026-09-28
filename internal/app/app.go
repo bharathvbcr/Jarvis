@@ -16,6 +16,7 @@ import (
 	"github.com/bharathvbcr/Manvi/manvi/computer"
 	"github.com/bharathvbcr/Manvi/manvi/credentials"
 	"github.com/bharathvbcr/Manvi/manvi/devcouncil"
+	"github.com/bharathvbcr/Manvi/manvi/gussetcheck"
 	"github.com/bharathvbcr/Manvi/manvi/workflow"
 	"github.com/bharathvbcr/Manvi/manvi/workflow/catalog"
 )
@@ -567,6 +568,22 @@ type Diagnostic struct {
 	GeminiConfigured bool            `json:"gemini_configured"`
 	Binaries         map[string]bool `json:"binaries"`
 	Qualification    string          `json:"qualification"`
+	// Gusset is the in-process Rust policy engine: "ok", "not_linked" (a
+	// cgo-off build, which is what `dev build` ships), or the failure. A
+	// not_linked engine is a fact about the build, not a fault.
+	Gusset string `json:"gusset"`
+}
+
+// gussetStatus renders gussetcheck.Ready for the doctor report.
+func gussetStatus(err error) string {
+	switch {
+	case err == nil:
+		return "ok"
+	case errors.Is(err, gussetcheck.ErrNotLinked):
+		return "not_linked"
+	default:
+		return "failed: " + err.Error()
+	}
 }
 
 func (a *App) Doctor(ctx context.Context) Diagnostic {
@@ -575,6 +592,7 @@ func (a *App) Doctor(ctx context.Context) Diagnostic {
 		info, err := os.Stat(path)
 		d.Binaries[name] = err == nil && info.Mode().IsRegular()
 	}
+	d.Gusset = gussetStatus(gussetcheck.Ready())
 	_, err := a.credentials.Resolve("gemini")
 	d.GeminiConfigured = err == nil
 	c, err := a.broker()

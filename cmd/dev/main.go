@@ -21,7 +21,23 @@ type lock struct {
 	SchemaVersion int    `json:"schema_version"`
 	Manvi         source `json:"manvi"`
 	DevCouncil    source `json:"devcouncil"`
+	// Gusset is required because Manvi's go.mod replaces gusset with the
+	// sibling of its checkout: without it the Go workspace does not resolve.
+	Gusset source `json:"gusset"`
 }
+
+// upstream is one pinned source and where it is checked out.
+type upstream struct {
+	name, path string
+	pin        source
+}
+
+// checkouts lists every pinned source in one place, so bootstrap, check-pins
+// and bundle-sources cannot disagree about which sources exist.
+func (l lock) checkouts(manvi, dc, gusset string) []upstream {
+	return []upstream{{"Manvi", manvi, l.Manvi}, {"DevCouncil", dc, l.DevCouncil}, {"gusset", gusset, l.Gusset}}
+}
+
 type source struct {
 	URL      string `json:"url"`
 	Revision string `json:"revision"`
@@ -35,12 +51,13 @@ func main() {
 }
 func run() error {
 	if len(os.Args) < 2 {
-		return errors.New("commands: bootstrap, workspace, build, test, qualify, check-pins, bundle-sources, package")
+		return errors.New("commands: bootstrap, workspace, build, test, gusset, qualify, check-pins, bundle-sources, package")
 	}
 	action := os.Args[1]
 	f := flag.NewFlagSet(action, flag.ContinueOnError)
 	manvi := f.String("manvi", os.Getenv("JARVIS_MANVI_SOURCE"), "Manvi checkout root")
 	dc := f.String("devcouncil", os.Getenv("JARVIS_DEVCOUNCIL_SOURCE"), "DevCouncil checkout root")
+	gusset := f.String("gusset", os.Getenv("JARVIS_GUSSET_SOURCE"), "gusset checkout root (default: next to the Manvi checkout, where Manvi's go.mod replace looks)")
 	release := f.Bool("release", false, "optimized Rust build")
 	bundles := f.String("bundles", "build/upstream", "directory containing portable upstream Git bundles")
 	if err := f.Parse(os.Args[2:]); err != nil {
@@ -64,18 +81,31 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	if *gusset == "" {
+		*gusset = filepath.Join(filepath.Dir(*manvi), "gusset")
+	}
+	*gusset, err = filepath.Abs(*gusset)
+	if err != nil {
+		return err
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
-	command := func(dir, name string, args ...string) error {
+	// commandEnv runs one step. The shipped configuration is cgo-off, so every
+	// step gets CGO_ENABLED=0 unless extra overrides it: exec keeps the last
+	// value of a repeated key, and extra comes last. Only `dev gusset` does.
+	commandEnv := func(extra []string, dir, name string, args ...string) error {
 		fmt.Fprintln(os.Stderr, name, strings.Join(args, " "))
 		cmd := exec.CommandContext(ctx, name, args...)
 		cmd.Dir = dir
-		cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
+		cmd.Env = append(append(os.Environ(), "CGO_ENABLED=0"), extra...)
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		cmd.WaitDelay = 2 * time.Second
 		return cmd.Run()
+	}
+	command := func(dir, name string, args ...string) error {
+		return commandEnv(nil, dir, name, args...)
 	}
 	workspace := func() error {
 		if _, err := os.Stat(filepath.Join(*manvi, "manvi", "go.mod")); err != nil {
@@ -86,18 +116,18 @@ func run() error {
 	}
 	switch action {
 	case "bootstrap":
-		if err := bootstrap(ctx, *manvi, *dc, *bundles); err != nil {
+		if err := bootstrap(ctx, *manvi, *dc, *gusset, *bundles); err != nil {
 			return err
 		}
 		return workspace()
 	case "bundle-sources":
-		return bundleSources(ctx, *manvi, *dc, *bundles)
+		return bundleSources(ctx, *manvi, *dc, *gusset, *bundles)
 	case "package":
 		return packageBuild(root)
 	case "workspace":
 		return workspace()
 	case "check-pins":
-		return checkPins(ctx, *manvi, *dc)
+		return checkPins(ctx, *manvi, *dc, *gusset)
 	case "build":
 		if err := workspace(); err != nil {
 			return err
@@ -144,12 +174,36 @@ func run() error {
 		for _, item := range []struct {
 			dir, name string
 			args      []string
-		}{{root, "go", []string{"test", "./..."}}, {filepath.Join(*manvi, "manvi"), "go", []string{"test", "./workflow/...", "./computer/...", "./llm/budget/...", "./session", "./tools", "./llm/replay", "./llm/gemini", "./llm/transport", "./agent", "./serve"}}, {filepath.Join(root, "desktop"), "cargo", []string{"test", "--locked", "--workspace"}}, {filepath.Join(*manvi, "native"), "cargo", []string{"test", "--locked", "--workspace"}}, {filepath.Join(*dc, "rust"), "cargo", []string{"test", "--locked", "-p", "dc-evidence", "-p", "dc-verify"}}} {
+		}{{root, "go", []string{"test", "./..."}}, {filepath.Join(*manvi, "manvi"), "go", []string{"test", "./workflow/...", "./computer/...", "./llm/budget/...", "./session", "./tools", "./llm/replay", "./llm/gemini", "./llm/transport", "./agent", "./serve", "./gussetcheck"}}, {filepath.Join(root, "desktop"), "cargo", []string{"test", "--locked", "--workspace"}}, {filepath.Join(*manvi, "native"), "cargo", []string{"test", "--locked", "--workspace"}}, {filepath.Join(*dc, "rust"), "cargo", []string{"test", "--locked", "-p", "dc-evidence", "-p", "dc-verify"}}} {
 			if err := command(item.dir, item.name, item.args...); err != nil {
 				return err
 			}
 		}
 		return command(root, "go", "run", "./cmd/qualify", "--check-boundaries")
+	case "gusset":
+		// The one cgo leg. Everything `dev build` ships is cgo-off, so the
+		// Rust policy engine Manvi's serve plane consults is never linked into
+		// the product; this builds a Jarvis that links it and proves it.
+		if err := workspace(); err != nil {
+			return err
+		}
+		env, err := gussetEnv(ctx, *manvi, *dc, *gusset)
+		if err != nil {
+			return err
+		}
+		for _, step := range []struct {
+			dir  string
+			args []string
+		}{
+			{root, []string{"test", "-race", "-count=1", "./cmd/jarvis", "./internal/app"}},
+			{filepath.Join(*manvi, "manvi"), []string{"test", "-count=1", "./gussetcheck", "./serve"}},
+			{root, []string{"run", "./cmd/jarvis", "gusset-check"}},
+		} {
+			if err := commandEnv(env, step.dir, "go", step.args...); err != nil {
+				return err
+			}
+		}
+		return nil
 	case "qualify":
 		return command(root, "go", append([]string{"run", "./cmd/qualify"}, f.Args()...)...)
 	default:
