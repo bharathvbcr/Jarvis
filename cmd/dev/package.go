@@ -30,10 +30,15 @@ func readPins() (lock, error) {
 	if pins.SchemaVersion != 1 {
 		return pins, errors.New("unsupported source pin schema")
 	}
-	for _, s := range []source{pins.Manvi, pins.DevCouncil, pins.Gusset} {
-		hash, err := hex.DecodeString(s.Revision)
-		if err != nil || len(hash) != 20 || !strings.HasPrefix(s.URL, "https://github.com/bharathvbcr/") {
-			return pins, errors.New("invalid source revision or origin")
+	for _, p := range pins.checkouts("", "", "") {
+		if p.pin == (source{}) {
+			// Lock files from before the gusset pin was added carry two
+			// entries. Say which one is missing rather than "invalid".
+			return pins, fmt.Errorf("upstream.lock.json has no %s pin; Manvi's go.mod replaces %s with its sibling checkout, so the lock must pin it", strings.ToLower(p.name), p.name)
+		}
+		hash, err := hex.DecodeString(p.pin.Revision)
+		if err != nil || len(hash) != 20 || !strings.HasPrefix(p.pin.URL, "https://github.com/bharathvbcr/") {
+			return pins, fmt.Errorf("invalid %s source revision or origin", p.name)
 		}
 	}
 	return pins, nil

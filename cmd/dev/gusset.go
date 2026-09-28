@@ -26,7 +26,7 @@ import (
 func gussetEnv(ctx context.Context, manvi, dc, gusset string) ([]string, error) {
 	parent := filepath.Dir(manvi)
 	for _, want := range []struct{ name, path string }{{"DevCouncil", dc}, {"gusset", gusset}} {
-		if filepath.Clean(want.path) != filepath.Join(parent, want.name) {
+		if !sameDir(want.path, filepath.Join(parent, want.name)) {
 			return nil, fmt.Errorf("%s must be checked out at %s, where Manvi's go.mod replace looks; got %s", want.name, filepath.Join(parent, want.name), want.path)
 		}
 	}
@@ -71,4 +71,38 @@ func parseCgoEnv(out []byte) ([]string, error) {
 		}
 	}
 	return env, nil
+}
+
+// sameDir reports whether a and b name one directory. By identity when both
+// exist, so a symlinked sibling or a different case on a case-insensitive
+// filesystem is the same place; textually otherwise, so a missing checkout
+// is still reported at the path Manvi's replace expects.
+func sameDir(a, b string) bool {
+	ai, errA := os.Stat(a)
+	bi, errB := os.Stat(b)
+	if errA == nil && errB == nil {
+		return os.SameFile(ai, bi)
+	}
+	return filepath.Clean(a) == filepath.Clean(b)
+}
+
+// reportRevisions prints each source's HEAD against its pin before the cgo
+// leg runs, so a proof run on working checkouts says so.
+func reportRevisions(ctx context.Context, manvi, dc, gusset string) {
+	pins, err := readPins()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "dev gusset: pins unreadable:", err)
+		return
+	}
+	for _, p := range pins.checkouts(manvi, dc, gusset) {
+		head, err := git(ctx, p.path, "rev-parse", "HEAD")
+		switch {
+		case err != nil:
+			fmt.Fprintf(os.Stderr, "dev gusset: %s at %s: revision unknown (%v)\n", p.name, p.path, err)
+		case head == p.pin.Revision:
+			fmt.Fprintf(os.Stderr, "dev gusset: %s at pin %s\n", p.name, head[:12])
+		default:
+			fmt.Fprintf(os.Stderr, "dev gusset: %s at %s, NOT the pin %s; this proof covers the checkout, not the pin\n", p.name, head[:12], p.pin.Revision[:12])
+		}
+	}
 }

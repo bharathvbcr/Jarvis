@@ -15,8 +15,8 @@ import (
 // builds one with the engine linked.
 var errGussetNotLinked = errors.New("gusset-check: engine is not linked into this build (CGO_ENABLED=0); run `go run ./cmd/dev gusset` for a linked build")
 
-// gussetCheck proves the in-process Rust policy engine Manvi's serve plane
-// consults: CPython fnmatch parity, the batched match-any path, and a real
+// gussetCheck proves the in-process Rust engine behind Manvi's serve-plane
+// health gate (policy decisions themselves are Go fnmatch): CPython fnmatch parity, the batched match-any path, and a real
 // panic inside the linked archive caught at the boundary (I2). It reuses
 // Manvi's gussetcheck rather than a Jarvis copy: one engine, one archive per
 // binary (R14).

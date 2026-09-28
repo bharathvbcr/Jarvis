@@ -182,11 +182,14 @@ func run() error {
 		return command(root, "go", "run", "./cmd/qualify", "--check-boundaries")
 	case "gusset":
 		// The one cgo leg. Everything `dev build` ships is cgo-off, so the
-		// Rust policy engine Manvi's serve plane consults is never linked into
-		// the product; this builds a Jarvis that links it and proves it.
+		// Rust engine behind Manvi's serve-plane health gate is never linked
+		// into the product; this builds a Jarvis that links it and proves it.
 		if err := workspace(); err != nil {
 			return err
 		}
+		// Not refused on a mismatch — a developer runs this against working
+		// checkouts — but never silent: the proof names what it ran against.
+		reportRevisions(ctx, *manvi, *dc, *gusset)
 		env, err := gussetEnv(ctx, *manvi, *dc, *gusset)
 		if err != nil {
 			return err

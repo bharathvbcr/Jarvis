@@ -136,8 +136,9 @@ func run() error {
 	switch command {
 	case "serve":
 		err := serve.New(os.Stdout, serve.Options{HardRules: true, Modules: []serve.Module{a}}).Serve(ctx, os.Stdin)
-		// The policy plane's engine handle, when this build links one.
-		return errors.Join(err, gussetcheck.Close())
+		// The policy plane's engine handle, when this build links one. Bounded,
+		// so a stuck engine is reported rather than hanging exit.
+		return errors.Join(err, gussetcheck.Shutdown(2*time.Second))
 	case "doctor":
 		return output(a.Doctor(ctx))
 	case "compile":
