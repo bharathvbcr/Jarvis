@@ -128,7 +128,43 @@ func checkPins(ctx context.Context, manvi, dc, gusset string) error {
 			return fmt.Errorf("upstream contains changes outside pinned revision: %s", p.path)
 		}
 	}
+	if err := checkUpstreamPinsAgree(manvi, dc, pins); err != nil {
+		return err
+	}
 	return checkGoModuleMatchesPin(ctx, manvi, pins.Manvi)
+}
+
+// checkUpstreamPinsAgree requires the upstreams' own pins to name the
+// revisions this lock pins. Manvi pins DevCouncil and gusset in
+// scripts/module-pins.txt, and DevCouncil pins gusset in its setup-gusset
+// action; each was only ever kept in step by hand, so a lock bumped without
+// them would build Jarvis against one gusset while Manvi's and DevCouncil's
+// CI proved another.
+func checkUpstreamPinsAgree(manvi, dc string, pins lock) error {
+	raw, err := os.ReadFile(filepath.Join(manvi, "scripts", "module-pins.txt"))
+	if err != nil {
+		return fmt.Errorf("Manvi module pins: %w", err)
+	}
+	manviPins := map[string]string{}
+	for _, line := range strings.Split(string(raw), "\n") {
+		fields := strings.Split(strings.TrimSpace(line), "\t")
+		if len(fields) == 3 && !strings.HasPrefix(fields[0], "#") {
+			manviPins[fields[0]] = fields[2]
+		}
+	}
+	for _, want := range []struct{ name, rev string }{{"DevCouncil", pins.DevCouncil.Revision}, {"gusset", pins.Gusset.Revision}} {
+		if got := manviPins[want.name]; got != want.rev {
+			return fmt.Errorf("Manvi's scripts/module-pins.txt pins %s at %q, upstream.lock.json at %q", want.name, got, want.rev)
+		}
+	}
+	action, err := os.ReadFile(filepath.Join(dc, ".github", "actions", "setup-gusset", "action.yml"))
+	if err != nil {
+		return fmt.Errorf("DevCouncil setup-gusset action: %w", err)
+	}
+	if !strings.Contains(string(action), "ref: "+pins.Gusset.Revision+"\n") {
+		return fmt.Errorf("DevCouncil's setup-gusset action does not pin gusset %s, which upstream.lock.json pins", pins.Gusset.Revision)
+	}
+	return nil
 }
 
 func bootstrap(ctx context.Context, manvi, dc, gusset, bundles string) error {

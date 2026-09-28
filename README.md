@@ -68,7 +68,10 @@ go run ./cmd/dev build --manvi /path/to/Manvi --devcouncil /path/to/DevCouncil
 ./build/jarvis-workbench --backend ./build/jarvis --root .
 ```
 
-The generated local `go.work` is ignored. Build outputs are under `build/`. The Go host builds with `CGO_ENABLED=0`; platform FFI is confined to Manvi's Rust native adapters. Qualification builds disable egui inspection controls. Do not treat a Rust cross-check as proof of native execution on that OS.
+The generated local `go.work` is ignored, and it is required: Manvi's `go.mod`
+replaces DevCouncil and gusset with sibling checkouts, and Go applies those
+`replace` lines only inside a workspace, so a `GOWORK=off` build does not
+resolve. Build outputs are under `build/`. The Go host builds with `CGO_ENABLED=0`; platform FFI is confined to Manvi's Rust native adapters. Qualification builds disable egui inspection controls. Do not treat a Rust cross-check as proof of native execution on that OS.
 
 ```sh
 ./build/jarvis compile --capability examples/balance.json --register

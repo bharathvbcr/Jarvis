@@ -80,3 +80,42 @@ func TestReadPinsNamesAMissingGussetPin(t *testing.T) {
 		t.Fatalf("readPins() = %v, want a missing-gusset-pin error", err)
 	}
 }
+
+// Manvi's and DevCouncil's own pins must name the revisions the lock pins;
+// a lock bumped without them builds against one gusset while their CI
+// proves another.
+func TestUpstreamPinsMustAgree(t *testing.T) {
+	root := t.TempDir()
+	manvi, dc := filepath.Join(root, "Manvi"), filepath.Join(root, "DevCouncil")
+	g, d := "709c2b7b85be0de7c263471d933f395bb3b1b27f", "663b998d7265ca6a14ff72492ed17064df19fe05"
+	pins := lock{DevCouncil: source{Revision: d}, Gusset: source{Revision: g}}
+	write := func(dir, rel, body string) {
+		t.Helper()
+		p := filepath.Join(dir, rel)
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, []byte(body), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	modulePins := func(dcRev, gRev string) string {
+		return "# pins\nDevCouncil\thttps://github.com/bharathvbcr/DevCouncil.git\t" + dcRev +
+			"\ngusset\thttps://github.com/bharathvbcr/gusset.git\t" + gRev + "\n"
+	}
+	write(manvi, "scripts/module-pins.txt", modulePins(d, g))
+	write(dc, ".github/actions/setup-gusset/action.yml", "      with:\n        ref: "+g+"\n")
+	if err := checkUpstreamPinsAgree(manvi, dc, pins); err != nil {
+		t.Fatalf("agreeing pins refused: %v", err)
+	}
+	stale := "b6f5200bfff4730e4e5268bead7e743d684cb67e"
+	write(manvi, "scripts/module-pins.txt", modulePins(d, stale))
+	if err := checkUpstreamPinsAgree(manvi, dc, pins); err == nil || !strings.Contains(err.Error(), "module-pins.txt pins gusset") {
+		t.Fatalf("Manvi pinning another gusset = %v", err)
+	}
+	write(manvi, "scripts/module-pins.txt", modulePins(d, g))
+	write(dc, ".github/actions/setup-gusset/action.yml", "        ref: "+stale+"\n")
+	if err := checkUpstreamPinsAgree(manvi, dc, pins); err == nil || !strings.Contains(err.Error(), "setup-gusset") {
+		t.Fatalf("DevCouncil pinning another gusset = %v", err)
+	}
+}

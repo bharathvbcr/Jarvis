@@ -28,7 +28,12 @@ Offline Go/Rust suites used for this publish path:
 
 - Manvi: `go test ./workflow/... ./computer/... ./devcouncil/...` (pass)
 - DevCouncil: `cargo test --locked -p dc-evidence -p dc-verify` (pass)
-- Jarvis: `go test ./internal/app/...` and `GOWORK=off go build ./cmd/jarvis` (pass)
+- Jarvis: `go test ./internal/app/...` and `GOWORK=off go build ./cmd/jarvis` (pass at the Manvi pin of that run)
+
+Since the gusset pin, Manvi's `go.mod` replaces DevCouncil and gusset with
+sibling checkouts, and `replace` applies only to the main module or a
+workspace, so `GOWORK=off go build` no longer resolves; build through the
+workspace `dev bootstrap` or `dev workspace` writes.
 
 ## Remaining user actions
 

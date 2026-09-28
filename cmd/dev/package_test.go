@@ -185,14 +185,22 @@ func TestBootstrapRunsOfflineWithoutWorkspaceOrUpstreamModules(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	pins := lock{SchemaVersion: 1}
+	// Dependency order: each upstream pins the ones before it, and check-pins
+	// requires those pins to agree with the lock.
 	for _, item := range []struct {
 		name string
 		pin  *source
-	}{{"Manvi", &pins.Manvi}, {"DevCouncil", &pins.DevCouncil}, {"gusset", &pins.Gusset}} {
+	}{{"gusset", &pins.Gusset}, {"DevCouncil", &pins.DevCouncil}, {"Manvi", &pins.Manvi}} {
 		repo := t.TempDir()
-		if item.name == "Manvi" {
+		switch item.name {
+		case "Manvi":
 			writeFixture(t, repo, "manvi/go.mod", []byte("module github.com/bharathvbcr/Manvi/manvi\n\ngo 1.26.6\n"))
-		} else {
+			writeFixture(t, repo, "scripts/module-pins.txt", []byte(
+				"DevCouncil\thttps://github.com/bharathvbcr/DevCouncil.git\t"+pins.DevCouncil.Revision+
+					"\ngusset\thttps://github.com/bharathvbcr/gusset.git\t"+pins.Gusset.Revision+"\n"))
+		case "DevCouncil":
+			writeFixture(t, repo, ".github/actions/setup-gusset/action.yml", []byte("        ref: "+pins.Gusset.Revision+"\n"))
+		default:
 			writeFixture(t, repo, "README.md", []byte("fixture"))
 		}
 		for _, args := range [][]string{{"init", "-b", "main"}, {"add", "."}, {"-c", "user.name=Bootstrap test", "-c", "user.email=bootstrap@example.invalid", "-c", "commit.gpgsign=false", "commit", "-m", "fixture"}} {
