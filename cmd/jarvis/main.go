@@ -138,7 +138,11 @@ func run() error {
 		err := serve.New(os.Stdout, serve.Options{HardRules: true, Modules: []serve.Module{a}}).Serve(ctx, os.Stdin)
 		// The policy plane's engine handle, when this build links one. Bounded,
 		// so a stuck engine is reported rather than hanging exit.
-		return errors.Join(err, gussetcheck.Shutdown(2*time.Second))
+		err = errors.Join(err, gussetcheck.Shutdown(2*time.Second))
+		// Worker respawns and caught panics, which the bounded ring would
+		// otherwise evict unseen.
+		_, _ = gussetcheck.DrainLogs(os.Stderr)
+		return err
 	case "doctor":
 		return output(a.Doctor(ctx))
 	case "compile":

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"time"
 
 	"github.com/bharathvbcr/Manvi/manvi/gussetcheck"
@@ -24,7 +25,10 @@ func gussetCheck(ctx context.Context, out io.Writer) error {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	err := gussetcheck.SelfTest(ctx)
-	err = errors.Join(err, gussetcheck.Close())
+	// Bounded, like serve's exit: Close joins without a limit, so a stuck
+	// engine would hang the check it is supposed to report on.
+	err = errors.Join(err, gussetcheck.Shutdown(2*time.Second))
+	_, _ = gussetcheck.DrainLogs(os.Stderr)
 	if errors.Is(err, gussetcheck.ErrNotLinked) {
 		return errGussetNotLinked
 	}
