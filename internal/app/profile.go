@@ -150,11 +150,7 @@ func assertOverlayWithinPolicy(o workflow.Overlay, policy PolicyDocument) error 
 			if policy.containsSelector(policy.ReadOnlyTargets, want) || policy.containsSelector(policy.EditableFields, want) {
 				continue
 			}
-			label := want.Name
-			if label == "" {
-				label = want.Identifier
-			}
-			return fmt.Errorf("overlay target %s rung %d widens policy with %s", name, i, label)
+			return fmt.Errorf("overlay target %s rung %d widens policy with %s", name, i, want.label())
 		}
 	}
 	return nil

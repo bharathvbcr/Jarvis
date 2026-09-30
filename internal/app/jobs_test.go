@@ -249,10 +249,18 @@ func TestSlowDoctorDoesNotBlockHostStatusOrCancellation(t *testing.T) {
 	t.Setenv("JARVIS_DIAGNOSTIC_PROBE_DELAY", "1")
 	a, _ := diagnosticApp(t, "Diagnostic bank")
 	cancelled := make(chan struct{})
+	done := make(chan struct{})
 	var once sync.Once
+	finish := func() {
+		once.Do(func() {
+			close(cancelled)
+			close(done)
+		})
+	}
 	a.mu.Lock()
-	a.runs["waiting"] = &runEntry{cancel: func() { once.Do(func() { close(cancelled) }) }, view: RunView{RunID: "waiting"}}
+	a.runs["waiting"] = &runEntry{done: done, cancel: finish, view: RunView{RunID: "waiting"}}
 	a.mu.Unlock()
+	t.Cleanup(finish)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	input, send := io.Pipe()

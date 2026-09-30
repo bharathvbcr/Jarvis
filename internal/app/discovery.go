@@ -53,7 +53,7 @@ func (a *App) Discover(req DiscoveryRequest) (string, error) {
 		return "", errors.New("tenant must be north or south")
 	}
 	if req.Task == "" || len(req.Task) > 8192 {
-		return "", errors.New("task must contain1..8192 bytes")
+		return "", errors.New("task must contain 1..8192 bytes")
 	}
 	providerKind, err := normalizeDiscoveryProvider(req.Provider)
 	if err != nil {
@@ -91,7 +91,15 @@ func (a *App) Discover(req DiscoveryRequest) (string, error) {
 	}
 	ctx, cancel := context.WithTimeout(a.ctx, 15*time.Minute)
 	e := &runEntry{startedAt: time.Now().UTC(), cancel: cancel, done: make(chan struct{}), view: RunView{RunID: id, State: workflow.State{Phase: "discovering"}, EvidenceDir: filepath.Join(a.cfg.Root, "evidence", "private", id), Records: []computer.Record{}}}
+	if admitGate != nil {
+		admitGate()
+	}
 	a.mu.Lock()
+	if err := a.ctx.Err(); err != nil {
+		a.mu.Unlock()
+		cancel()
+		return "", err
+	}
 	if a.active != "" {
 		a.mu.Unlock()
 		cancel()

@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -106,20 +107,61 @@ func (a *App) Close() error {
 	a.cancel()
 	a.mu.Lock()
 	c := a.client
-	e := a.runs[a.active]
-	a.mu.Unlock()
-	if e != nil {
-		timer := time.NewTimer(5 * time.Second)
+	pending := make([]*runEntry, 0, len(a.runs))
+	blind := make([]*runEntry, 0)
+	unfinished := 0
+	for _, e := range a.runs {
+		if e == nil {
+			unfinished++
+			continue
+		}
+		if e.done == nil {
+			blind = append(blind, e)
+			continue
+		}
 		select {
 		case <-e.done:
-			timer.Stop()
-		case <-timer.C:
+		default:
+			pending = append(pending, e)
 		}
 	}
-	if c != nil {
-		return c.Close()
+	a.mu.Unlock()
+	for _, e := range blind {
+		e.mu.Lock()
+		finished := e.view.Finished
+		e.mu.Unlock()
+		if !finished {
+			unfinished++
+		}
 	}
-	return nil
+	if len(pending) > 0 {
+		timer := time.NewTimer(5 * time.Second)
+		defer timer.Stop()
+	wait:
+		for i, e := range pending {
+			select {
+			case <-e.done:
+			case <-timer.C:
+				unfinished++
+				for _, rest := range pending[i+1:] {
+					select {
+					case <-rest.done:
+					default:
+						unfinished++
+					}
+				}
+				break wait
+			}
+		}
+	}
+	var err error
+	if unfinished > 0 {
+		err = fmt.Errorf("close left %d run(s) without a finished exit", unfinished)
+	}
+	if c != nil {
+		err = errors.Join(err, c.Close())
+	}
+	return err
 }
 func (a *App) Root() string { return a.cfg.Root }
 func (a *App) Catalog() catalog.Store {
@@ -154,6 +196,12 @@ func (a *App) broker() (*computer.Client, error) {
 	a.client = c
 	return c, nil
 }
+
+// admitGate, when set, runs after validation and before the admission lock.
+// Tests cancel the app in that window. Production leaves it nil, and it must
+// not run while a.mu is held.
+var admitGate func()
+
 func identifier() (string, error) {
 	var b [16]byte
 	if _, err := rand.Read(b[:]); err != nil {
@@ -212,7 +260,15 @@ func (a *App) Start(req StartRequest) (string, error) {
 		inputs[k] = v
 	}
 	req.Inputs = inputs
+	if admitGate != nil {
+		admitGate()
+	}
 	a.mu.Lock()
+	if err := a.ctx.Err(); err != nil {
+		a.mu.Unlock()
+		cancel()
+		return "", err
+	}
 	if a.active != "" {
 		a.mu.Unlock()
 		cancel()

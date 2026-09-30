@@ -26,11 +26,12 @@ func startOwnedBank(ctx context.Context, path string, args ...string) (*ownedBan
 		return nil, err
 	}
 	b := &ownedBank{cmd: cmd, done: make(chan struct{})}
-	go func() { b.exitErr = cmd.Wait(); close(b.done) }()
+	done := b.done
+	go func() { b.exitErr = cmd.Wait(); close(done) }()
 	return b, nil
 }
 func (b *ownedBank) admissionError(err error) error {
-	if b == nil {
+	if b == nil || b.done == nil {
 		return err
 	}
 	select {
@@ -41,12 +42,15 @@ func (b *ownedBank) admissionError(err error) error {
 	}
 }
 func (b *ownedBank) stop() error {
-	if b == nil {
+	if b == nil || b.cmd == nil || b.cmd.Process == nil {
 		return nil
 	}
 	err := b.cmd.Process.Kill()
 	if errors.Is(err, os.ErrProcessDone) {
 		err = nil
+	}
+	if b.done == nil {
+		return errors.Join(err, errors.New("owned bank has no exit signal"))
 	}
 	timer := time.NewTimer(2 * time.Second)
 	defer timer.Stop()

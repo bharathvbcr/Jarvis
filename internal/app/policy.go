@@ -122,14 +122,30 @@ func (s PolicySelector) equal(other PolicySelector) bool {
 	if s.Role != other.Role || s.Name != other.Name || s.Identifier != other.Identifier || s.Ancestor != other.Ancestor {
 		return false
 	}
-	switch {
-	case s.Visual == nil && other.Visual == nil:
-		return true
-	case s.Visual == nil || other.Visual == nil:
-		return false
-	default:
-		return s.Visual.SHA256 == other.Visual.SHA256
+	return visualEqual(s.Visual, other.Visual)
+}
+
+// visualEqual treats geometry as part of the allowlist identity. The digest
+// only names the template; a larger search region or a different click point
+// is a different selector.
+func visualEqual(a, b *workflow.VisualAnchor) bool {
+	if a == nil || b == nil {
+		return a == b
 	}
+	return *a == *b
+}
+
+func (s PolicySelector) label() string {
+	if s.Name != "" {
+		return s.Name
+	}
+	if s.Identifier != "" {
+		return s.Identifier
+	}
+	if s.Visual != nil {
+		return "visual:" + s.Visual.SHA256
+	}
+	return s.Role
 }
 
 func (s PolicySelector) toComputer() computer.Selector {
@@ -201,19 +217,19 @@ func (base PolicyDocument) AssertNarrowed(candidate PolicyDocument) error {
 	}
 	for _, s := range candidate.EditableFields {
 		if !base.containsSelector(base.EditableFields, s) {
-			return fmt.Errorf("narrowed policy widens editable_fields for %s", s.Name)
+			return fmt.Errorf("narrowed policy widens editable_fields for %s", s.label())
 		}
 	}
 	for _, s := range candidate.ReadOnlyTargets {
 		if !base.containsSelector(base.ReadOnlyTargets, s) {
-			return fmt.Errorf("narrowed policy widens read_only_targets for %s", s.Name)
+			return fmt.Errorf("narrowed policy widens read_only_targets for %s", s.label())
 		}
 	}
 	// Sensitive coverage is a protection list: omitting a base entry widens
 	// exposure. Candidates may add protections, never remove them.
 	for _, s := range base.SensitiveTargets {
 		if !candidate.containsSelector(candidate.SensitiveTargets, s) {
-			return fmt.Errorf("narrowed policy removes sensitive_targets protection for %s", s.Name)
+			return fmt.Errorf("narrowed policy removes sensitive_targets protection for %s", s.label())
 		}
 	}
 	for _, kind := range candidate.PermittedStepKinds {

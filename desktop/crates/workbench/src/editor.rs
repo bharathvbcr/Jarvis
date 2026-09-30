@@ -662,9 +662,8 @@ impl Document {
                                     if matches!(
                                         step.kind.as_str(),
                                         "extract" | "assert" | "wait" | "branch"
-                                    ) {
-                                        step.effect = "read".into();
-                                    } else if step.effect.is_empty() {
+                                    ) || step.effect.is_empty()
+                                    {
                                         step.effect = "read".into();
                                     }
                                 }
