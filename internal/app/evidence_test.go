@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/bharathvbcr/Jarvis/internal/evidence"
 	"github.com/bharathvbcr/Manvi/manvi/computer"
-	"github.com/bharathvbcr/Manvi/manvi/devcouncil"
 	"github.com/bharathvbcr/Manvi/manvi/workflow"
 )
 
@@ -71,7 +71,7 @@ func TestHumanReceiptUpdatesAdmissionAndEpochChain(t *testing.T) {
 	if err := r.Finish(computer.RunResult{State: workflow.State{Phase: workflow.Completed, Epoch: 3}}, nil); err != nil {
 		t.Fatal(err)
 	}
-	var bundle devcouncil.EvidenceBundle
+	var bundle evidence.Bundle
 	raw, err := os.ReadFile(filepath.Join(r.dir, "bundle.json"))
 	if err != nil {
 		t.Fatal(err)

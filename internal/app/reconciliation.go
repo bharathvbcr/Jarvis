@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/bharathvbcr/Jarvis/internal/evidence"
 	"github.com/bharathvbcr/Manvi/manvi/computer"
-	"github.com/bharathvbcr/Manvi/manvi/devcouncil"
 	"github.com/bharathvbcr/Manvi/manvi/workflow"
 )
 
@@ -83,17 +83,17 @@ func (r *Recorder) RecordReconciliation(report Reconciliation) error {
 	r.bundle.Artifacts = append(r.bundle.Artifacts, artifact)
 	return nil
 }
-func storeReconciliation(dir string, report Reconciliation) (devcouncil.EvidenceArtifact, error) {
+func storeReconciliation(dir string, report Reconciliation) (evidence.Artifact, error) {
 	raw, err := json.MarshalIndent(report, "", "  ")
 	if err != nil {
-		return devcouncil.EvidenceArtifact{}, err
+		return evidence.Artifact{}, err
 	}
 	if len(raw) > 1<<20 {
-		return devcouncil.EvidenceArtifact{}, errors.New("reconciliation report exceeds one MiB")
+		return evidence.Artifact{}, errors.New("reconciliation report exceeds one MiB")
 	}
 	const name = "reconciliation.json"
 	if err = writeAtomic(filepath.Join(dir, name), raw); err != nil {
-		return devcouncil.EvidenceArtifact{}, err
+		return evidence.Artifact{}, err
 	}
-	return devcouncil.EvidenceArtifact{ID: "outcome-reconciliation", Path: name, SHA256: digest(raw), SizeBytes: uint64(len(raw))}, nil
+	return evidence.Artifact{ID: "outcome-reconciliation", Path: name, SHA256: digest(raw), SizeBytes: uint64(len(raw))}, nil
 }

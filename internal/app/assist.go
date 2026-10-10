@@ -71,11 +71,6 @@ func (a *App) assist(e *runEntry) {
 		failure = err
 		return
 	}
-	defer func() {
-		if err := ledger.Close(); err != nil && failure == nil {
-			failure = err
-		}
-	}()
 	e.mu.Lock()
 	run := e.run
 	e.mu.Unlock()

@@ -14,13 +14,13 @@ import (
 	"time"
 
 	"github.com/bharathvbcr/Jarvis/internal/app"
+	"github.com/bharathvbcr/Jarvis/internal/codegen"
+	"github.com/bharathvbcr/Jarvis/internal/evidence"
 	offline "github.com/bharathvbcr/Jarvis/internal/trace"
 	"github.com/bharathvbcr/Manvi/manvi/computer"
-	"github.com/bharathvbcr/Manvi/manvi/devcouncil"
 	"github.com/bharathvbcr/Manvi/manvi/gussetcheck"
 	"github.com/bharathvbcr/Manvi/manvi/serve"
 	"github.com/bharathvbcr/Manvi/manvi/workflow"
-	"github.com/bharathvbcr/Manvi/manvi/workflow/catalog"
 )
 
 func main() {
@@ -178,7 +178,7 @@ func run() error {
 		if err != nil {
 			return err
 		}
-		source, err := catalog.GenerateGo(p)
+		source, err := codegen.Go(p)
 		if err != nil {
 			return err
 		}
@@ -192,7 +192,7 @@ func run() error {
 		if binary == "" {
 			binary = filepath.Join(absRoot, "build", "dcverify")
 		}
-		report, err := devcouncil.VerifyEvidence(ctx, devcouncil.EvidenceRequest{Binary: binary, ContractPath: resolve(*contract), BundlePath: resolve(*bundle), ArtifactsRoot: filepath.Dir(resolve(*bundle)), ContractSHA256: *contractSHA, CapabilitySHA256: *capabilitySHA, RunID: *runID, SessionID: *sessionID, Epoch: *epoch})
+		report, err := evidence.Verify(ctx, evidence.Request{Binary: binary, ContractPath: resolve(*contract), BundlePath: resolve(*bundle), ArtifactsRoot: filepath.Dir(resolve(*bundle)), ContractSHA256: *contractSHA, CapabilitySHA256: *capabilitySHA, RunID: *runID, SessionID: *sessionID, Epoch: *epoch})
 		if err != nil {
 			return err
 		}

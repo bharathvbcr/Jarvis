@@ -13,9 +13,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bharathvbcr/Jarvis/internal/codegen"
+	"github.com/bharathvbcr/Jarvis/internal/evidence"
 	"github.com/bharathvbcr/Manvi/manvi/computer"
 	"github.com/bharathvbcr/Manvi/manvi/credentials"
-	"github.com/bharathvbcr/Manvi/manvi/devcouncil"
 	"github.com/bharathvbcr/Manvi/manvi/serve"
 	"github.com/bharathvbcr/Manvi/manvi/workflow"
 	"github.com/bharathvbcr/Manvi/manvi/workflow/catalog"
@@ -206,18 +207,18 @@ func (a *App) Configure(r *serve.Router) error {
 				Configured bool `json:"configured"`
 			}{true}, nil
 		}),
-		"jarvis.evidence.verify": asyncHandler(a, "jarvis.evidence.verify", 15*time.Second, func(ctx context.Context, p runID) (devcouncil.EvidenceReport, error) {
+		"jarvis.evidence.verify": asyncHandler(a, "jarvis.evidence.verify", 15*time.Second, func(ctx context.Context, p runID) (evidence.Report, error) {
 			e, err := a.entry(p.RunID)
 			if err != nil {
-				return devcouncil.EvidenceReport{}, err
+				return evidence.Report{}, err
 			}
 			e.mu.Lock()
 			expected, finished := e.expected, e.view.Finished
 			e.mu.Unlock()
 			if !finished {
-				return devcouncil.EvidenceReport{}, errors.New("run is still active")
+				return evidence.Report{}, errors.New("run is still active")
 			}
-			return devcouncil.VerifyEvidence(ctx, expected)
+			return evidence.Verify(ctx, expected)
 		}),
 		"jarvis.codegen": handler(func(_ context.Context, p struct {
 			CapabilityPath string `json:"capability_path"`
@@ -236,7 +237,7 @@ func (a *App) Configure(r *serve.Router) error {
 					Source string `json:"source"`
 				}{}, errors.New("generated package name is capability")
 			}
-			b, err := catalog.GenerateGo(v)
+			b, err := codegen.Go(v)
 			return struct {
 				Source string `json:"source"`
 			}{string(b)}, err

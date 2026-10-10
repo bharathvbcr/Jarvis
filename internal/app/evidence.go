@@ -9,21 +9,21 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/bharathvbcr/Jarvis/internal/evidence"
 	"github.com/bharathvbcr/Manvi/manvi/computer"
-	"github.com/bharathvbcr/Manvi/manvi/devcouncil"
 	"github.com/bharathvbcr/Manvi/manvi/workflow"
 )
 
 type Recorder struct {
 	*desktopJournal
-	mu            sync.Mutex
-	bundle        devcouncil.EvidenceBundle
-	sequence      uint64
-	sideSequence  uint64
-	contract      []byte
-	program       *workflow.Program
-	pendingHuman  []pendingHumanAction
-	seenRecovery  map[string]bool
+	mu           sync.Mutex
+	bundle       evidence.Bundle
+	sequence     uint64
+	sideSequence uint64
+	contract     []byte
+	program      *workflow.Program
+	pendingHuman []pendingHumanAction
+	seenRecovery map[string]bool
 }
 
 type pendingHumanAction struct {
@@ -32,7 +32,7 @@ type pendingHumanAction struct {
 }
 
 func NewRecorder(dir string, program *workflow.Program, contract []byte, session computer.Session, policySHA256 string) (*Recorder, error) {
-	var expected devcouncil.EvidenceContract
+	var expected evidence.Contract
 	if err := workflow.DecodeStrict(contract, &expected); err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func NewRecorder(dir string, program *workflow.Program, contract []byte, session
 		contract:       append([]byte(nil), contract...),
 		program:        program,
 		seenRecovery:   map[string]bool{},
-		bundle: devcouncil.EvidenceBundle{
+		bundle: evidence.Bundle{
 			SchemaVersion:    1,
 			RunID:            session.RunID,
 			SessionID:        session.ID,
@@ -63,13 +63,13 @@ func NewRecorder(dir string, program *workflow.Program, contract []byte, session
 			CapabilitySHA256: program.Digest(),
 			PolicySHA256:     policySHA256,
 			Degraded:         []string{},
-			Actions:          []devcouncil.EvidenceAction{},
-			Observations:     []devcouncil.EvidenceObservation{},
-			Artifacts:        []devcouncil.EvidenceArtifact{},
-			Interventions:    []devcouncil.EvidenceIntervention{},
-			HumanActions:     []devcouncil.EvidenceHumanAction{},
-			Recoveries:       []devcouncil.EvidenceRecoveryApplied{},
-			LocatorHits:      []devcouncil.EvidenceLocatorHit{},
+			Actions:          []evidence.Action{},
+			Observations:     []evidence.Observation{},
+			Artifacts:        []evidence.Artifact{},
+			Interventions:    []evidence.Intervention{},
+			HumanActions:     []evidence.HumanAction{},
+			Recoveries:       []evidence.RecoveryApplied{},
+			LocatorHits:      []evidence.LocatorHit{},
 		},
 	}
 	if err := writeAtomic(filepath.Join(dir, "contract.json"), contract); err != nil {
@@ -84,7 +84,7 @@ func NewRecorder(dir string, program *workflow.Program, contract []byte, session
 }
 func (r *Recorder) appendAction(id, disposition string) {
 	r.sequence++
-	r.bundle.Actions = append(r.bundle.Actions, devcouncil.EvidenceAction{ID: id, Sequence: r.sequence, Disposition: disposition})
+	r.bundle.Actions = append(r.bundle.Actions, evidence.Action{ID: id, Sequence: r.sequence, Disposition: disposition})
 }
 func (r *Recorder) actionIndex(id string) int {
 	for i, a := range r.bundle.Actions {
@@ -112,7 +112,7 @@ func (r *Recorder) Record(record computer.Record) error {
 		if record.RecoveryID != "" && !r.seenRecovery[record.RecoveryID] {
 			r.seenRecovery[record.RecoveryID] = true
 			r.sideSequence++
-			r.bundle.Recoveries = append(r.bundle.Recoveries, devcouncil.EvidenceRecoveryApplied{
+			r.bundle.Recoveries = append(r.bundle.Recoveries, evidence.RecoveryApplied{
 				ID:       record.RecoveryID,
 				Sequence: r.sideSequence,
 				StepID:   stepIDFromAction(record.ActionID, r.bundle.RunID),
@@ -121,7 +121,7 @@ func (r *Recorder) Record(record computer.Record) error {
 	}
 	if record.Kind == "event" && record.Event != nil && record.Event.NextEpoch > record.Event.Epoch {
 		r.sequence++
-		r.bundle.EpochTransitions = append(r.bundle.EpochTransitions, devcouncil.EvidenceEpochTransition{Sequence: r.sequence, FromEpoch: record.Event.Epoch, ToEpoch: record.Event.NextEpoch, Reason: record.Event.Kind})
+		r.bundle.EpochTransitions = append(r.bundle.EpochTransitions, evidence.EpochTransition{Sequence: r.sequence, FromEpoch: record.Event.Epoch, ToEpoch: record.Event.NextEpoch, Reason: record.Event.Kind})
 	}
 	if record.Kind == "event" && record.Event != nil && record.Event.Kind == "receipt" {
 		disposition := "unknown"
@@ -149,7 +149,7 @@ func (r *Recorder) Record(record computer.Record) error {
 		}
 		if target := record.Event.Observation.Target; target != "" {
 			r.sideSequence++
-			r.bundle.LocatorHits = append(r.bundle.LocatorHits, devcouncil.EvidenceLocatorHit{
+			r.bundle.LocatorHits = append(r.bundle.LocatorHits, evidence.LocatorHit{
 				Target:        target,
 				StrategyIndex: uint64(record.Event.Observation.StrategyIndex),
 				Sequence:      r.sideSequence,
@@ -184,7 +184,7 @@ func (r *Recorder) Record(record computer.Record) error {
 				}
 				if target != "" {
 					r.sideSequence++
-					r.bundle.LocatorHits = append(r.bundle.LocatorHits, devcouncil.EvidenceLocatorHit{
+					r.bundle.LocatorHits = append(r.bundle.LocatorHits, evidence.LocatorHit{
 						Target:        target,
 						StrategyIndex: uint64(record.StrategyIndex),
 						Sequence:      r.sideSequence,
@@ -204,7 +204,7 @@ func (r *Recorder) Record(record computer.Record) error {
 		if record.Stage == "observe_after" || record.Stage == "human_after" || record.Stage == "outcome_reconciliation" || isRead {
 			r.sequence++
 			facts := factsFromObservation(o)
-			r.bundle.Observations = append(r.bundle.Observations, devcouncil.EvidenceObservation{Sequence: r.sequence, RunID: r.bundle.RunID, SessionID: r.bundle.SessionID, Epoch: record.Epoch, AfterActionID: record.ActionID, Facts: facts, ArtifactIDs: []string{artifacts[0].ID, artifacts[1].ID}})
+			r.bundle.Observations = append(r.bundle.Observations, evidence.Observation{Sequence: r.sequence, RunID: r.bundle.RunID, SessionID: r.bundle.SessionID, Epoch: record.Epoch, AfterActionID: record.ActionID, Facts: facts, ArtifactIDs: []string{artifacts[0].ID, artifacts[1].ID}})
 		}
 	}
 	return nil
@@ -258,7 +258,7 @@ func (r *Recorder) Finish(result computer.RunResult, interventions []computer.In
 	terminalOK := result.Error == "" && (result.State.Phase == workflow.Completed || result.State.Phase == workflow.Concluded)
 	r.bundle.JournalComplete = terminalOK
 	if r.bundle.EpochTransitions == nil {
-		r.bundle.EpochTransitions = []devcouncil.EvidenceEpochTransition{}
+		r.bundle.EpochTransitions = []evidence.EpochTransition{}
 	}
 	if !r.bundle.JournalComplete {
 		r.bundle.Degraded = append(r.bundle.Degraded, string(result.State.Phase))
@@ -274,7 +274,7 @@ func (r *Recorder) Finish(result computer.RunResult, interventions []computer.In
 		if kind != "success" && kind != "business" {
 			kind = "success"
 		}
-		r.bundle.Outcome = &devcouncil.EvidenceOutcome{ID: outcomeID, Kind: kind}
+		r.bundle.Outcome = &evidence.Outcome{ID: outcomeID, Kind: kind}
 	}
 	returnedID := ""
 	for _, iv := range interventions {
@@ -287,7 +287,7 @@ func (r *Recorder) Finish(result computer.RunResult, interventions []computer.In
 		if id == "" {
 			id = fmt.Sprintf("%s:intervention:%d", r.bundle.RunID, r.sideSequence)
 		}
-		r.bundle.Interventions = append(r.bundle.Interventions, devcouncil.EvidenceIntervention{
+		r.bundle.Interventions = append(r.bundle.Interventions, evidence.Intervention{
 			ID:         id,
 			Sequence:   r.sideSequence,
 			ReasonCode: iv.ReasonCode,
@@ -300,7 +300,7 @@ func (r *Recorder) Finish(result computer.RunResult, interventions []computer.In
 	if returnedID != "" {
 		for _, h := range r.pendingHuman {
 			r.sideSequence++
-			r.bundle.HumanActions = append(r.bundle.HumanActions, devcouncil.EvidenceHumanAction{
+			r.bundle.HumanActions = append(r.bundle.HumanActions, evidence.HumanAction{
 				ID:             h.ID,
 				Sequence:       r.sideSequence,
 				Kind:           h.Kind,

@@ -27,7 +27,6 @@ func TestDiscoveryFixtureProviderLoadsWithoutGeminiKey(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer ledger.Close()
 	provider, path, err := newDiscoveryLLMProvider(DiscoveryProviderFixture, "", func() (credentials.Secret, error) {
 		t.Fatal("fixture provider must not resolve Gemini credentials")
 		return credentials.Secret{}, nil
@@ -140,7 +139,6 @@ func TestDiscoveryFixtureTranscriptDrivesPublishAssembly(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer ledger.Close()
 	provider, _, err := newDiscoveryLLMProvider(DiscoveryProviderFixture, "", nil, ledger)
 	if err != nil {
 		t.Fatal(err)
@@ -297,7 +295,6 @@ func TestDefaultDiscoveryFixtureNeedsNoSourceTree(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer ledger.Close()
 	provider, source, err := newDiscoveryLLMProvider(DiscoveryProviderFixture, "", nil, ledger)
 	if err != nil {
 		t.Fatalf("embedded fixture unavailable from an unrelated directory: %v", err)

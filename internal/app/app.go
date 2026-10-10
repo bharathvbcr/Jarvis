@@ -14,9 +14,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/bharathvbcr/Jarvis/internal/evidence"
 	"github.com/bharathvbcr/Manvi/manvi/computer"
 	"github.com/bharathvbcr/Manvi/manvi/credentials"
-	"github.com/bharathvbcr/Manvi/manvi/devcouncil"
 	"github.com/bharathvbcr/Manvi/manvi/gussetcheck"
 	"github.com/bharathvbcr/Manvi/manvi/workflow"
 	"github.com/bharathvbcr/Manvi/manvi/workflow/catalog"
@@ -54,7 +54,7 @@ type RunView struct {
 	EvidenceDir       string                         `json:"evidence_dir"`
 	Finished          bool                           `json:"finished"`
 	Error             string                         `json:"error,omitempty"`
-	Report            *devcouncil.EvidenceReport     `json:"report,omitempty"`
+	Report            *evidence.Report               `json:"report,omitempty"`
 	Observation       *computer.Observation          `json:"observation,omitempty"`
 	Records           []computer.Record              `json:"records"`
 	TotalRecords      int                            `json:"total_records"`
@@ -74,7 +74,7 @@ type runEntry struct {
 	run               *computer.Run
 	cancel            context.CancelFunc
 	session           computer.Session
-	expected          devcouncil.EvidenceRequest
+	expected          evidence.Request
 	done              chan struct{}
 	assisted          bool
 	assistanceRunning bool
@@ -240,7 +240,7 @@ func (a *App) Start(req StartRequest) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	var contractDoc devcouncil.EvidenceContract
+	var contractDoc evidence.Contract
 	if err = workflow.DecodeStrict(contract, &contractDoc); err != nil {
 		return "", err
 	}
@@ -393,7 +393,7 @@ func (a *App) execute(ctx context.Context, e *runEntry, p *workflow.Program, bin
 	}
 	e.mu.Lock()
 	e.session = session
-	e.expected = devcouncil.EvidenceRequest{Binary: a.cfg.Verifier, ContractPath: filepath.Join(e.view.EvidenceDir, "contract.json"), BundlePath: filepath.Join(e.view.EvidenceDir, "bundle.json"), ArtifactsRoot: e.view.EvidenceDir, ContractSHA256: digest(contract), CapabilitySHA256: p.Digest(), RunID: session.RunID, SessionID: session.ID, Epoch: session.Epoch}
+	e.expected = evidence.Request{Binary: a.cfg.Verifier, ContractPath: filepath.Join(e.view.EvidenceDir, "contract.json"), BundlePath: filepath.Join(e.view.EvidenceDir, "bundle.json"), ArtifactsRoot: e.view.EvidenceDir, ContractSHA256: digest(contract), CapabilitySHA256: p.Digest(), RunID: session.RunID, SessionID: session.ID, Epoch: session.Epoch}
 	e.mu.Unlock()
 	onRecord := func(record computer.Record) error {
 		if err := recorder.Record(record); err != nil {
@@ -460,7 +460,7 @@ func (a *App) execute(ctx context.Context, e *runEntry, p *workflow.Program, bin
 	e.view.Observation = run.Observation()
 	expected := e.expected
 	e.mu.Unlock()
-	report, err := devcouncil.VerifyEvidence(ctx, expected)
+	report, err := evidence.Verify(ctx, expected)
 	if err != nil {
 		failure = err
 	} else {
@@ -630,7 +630,7 @@ type Diagnostic struct {
 	Gusset string `json:"gusset"`
 }
 
-// gussetStatus renders gussetcheck.Ready for the doctor report.
+// gussetStatus renders the result of gussetcheck.Run for the doctor report.
 func gussetStatus(err error) string {
 	switch {
 	case err == nil:
@@ -648,7 +648,9 @@ func (a *App) Doctor(ctx context.Context) Diagnostic {
 		info, err := os.Stat(path)
 		d.Binaries[name] = err == nil && info.Mode().IsRegular()
 	}
-	d.Gusset = gussetStatus(gussetcheck.Ready())
+	gussetCtx, cancelGusset := context.WithTimeout(ctx, 5*time.Second)
+	d.Gusset = gussetStatus(gussetcheck.Run(gussetCtx))
+	cancelGusset()
 	_, err := a.credentials.Resolve("gemini")
 	d.GeminiConfigured = err == nil
 	c, err := a.broker()

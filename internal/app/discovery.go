@@ -157,11 +157,6 @@ func (a *App) discover(ctx context.Context, e *runEntry, req DiscoveryRequest) {
 		failure = err
 		return
 	}
-	defer func() {
-		if err := ledger.Close(); err != nil && failure == nil {
-			failure = err
-		}
-	}()
 	client, err := a.broker()
 	if err != nil {
 		failure = err
@@ -464,6 +459,10 @@ func (a *App) discover(ctx context.Context, e *runEntry, req DiscoveryRequest) {
 	if !published && failure == nil {
 		failure = errors.New("discovery ended without a compiled capability")
 	}
+	snapshot, err := ledger.Snapshot()
+	if err != nil && failure == nil {
+		failure = err
+	}
 	metadata := struct {
 		Model          string          `json:"model"`
 		PromptRevision string          `json:"prompt_revision"`
@@ -476,7 +475,8 @@ func (a *App) discover(ctx context.Context, e *runEntry, req DiscoveryRequest) {
 		ToolCalls      int             `json:"tool_calls"`
 		Usage          llm.Usage       `json:"usage"`
 		Budget         budget.Snapshot `json:"budget"`
-	}{DiscoveryModel, DiscoveryPromptRevision, req.Provider, fixtureUsed, discoveryLive(req.Provider), discoveryEvidenceClass(req.Provider), published, outcome.Steps, outcome.ToolCalls, outcome.Usage, ledger.Snapshot()}
+		PriceRevision  string          `json:"price_revision"`
+	}{DiscoveryModel, DiscoveryPromptRevision, req.Provider, fixtureUsed, discoveryLive(req.Provider), discoveryEvidenceClass(req.Provider), published, outcome.Steps, outcome.ToolCalls, outcome.Usage, snapshot, campaignPriceRevision}
 	if err := writeJSON(filepath.Join(e.view.EvidenceDir, "discovery.json"), metadata); err != nil && failure == nil {
 		failure = err
 	}

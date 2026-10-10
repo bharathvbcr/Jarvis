@@ -3,8 +3,8 @@ package app
 import (
 	"encoding/json"
 	"errors"
+	"github.com/bharathvbcr/Jarvis/internal/evidence"
 	"github.com/bharathvbcr/Manvi/manvi/computer"
-	"github.com/bharathvbcr/Manvi/manvi/devcouncil"
 	"path/filepath"
 	"sync"
 )
@@ -13,7 +13,7 @@ type discoveryWriter struct {
 	mu         sync.Mutex
 	journal    *desktopJournal
 	sequence   uint64
-	artifacts  []devcouncil.EvidenceArtifact
+	artifacts  []evidence.Artifact
 	lastAction string
 }
 
@@ -73,12 +73,12 @@ func (w *discoveryWriter) finish(runID string) error {
 	if err != nil {
 		return err
 	}
-	artifacts := append([]devcouncil.EvidenceArtifact{}, w.artifacts...)
-	artifacts = append(artifacts, devcouncil.EvidenceArtifact{ID: "desktop-journal", Path: "events.jsonl", SHA256: digest(raw), SizeBytes: uint64(len(raw))})
+	artifacts := append([]evidence.Artifact{}, w.artifacts...)
+	artifacts = append(artifacts, evidence.Artifact{ID: "desktop-journal", Path: "events.jsonl", SHA256: digest(raw), SizeBytes: uint64(len(raw))})
 	return writeJSON(filepath.Join(w.journal.dir, "desktop-artifacts.json"), struct {
-		SchemaVersion int                           `json:"schema_version"`
-		RunID         string                        `json:"run_id"`
-		Acceptance    string                        `json:"acceptance"`
-		Artifacts     []devcouncil.EvidenceArtifact `json:"artifacts"`
+		SchemaVersion int                 `json:"schema_version"`
+		RunID         string              `json:"run_id"`
+		Acceptance    string              `json:"acceptance"`
+		Artifacts     []evidence.Artifact `json:"artifacts"`
 	}{1, runID, "not_evaluated", artifacts})
 }

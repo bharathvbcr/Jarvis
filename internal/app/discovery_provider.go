@@ -99,6 +99,6 @@ func newDiscoveryLLMProvider(provider, fixturePath string, resolveGemini func() 
 		}
 		return inner, path, nil
 	default:
-		return &budget.Provider{Inner: gemini.New("", resolveGemini), Ledger: ledger}, "", nil
+		return &budget.Provider{Inner: &campaignGemini{Adapter: gemini.New("", resolveGemini)}, Ledger: ledger}, "", nil
 	}
 }

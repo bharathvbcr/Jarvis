@@ -8,8 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/bharathvbcr/Jarvis/internal/evidence"
 	"github.com/bharathvbcr/Manvi/manvi/computer"
-	"github.com/bharathvbcr/Manvi/manvi/devcouncil"
 )
 
 // desktopJournal is the shared durable sink for discovery and frozen replay.
@@ -29,12 +29,12 @@ func openDesktopJournal(dir string) (*desktopJournal, error) {
 	}
 	return &desktopJournal{dir: dir, file: f}, nil
 }
-func (j *desktopJournal) append(record computer.Record, frameSequence uint64) (computer.Record, []devcouncil.EvidenceArtifact, error) {
+func (j *desktopJournal) append(record computer.Record, frameSequence uint64) (computer.Record, []evidence.Artifact, error) {
 	j.records++
 	if j.records > 4096 {
 		return record, nil, errors.New("run evidence record limit exceeded")
 	}
-	artifacts := []devcouncil.EvidenceArtifact{}
+	artifacts := []evidence.Artifact{}
 	if record.Kind == "observation" && record.Observation != nil {
 		o := *record.Observation
 		imageBytes, err := base64.StdEncoding.DecodeString(o.Screenshot.Base64)
@@ -49,7 +49,7 @@ func (j *desktopJournal) append(record computer.Record, frameSequence uint64) (c
 		if err = writeAtomic(filepath.Join(j.dir, prefix+".png"), imageBytes); err != nil {
 			return record, nil, err
 		}
-		artifacts = append(artifacts, devcouncil.EvidenceArtifact{ID: prefix, Path: prefix + ".png", SHA256: digest(imageBytes), SizeBytes: uint64(len(imageBytes))})
+		artifacts = append(artifacts, evidence.Artifact{ID: prefix, Path: prefix + ".png", SHA256: digest(imageBytes), SizeBytes: uint64(len(imageBytes))})
 		o.Screenshot.Base64 = ""
 		treeBytes, err := json.MarshalIndent(o, "", "  ")
 		if err != nil {
@@ -58,7 +58,7 @@ func (j *desktopJournal) append(record computer.Record, frameSequence uint64) (c
 		if err = writeAtomic(filepath.Join(j.dir, prefix+".json"), treeBytes); err != nil {
 			return record, nil, err
 		}
-		artifacts = append(artifacts, devcouncil.EvidenceArtifact{ID: prefix + "-tree", Path: prefix + ".json", SHA256: digest(treeBytes), SizeBytes: uint64(len(treeBytes))})
+		artifacts = append(artifacts, evidence.Artifact{ID: prefix + "-tree", Path: prefix + ".json", SHA256: digest(treeBytes), SizeBytes: uint64(len(treeBytes))})
 		record.Observation = &o
 	}
 	data, err := json.Marshal(record)
