@@ -630,7 +630,7 @@ type Diagnostic struct {
 	Gusset string `json:"gusset"`
 }
 
-// gussetStatus renders the result of gussetcheck.Run for the doctor report.
+// gussetStatus renders the result of gussetcheck.SelfTest for the doctor report.
 func gussetStatus(err error) string {
 	switch {
 	case err == nil:
@@ -649,7 +649,7 @@ func (a *App) Doctor(ctx context.Context) Diagnostic {
 		d.Binaries[name] = err == nil && info.Mode().IsRegular()
 	}
 	gussetCtx, cancelGusset := context.WithTimeout(ctx, 5*time.Second)
-	d.Gusset = gussetStatus(gussetcheck.Run(gussetCtx))
+	d.Gusset = gussetStatus(gussetcheck.SelfTest(gussetCtx))
 	cancelGusset()
 	_, err := a.credentials.Resolve("gemini")
 	d.GeminiConfigured = err == nil
