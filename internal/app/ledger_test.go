@@ -1,6 +1,8 @@
 package app
 
 import (
+	"context"
+	"errors"
 	"testing"
 
 	"github.com/bharathvbcr/Manvi/manvi/llm"
@@ -11,7 +13,7 @@ import (
 
 func TestOpenCampaignLedgerUnifiesAssistAndDiscovery(t *testing.T) {
 	root := t.TempDir()
-	ledger, err := openCampaignLedger(root)
+	ledger, err := openCampaignLedger(t.Context(), root)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,11 +44,24 @@ func TestCampaignGeminiIsMeterable(t *testing.T) {
 	if gated, ok := p.(transport.AttemptGatedProvider); !ok || !gated.AttemptGateSupported() {
 		t.Fatal("campaignGemini hides the attempt gate")
 	}
-	ledger, err := openCampaignLedger(t.TempDir())
+	ledger, err := openCampaignLedger(t.Context(), t.TempDir())
 	if err != nil {
 		t.Fatal(err)
 	}
 	if n, err := (&budget.Provider{Inner: p, Ledger: ledger}).Estimate(llm.Request{Model: DiscoveryModel}); err != nil || n <= 0 {
 		t.Fatalf("the campaign model cannot be metered: reserve=%d err=%v", n, err)
+	}
+}
+
+// A caller that has already given up must not get a ledger handle: Manvi's
+// Open checks ctx before it takes the file lock, so a cancelled discovery or
+// assist run stops here instead of opening, and later reserving against, the
+// shared cap.
+func TestOpenCampaignLedgerStopsOnCancelledContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	ledger, err := openCampaignLedger(ctx, t.TempDir())
+	if !errors.Is(err, context.Canceled) || ledger != nil {
+		t.Fatalf("ledger=%v err=%v, want nil and context.Canceled", ledger, err)
 	}
 }

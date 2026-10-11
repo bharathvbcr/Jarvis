@@ -152,7 +152,7 @@ func (a *App) discover(ctx context.Context, e *runEntry, req DiscoveryRequest) {
 		}
 	}()
 	record := func(r computer.Record) error { return writer.record(e, r) }
-	ledger, err := openCampaignLedger(a.cfg.Root)
+	ledger, err := openCampaignLedger(ctx, a.cfg.Root)
 	if err != nil {
 		failure = err
 		return
@@ -459,7 +459,10 @@ func (a *App) discover(ctx context.Context, e *runEntry, req DiscoveryRequest) {
 	if !published && failure == nil {
 		failure = errors.New("discovery ended without a compiled capability")
 	}
-	snapshot, err := ledger.Snapshot()
+	// A cancelled run must still record what it spent, so the evidence read
+	// keeps the caller's values but not its cancellation; Snapshot bounds the
+	// wait itself.
+	snapshot, err := ledger.Snapshot(context.WithoutCancel(ctx))
 	if err != nil && failure == nil {
 		failure = err
 	}

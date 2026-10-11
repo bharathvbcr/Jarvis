@@ -23,7 +23,7 @@ func TestDiscoveryFixtureProviderLoadsWithoutGeminiKey(t *testing.T) {
 	t.Setenv("GEMINI_API_KEY", "")
 	t.Setenv("GOOGLE_API_KEY", "")
 	root := t.TempDir()
-	ledger, err := openCampaignLedger(root)
+	ledger, err := openCampaignLedger(t.Context(), root)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -135,7 +135,7 @@ func TestDiscoveryFixtureTranscriptDrivesPublishAssembly(t *testing.T) {
 	t.Setenv("GEMINI_API_KEY", "")
 	t.Setenv("GOOGLE_API_KEY", "")
 	root := t.TempDir()
-	ledger, err := openCampaignLedger(root)
+	ledger, err := openCampaignLedger(t.Context(), root)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -291,7 +291,7 @@ func TestDefaultDiscoveryFixtureNeedsNoSourceTree(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = os.Chdir(cwd) })
 
-	ledger, err := openCampaignLedger(dir)
+	ledger, err := openCampaignLedger(t.Context(), dir)
 	if err != nil {
 		t.Fatal(err)
 	}

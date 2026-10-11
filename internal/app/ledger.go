@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"path/filepath"
 
 	"github.com/bharathvbcr/Manvi/manvi/llm/budget"
@@ -31,6 +32,8 @@ type campaignGemini struct{ *gemini.Adapter }
 // PriceOf answers budget.Pricer for every model the campaign may use.
 func (*campaignGemini) PriceOf(string) (budget.Prices, bool) { return campaignLedgerPrices, true }
 
-func openCampaignLedger(root string) (*budget.Ledger, error) {
-	return budget.Open(filepath.Join(root, ".local", "gemini-campaign.json"), campaignLedgerSoftCap)
+// openCampaignLedger opens the campaign ledger, waiting for its file lock no
+// longer than ctx allows.
+func openCampaignLedger(ctx context.Context, root string) (*budget.Ledger, error) {
+	return budget.Open(ctx, filepath.Join(root, ".local", "gemini-campaign.json"), campaignLedgerSoftCap)
 }

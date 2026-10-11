@@ -66,7 +66,7 @@ func (a *App) assist(e *runEntry) {
 		case <-ctx.Done():
 		}
 	}()
-	ledger, err := openCampaignLedger(a.cfg.Root)
+	ledger, err := openCampaignLedger(ctx, a.cfg.Root)
 	if err != nil {
 		failure = err
 		return
