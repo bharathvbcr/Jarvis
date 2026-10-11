@@ -15,6 +15,8 @@ import (
 	"os/exec"
 	"strconv"
 	"time"
+
+	"github.com/bharathvbcr/Manvi/manvi/childenv"
 )
 
 type Predicate struct {
@@ -151,6 +153,7 @@ func Verify(ctx context.Context, r Request) (Report, error) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, r.Binary, "evidence-check", "--contract", r.ContractPath, "--bundle", r.BundlePath, "--artifacts-root", r.ArtifactsRoot, "--expected-contract-sha256", r.ContractSHA256, "--expected-capability-sha256", r.CapabilitySHA256, "--expected-run-id", r.RunID, "--expected-session-id", r.SessionID, "--expected-epoch", strconv.FormatUint(r.Epoch, 10))
+	cmd.Env = childenv.Inherit()
 	cmd.WaitDelay = 2 * time.Second
 	out := boundedOutput{limit: 1 << 20}
 	stderr := boundedOutput{limit: 4096}

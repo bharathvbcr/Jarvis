@@ -7,6 +7,8 @@ import (
 	"os"
 	"os/exec"
 	"time"
+
+	"github.com/bharathvbcr/Manvi/manvi/childenv"
 )
 
 type ownedBank struct {
@@ -22,6 +24,7 @@ func startOwnedBank(ctx context.Context, path string, args ...string) (*ownedBan
 	// The run owns cleanup. Input cancellation must leave the same application
 	// alive long enough for its final read-only reconciliation capture.
 	cmd := exec.Command(path, args...)
+	cmd.Env = childenv.Inherit()
 	if err := cmd.Start(); err != nil {
 		return nil, err
 	}
