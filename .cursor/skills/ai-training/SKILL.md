@@ -1,8 +1,10 @@
 ---
 name: ai-training
-description: Before writing model-training code, retrieve current framework versions,
-  hardware/driver constraints, deprecations, dataset/eval practices, and the right
-  tooling — like a senior ML engineer.
+title: AI / ML Model Training Intake
+description: Before writing model-training code, retrieve current framework versions, hardware/driver constraints, deprecations, dataset/eval practices, and the right tooling — like a senior ML engineer.
+triggers:
+  keywords: [train, training, model, pytorch, torch, tensorflow, keras, jax, huggingface, transformers, finetune, "fine-tune", dataset, llm, ml, cuda, embedding]
+  globs: ["*.ipynb", "train.py", "trainer.py", "requirements.txt", "environment.yml", "pyproject.toml", "accelerate*.yaml", "deepspeed*.json"]
 ---
 
 # AI / ML Model Training Intake
@@ -36,6 +38,14 @@ environment files.
 - `python`/`accelerate launch`/`torchrun` for training entry points.
 - Experiment tracking (W&B, MLflow, TensorBoard) and `nvidia-smi` for GPU monitoring.
 - `datasets`/`dvc` for data, and a pinned environment (`uv`/`conda`/`pip-tools`).
+
+## Language policy
+
+Python stays as orchestration — the training loop and the framework API. Kernels
+and hot loops go into Rust (tessl for GEMM/NN work on Apple silicon, or a
+purpose-built crate), exposed to Python through a C ABI with `ctypes` or through
+PyO3. The Python reference implementation becomes the oracle the kernel's parity
+test compares against. See the `language-policy` skill.
 
 ## What to record before coding
 

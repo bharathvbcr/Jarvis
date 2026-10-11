@@ -1,8 +1,10 @@
 ---
 name: ios
-description: Before writing iOS/macOS code, retrieve current Swift/SwiftUI/Xcode versions,
-  deployment targets, deprecations, recommended frameworks, and the right CLI/build
-  tools — like a senior Apple-platform engineer.
+title: iOS / Apple Platform Development Intake
+description: Before writing iOS/macOS code, retrieve current Swift/SwiftUI/Xcode versions, deployment targets, deprecations, recommended frameworks, and the right CLI/build tools — like a senior Apple-platform engineer.
+triggers:
+  keywords: [ios, ipados, macos, swift, swiftui, uikit, xcode, cocoapods, spm, swiftpm, combine]
+  globs: ["*.swift", "*.xcodeproj", "*.xcworkspace", "Podfile", "Package.swift", "*.entitlements", "Info.plist"]
 ---
 
 # iOS / Apple Platform Development Intake
@@ -34,6 +36,12 @@ Apple deprecates APIs aggressively and gates features on OS version.
 - `xcodebuild` for builds/tests/archives; `xcrun simctl` for simulators.
 - `swift build` / `swift test` for SwiftPM targets; `swiftformat`/`swiftlint` if configured.
 - Instruments for profiling.
+
+## Language policy
+
+UI and platform integration are Swift. Logic shared with Android or a server
+lives in a Rust core called through generated bindings (for example UniFFI) —
+verify the binding tool's current docs first. See the `language-policy` skill.
 
 ## What to record before coding
 

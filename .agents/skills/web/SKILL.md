@@ -1,8 +1,10 @@
 ---
 name: web
-description: Before writing web code, retrieve current framework versions, runtime/build
-  tooling, deprecations, and recommended patterns — like a senior web engineer briefing
-  themselves on the stack.
+title: Web / Frontend Development Intake
+description: Before writing web code, retrieve current framework versions, runtime/build tooling, deprecations, and recommended patterns — like a senior web engineer briefing themselves on the stack.
+triggers:
+  keywords: [web, website, frontend, react, next, nextjs, vue, svelte, angular, typescript, javascript, vite, tailwind, node]
+  globs: ["package.json", "tsconfig.json", "*.tsx", "*.jsx", "*.vue", "*.svelte", "next.config.*", "vite.config.*", "tailwind.config.*"]
 ---
 
 # Web / Frontend Development Intake
@@ -34,6 +36,12 @@ docs and the project's `package.json` — not from memory.
 - Package manager scripts (`npm run build`/`test`/`lint`, or pnpm/yarn/bun equivalents).
 - The framework CLI (`next`, `vite`, `ng`, `svelte-kit`) for dev/build.
 - `eslint`/`prettier`/`tsc --noEmit` and the test runner (Vitest/Jest/Playwright) if configured.
+
+## Language policy
+
+TypeScript is for the UI layer. Compute belongs in a Rust/Go backend or in Rust
+compiled to WebAssembly; new server code is Go or Rust, not Node. See the
+`language-policy` skill.
 
 ## What to record before coding
 

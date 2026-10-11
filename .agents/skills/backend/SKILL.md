@@ -1,9 +1,10 @@
 ---
 name: backend
-description: Before writing server-side code, retrieve current framework and runtime
-  versions, security and auth guidance, database/migration tooling, and the right
-  CLI/build/test commands — like a senior backend engineer briefing themselves on
-  the stack.
+title: Backend / API / Services Intake
+description: Before writing server-side code, retrieve current framework and runtime versions, security and auth guidance, database/migration tooling, and the right CLI/build/test commands — like a senior backend engineer briefing themselves on the stack.
+triggers:
+  keywords: [backend, server, api, rest, grpc, graphql, microservice, fastapi, django, flask, starlette, express, nestjs, rails, spring, laravel, gin, fiber, echo, axum, actix, sqlalchemy, alembic, prisma, postgres, postgresql, mysql, sqlite, redis, mongodb, celery, rabbitmq, kafka, docker, kubernetes, migration, webhook, jwt, oauth]
+  globs: ["manage.py", "wsgi.py", "asgi.py", "alembic.ini", "Dockerfile", "docker-compose.yml", "docker-compose.yaml", "go.mod", "Cargo.toml", "*.proto", "Gemfile", "Procfile", "main.go", "openapi.yaml", "openapi.json"]
 ---
 
 # Backend / API / Services Intake
@@ -39,6 +40,13 @@ release notes, and against the project's own dependency manifests.
 - Tests: `pytest`, `go test ./...`, `cargo test`, `npm test`, `python manage.py test` — prefer
   the command the repo already uses so the change is verifiable.
 - Containers: `docker build` / `docker compose up` when the service is containerized.
+
+## Language policy
+
+New services are Go; the engines they host are Rust, called through gusset when
+they run in-process. Python frameworks (FastAPI, Django, Flask) are for existing
+services only — match them when editing, and propose a Go/Rust port with a
+benchmark when a Python path is the bottleneck. See the `language-policy` skill.
 
 ## What to record before coding
 

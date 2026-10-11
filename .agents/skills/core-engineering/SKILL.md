@@ -1,8 +1,9 @@
 ---
 name: core-engineering
-description: Always-on coding discipline for AI agents — think before coding, keep
-  it simple, edit surgically, drive to a verifiable goal, and communicate like a senior
-  engineer.
+title: Core Engineering Discipline
+description: Always-on coding discipline for AI agents — think before coding, keep it simple, edit surgically, drive to a verifiable goal, and communicate like a senior engineer.
+always: true
+source: Merged from Andrej Karpathy's LLM coding guidelines and the Claude Fable 5 behavioral framework, distilled for DevCouncil-orchestrated coding work.
 ---
 
 # Core Engineering Discipline
