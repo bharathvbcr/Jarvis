@@ -6,9 +6,10 @@ Recorded 2026-09-10 for TASK-010 / `p7-docs-publish`.
 
 | Repo | SHA | Notes |
 |---|---|---|
-| https://github.com/bharathvbcr/Jarvis | `main` (upgrade commit `e816e5a1e03f1d89c51506e4862ec8abbabcd0ea`) | Public; Assignment PDF, `.local/`, `evidence/private/` excluded by `.gitignore` |
-| https://github.com/bharathvbcr/Manvi | `adeb253a76f20c279b820f63cc340743bec25ef2` | Schema/runner/catalog/evidence Go changes pushed; unrelated local dirty files remain uncommitted |
-| https://github.com/bharathvbcr/DevCouncil | `5818ac55e51ef4209d305758fa9034ceb99faee5` | `dc-evidence` / `dc-verify` / protocol only; local `rust-port` dirty tree left alone |
+| https://github.com/bharathvbcr/Jarvis | `v0.2.0` (`0994985`) | Public release 0.2.0 |
+| https://github.com/bharathvbcr/Manvi | `5dbf47c78cc5a8637b222b4dc72d23b2906041f1` | Host module, reducer, and lifecycle API |
+| https://github.com/bharathvbcr/DevCouncil | `1ae3bc15a62a3875f9dd827899ba774aa1c50ab0` | `dc-evidence` / `dc-verify` independent verification |
+| https://github.com/bharathvbcr/gusset | `984209b542885b10b43e3d9aaf2073fd871e9eb9` | In-process Rust policy matching engine |
 
 Jarvis `go.mod` requires `github.com/bharathvbcr/Manvi/manvi v0.0.0-20260910143105-adeb253a76f2`. Smoke `go get` against that pseudo-version succeeded with `GOPROXY=direct`.
 

@@ -7,8 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.2.0] - 2026-10-17
 
-First version cut for publish. No tag has been published. The desktop
-workspace version moves from 0.1.0 to 0.2.0. Notes below are the seven
+First version cut for publish. Tagged as `v0.2.0`. The desktop
+workspace version moves from 0.1.0 to 0.2.0. Notes below are the
 commits on `main` since `origin/main` (`d475cf5`) and the earlier behavior
 on `main` that those commits sit on.
 

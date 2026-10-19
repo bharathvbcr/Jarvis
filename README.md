@@ -20,21 +20,128 @@ Live Gemini and human-approved account changes remain unqualified; Windows
 runtime qualification is deferred by the user. See the exact results in
 [`evidence/`](evidence/README.md) and the remaining [acceptance gates](docs/requirements-evidence.md).
 
-## Ownership
+## System Architecture
+
+```mermaid
+flowchart TD
+    subgraph UI["User & Operator Layer"]
+        CLI["Jarvis CLI\n(cmd/jarvis: replay, discover, verify, doctor)"]
+        WB["Jarvis Workbench\n(Native egui GUI: catalog, approval, takeover)"]
+    end
+
+    subgraph Host["Manvi Orchestration & Workflow Engine"]
+        HOST_MOD["Manvi Host Module\n(Session management, context cancellation)"]
+        DISC["Gemini Discovery Loop\n(gemini-3.8-flash, jarvis-desktop-v2 prompt)"]
+        LEDGER["Campaign Budget Ledger\n($25 hard spend cap, reserve-settle lifecycle)"]
+        COMPILER["Canonical Compiler\n(Validates parameters, targets, step order)"]
+        REDUCER["Pure Workflow Reducer\n(Deterministic state machine, zero model calls)"]
+        
+        HOST_MOD --> DISC & COMPILER
+        DISC --> LEDGER
+        COMPILER --> REDUCER
+    end
+
+    subgraph Policy["Safety, Fencing & Policy Engine"]
+        GUSSET["Gusset Policy Engine\n(In-process Rust engine via cgo / dc-glob)"]
+        GUARD["Admission & Input Guard\n(Pointer motion vs click/key partition)"]
+        APPROVAL{"Human Approval Gate\n(Required for account-mutating actions)"}
+    end
+
+    subgraph Broker["Native Desktop Broker Layer"]
+        DESK_BROKER["Desktop Broker\n(Window target acquisition & lifecycle)"]
+        AX_MAC["macOS Native Adapter\n(Accessibility API / CoreGraphics)"]
+        X11_LINUX["Linux Native Adapter\n(AT-SPI / X11 / XTest)"]
+        BANK["Target Bank Window\n(Synthetic banking tenant: North / South)"]
+        
+        DESK_BROKER --> AX_MAC & X11_LINUX --> BANK
+    end
+
+    subgraph Evidence["Evidence & Independent Verification"]
+        OBS["Scoped Masked Observation\n(Redacted PII, masked member inputs)"]
+        JOURNAL["Immutable Journal & Artifacts\n(desktop-artifacts.json, screenshots, Perfetto trace)"]
+        DEVC["DevCouncil Evaluator\n(dc-verify independent acceptance contract)"]
+        REPORT["Verification Report\n(Cryptographic hash & acceptance gates)"]
+        
+        OBS --> JOURNAL --> DEVC --> REPORT
+    end
+
+    CLI & WB --> HOST_MOD
+    REDUCER --> GUARD --> APPROVAL
+    APPROVAL -->|Approved| GUSSET --> DESK_BROKER
+    BANK --> OBS
+```
+
+## Discovery, Replay & Verification Lifecycle
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Op as Operator / CLI
+    participant Host as Manvi Host & Reducer
+    participant LLM as Gemini Discovery (gemini-3.8-flash)
+    participant Desk as Native Desktop Broker
+    participant Bank as Bank Window (North/South)
+    participant Verif as DevCouncil Verifier
+
+    Note over Op,Verif: Phase 1: Guided Discovery (Optional Model Turns)
+    Op->>Host: jarvis discover --tenant north --task '...'
+    Host->>Desk: Capture scoped observation
+    Desk->>Bank: Read AX tree & masked screen
+    Bank-->>Desk: Scoped state
+    Desk-->>Host: Window observations
+    Host->>LLM: Prompt with observations & capability tools (Budget reserved)
+    LLM-->>Host: Propose typed action steps
+    Host->>Op: Request human approval for mutation (if applicable)
+    Op-->>Host: Approved
+    Host->>Desk: Execute action
+    Desk->>Bank: Synthetic event dispatch
+    Host->>Host: Compile & freeze into capability.json
+
+    Note over Op,Verif: Phase 2: Deterministic Offline Replay (Zero Model Turns)
+    Op->>Host: jarvis replay --capability capability.json --tenant north
+    loop Each Compiled Step
+        Host->>Desk: Dispatch step via Pure Reducer
+        Desk->>Bank: Native input event
+        Bank-->>Desk: Scoped observation
+        Desk-->>Host: State snapshot
+    end
+    Host->>Host: Record immutable run journal & masked frames
+
+    Note over Op,Verif: Phase 3: Independent Evidence Verification
+    Op->>Verif: jarvis verify --contract CONTRACT --bundle BUNDLE
+    Verif->>Verif: Check contract SHA-256 & capability SHA-256
+    Verif->>Verif: Evaluate acceptance predicates on recorded evidence
+    Verif-->>Op: Independent Verdict (Passed / Failed / Incomplete)
+```
+
+## Ownership Boundaries
 
 ```mermaid
 flowchart LR
-  W[Jarvis workbench and CLI] --> H[Manvi host module]
-  H --> D[Gemini discovery]
-  H --> C[Canonical compiler]
-  C --> E[Pure workflow reducer]
-  E --> B[Native desktop broker]
-  B --> A[Selected bank window]
-  A --> O[Scoped observations]
-  O --> P[Privacy boundary]
-  P --> J[Immutable evidence]
-  X[Independent acceptance contract] --> V[DevCouncil evidence evaluator]
-  J --> V
+    subgraph ManviScope["Manvi Ownership"]
+        M1["Workflow Compiler & Catalog"]
+        M2["Pure Reducer & Runner"]
+        M3["Native Desktop Broker Adapters"]
+        M4["Journal Privacy & Masking"]
+        M5["Per-Attempt Budget Ledger"]
+    end
+
+    subgraph DevCouncilScope["DevCouncil Ownership"]
+        D1["Evidence Validation Schemas"]
+        D2["Independent Acceptance Predicates"]
+        D3["dc-evidence / dc-verify Engine"]
+    end
+
+    subgraph JarvisScope["Jarvis Ownership"]
+        J1["Workbench GUI (egui) & CLI"]
+        J2["Tenant Profiles (North & South)"]
+        J3["Scenario Contracts & Expectations"]
+        J4["Qualification Campaigns & Packaging"]
+    end
+
+    JarvisScope --> ManviScope
+    JarvisScope --> DevCouncilScope
+    ManviScope --> DevCouncilScope
 ```
 
 Manvi owns the workflow/compiler/catalog, native broker/client, provider integration, journal privacy, cancellation and per-attempt budget ledger. DevCouncil owns evidence validation and acceptance predicates. Jarvis owns bank/workbench composition, reviewed tenant profiles, independent scenario expectations, qualification and packaging. Generic components are developed in their upstream worktrees, not copied here.
