@@ -202,7 +202,16 @@ func (a *App) Configure(r *serve.Router) error {
 					Configured bool `json:"configured"`
 				}{}, errors.New("credential length is invalid")
 			}
+			// NewSecret has no error to return: a key it could not seal
+			// (credentials.ErrLockedMemory) is carried in the Secret, and Resolve
+			// reports it. Asking here refuses the key now, rather than letting
+			// the next discovery or assist run call it unavailable.
 			a.credentials.Set("gemini", credentials.NewSecret(p.Key, "workbench-memory"))
+			if _, err := a.credentials.Resolve("gemini"); err != nil {
+				return struct {
+					Configured bool `json:"configured"`
+				}{}, fmt.Errorf("Gemini credential was not configured: %w", err)
+			}
 			return struct {
 				Configured bool `json:"configured"`
 			}{true}, nil
