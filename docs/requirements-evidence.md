@@ -8,11 +8,11 @@ checks unchanged. This does not pass the clean stability gate. A
 [controlled experiment](../evidence/guard-partition/) attributed those suspensions to
 bare pointer motion and narrowed the admission guard to input that can commit a
 change; the [campaign that followed](../evidence/macos-guard-partition-40.json) passed
-35/40 with all 40 saved-state checks unchanged and every remaining refusal attributed
-by input category. That is an improvement, not a clean stability pass. Its [denial campaign](../evidence/macos-pinned-denial.json)
+35/40 with all 40 saved-state checks unchanged; its four input refusals are attributed
+by input category and a fifth run stopped on an unsatisfied wait predicate. That is an improvement, not a clean stability pass. Its [denial campaign](../evidence/macos-pinned-denial.json)
 reached denial on South; North suspended before approval. [Build, test and offline source restoration](../evidence/build-verification.json)
-passed against the pins in `upstream.lock.json`. Earlier 40/40 results below retain
-their original binary scope.
+passed at the earlier pins Manvi `4818dc2` / DevCouncil `4ccadc6`, not at the pins now in
+`upstream.lock.json`. Earlier 40/40 results below retain their original binary scope.
 
 | Requirement | Canonical owner / source surface | Evidence and remaining gate |
 | --- | --- | --- |

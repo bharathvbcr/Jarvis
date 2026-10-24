@@ -1,6 +1,6 @@
 # Publish and verification status
 
-Recorded 2026-09-10 for TASK-010 / `p7-docs-publish`.
+Recorded 2026-09-10 for TASK-010 / `p7-docs-publish`. Superseded for pins: `upstream.lock.json` and `go.mod` hold the current Manvi, DevCouncil and gusset revisions.
 
 ## Public pins (verified resolvable)
 

@@ -43,8 +43,9 @@ Privacy operates before projections, observers, persisted evidence and provider 
 
 ## Cuts
 
-The pinned build, consolidated tests and offline source-bundle restoration passed.
-Its fresh macOS campaign passed 23/40, with 17 input-counter suspensions and all 40
+The build recorded in `evidence/build-verification.json` (Manvi `4818dc2`, DevCouncil
+`4ccadc6`), its consolidated tests and offline source-bundle restoration passed; that
+run has not been re-recorded at the pins now in `upstream.lock.json`. Its fresh macOS campaign passed 23/40, with 17 input-counter suspensions and all 40
 saved-state checks unchanged. A controlled experiment attributed those suspensions to
 bare pointer motion: the admission guard demanded exact equality across fifteen
 `HIDSystemState` counters, `MouseMoved` among them, so any person touching the mouse
@@ -53,8 +54,9 @@ can commit — buttons, keys, modifiers, scroll and drags still refuse; bare mot
 tolerated on element-addressed accessibility work, recorded as `pointer_motion`, and
 still revalidated before dispatch — while coordinate-addressed input keeps the strict
 contract. The campaign that followed passed 35/40 with all 40 saved-state checks
-unchanged and every refusal attributed by input category. It does not pass clean
-stability qualification.
+unchanged; its four input refusals are attributed by input category and a fifth run
+stopped on an unsatisfied wait predicate. It does not pass clean stability
+qualification.
 The Linux refresh is blocked before guest startup by a UTM crash. Earlier 40/40
 campaigns remain valid for their recorded binaries. The stable workbench still
 reports Accessibility and Screen Recording denied under its own application identity.

@@ -6,7 +6,10 @@ Compilation, permissions, native execution, and a complete tenant campaign are s
 
 The pinned macOS rebuild has a separate `evidence/macos-pinned-40.json` campaign:
 23 passed, 17 suspended after native input-counter changes, all 40 saved-state
-oracles unchanged. It does not pass the clean stability gate. The current denial
+oracles unchanged. It does not pass the clean stability gate. After the admission
+guard was narrowed, `evidence/macos-guard-partition-40.json` passed 35/40 with all
+40 saved-state oracles unchanged (five runs blocked); that is also not a clean pass.
+The current denial
 campaign reached denial on South; North suspended before approval. UTM now crashes
 before guest startup, so Linux refresh attempted zero runs; see
 `evidence/linux-refresh-blocked.json`. The historical successful campaigns below

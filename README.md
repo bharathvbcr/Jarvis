@@ -4,15 +4,19 @@
 
 Jarvis discovers desktop capabilities with Gemini, freezes them into typed artifacts, and executes those artifacts through Manvi with zero model decisions. DevCouncil evaluates an independent acceptance contract against the resulting evidence. The native bank has two tenant layouts; the native workbench exposes catalog, editing, execution, approvals, takeover, diagnostics, and evidence inspection.
 
-The pinned build passes its automated suites. Its fresh macOS campaign completed
+The build recorded in [`evidence/build-verification.json`](evidence/build-verification.json)
+(2026-09-09, Manvi `4818dc2`, DevCouncil `4ccadc6`) passed its automated suites; that
+run has not been re-recorded at the pins now in `upstream.lock.json`. The campaigns
+below record their own executables, not those pins. The fresh macOS campaign on that build completed
 **23/40 read-only replays**, with **17 safe suspensions after input-counter changes**;
 all 40 independent saved-state checks passed. Those suspensions were attributed to
 bare pointer motion by a [controlled experiment](evidence/guard-partition/) and the
 admission guard was narrowed to the input that can actually commit a change. The
 campaign that followed completed **35/40**, again with all 40 saved-state checks
-unchanged, and its four remaining refusals are attributed by input category — all
+unchanged, and its four input refusals are attributed by input category — all
 genuine human keyboard and pointer-button activity during the run, none of it
-pointer motion. Neither is a clean stability pass.
+pointer motion; a fifth run stopped on an unsatisfied wait predicate. Neither is a
+clean stability pass.
 Earlier macOS and Linux X11 campaigns each passed 20/20 per tenant on their recorded
 executables. First-attempt successes were zero on macOS and one on Linux; retries
 are reported separately. The Linux refresh is blocked by a UTM startup crash.
