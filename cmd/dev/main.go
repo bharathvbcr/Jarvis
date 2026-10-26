@@ -192,11 +192,23 @@ func run() error {
 		if err := workspace(); err != nil {
 			return err
 		}
-		for _, item := range []struct {
-			dir, name string
-			args      []string
-		}{{root, "go", []string{"test", "./..."}}, {filepath.Join(*manvi, "manvi"), "go", []string{"test", "./workflow/...", "./computer/...", "./llm/budget/...", "./session", "./tools", "./llm/replay", "./llm/gemini", "./llm/transport", "./agent", "./serve", "./gussetcheck"}}, {filepath.Join(root, "desktop"), "cargo", []string{"test", "--locked", "--workspace"}}, {filepath.Join(*manvi, "native"), "cargo", []string{"test", "--locked", "--workspace"}}, {filepath.Join(*dc, "rust"), "cargo", []string{"test", "--locked", "-p", "dc-evidence", "-p", "dc-verify"}}} {
-			if err := command(item.dir, item.name, item.args...); err != nil {
+		var hostEnv []string
+		if *engine {
+			if hostEnv, err = gussetEnv(ctx, *manvi, *dc, *gusset); err != nil {
+				return err
+			}
+		}
+		hostDir, err := os.MkdirTemp("", "jarvis-devcouncil-host-")
+		if err != nil {
+			return err
+		}
+		defer os.RemoveAll(hostDir)
+		host := filepath.Join(hostDir, "devcouncil")
+		if runtime.GOOS == "windows" {
+			host += ".exe"
+		}
+		for _, item := range testSteps(root, *manvi, *dc, host, hostEnv) {
+			if err := commandEnv(item.env, item.dir, item.name, item.args...); err != nil {
 				return err
 			}
 		}
@@ -234,6 +246,33 @@ func run() error {
 		return fmt.Errorf("unknown command %q", action)
 	}
 }
+
+// testStep is one command `dev test` runs; env is added after commandEnv's
+// CGO_ENABLED=0, so it wins.
+type testStep struct {
+	dir, name string
+	args, env []string
+}
+
+// testSteps is the plan `dev test` runs, in order.
+//
+// dc-verify's json_contract audits DevCouncil's Go host and fails, by design,
+// when there is none, so the host is built from the pinned checkout first and
+// named in DEVCOUNCIL_BIN. host is outside the checkout, which check-pins
+// requires clean. The build needs GOWORK=off because Jarvis's go.work encloses
+// .local/upstream without listing DevCouncil, and hostEnv (the gusset engine's
+// cgo environment) because gusset does not compile without cgo.
+func testSteps(root, manvi, dc, host string, hostEnv []string) []testStep {
+	return []testStep{
+		{dir: root, name: "go", args: []string{"test", "./..."}},
+		{dir: filepath.Join(manvi, "manvi"), name: "go", args: []string{"test", "./workflow/...", "./computer/...", "./llm/budget/...", "./session", "./tools", "./llm/replay", "./llm/gemini", "./llm/transport", "./agent", "./serve", "./gussetcheck"}},
+		{dir: filepath.Join(root, "desktop"), name: "cargo", args: []string{"test", "--locked", "--workspace"}},
+		{dir: filepath.Join(manvi, "native"), name: "cargo", args: []string{"test", "--locked", "--workspace"}},
+		{dir: filepath.Join(dc, "backend", "go_orchestrator"), name: "go", args: []string{"build", "-o", host, "./cmd/devcouncil"}, env: append([]string{"GOWORK=off"}, hostEnv...)},
+		{dir: filepath.Join(dc, "rust"), name: "cargo", args: []string{"test", "--locked", "-p", "dc-evidence", "-p", "dc-verify"}, env: []string{"DEVCOUNCIL_BIN=" + host}},
+	}
+}
+
 func copyBinary(src, dst string) error {
 	info, err := os.Lstat(src)
 	if err != nil {
