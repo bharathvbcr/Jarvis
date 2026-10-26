@@ -2,14 +2,14 @@
   "schema_version": 1,
   "manvi": {
     "url": "https://github.com/bharathvbcr/Manvi.git",
-    "revision": "9bea4d98d35fc970627f4ec0bbd1fa2cd6598549"
+    "revision": "e60b6e01eea7904ed5d574c4bdf7f3a5104203ef"
   },
   "devcouncil": {
     "url": "https://github.com/bharathvbcr/DevCouncil.git",
-    "revision": "1ae3bc15a62a3875f9dd827899ba774aa1c50ab0"
+    "revision": "b1a29105ae176ea5b4898557cfa10c731110a144"
   },
   "gusset": {
     "url": "https://github.com/bharathvbcr/gusset.git",
-    "revision": "984209b542885b10b43e3d9aaf2073fd871e9eb9"
+    "revision": "320c56c27e1098f7e0a26e9854ff80c4f4354ef9"
   }
 }
