@@ -23,7 +23,15 @@ target/
 *.test
 *.exe
 
-# Wave reports and campaign output
+# Build reports, wave reports, and campaign output
+*build*report*
+*build-report*
+*build_report*
+*BUILD_REPORT*
+build-reports/
+build_reports/
+build-report/
+build_report/
 *wave*report*
 *wave-report*
 *wave_report*

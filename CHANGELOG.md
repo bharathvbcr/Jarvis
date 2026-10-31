@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Upstream pins updated to DevCouncil `782b9f16`, Manvi `ddec7b0c` (`v0.0.0-20261029005942-ddec7b0c907a`), and gusset `e561435a` (`0e1bbde`). Earlier in the cycle, pins advanced through DevCouncil `b1a29105`, Manvi `e60b6e01`, and gusset `320c56c2` (`ad9c335`), incorporating DevCouncil dc-store schema 11 / workbench schema 14, tokio 1.53.3/1.54.1, and gusset Rust layout checks with named refusal for unsupported targets.
 - Added root module `go.sum` entry for Manvi `e60b6e01` directly from GitHub (`GOPROXY=direct`, `31f8992`).
 - Configured `.claude/settings.json` and `.gitignore` to prevent Claude Code commit and PR attribution in cloud sessions (`2c736fe`).
-- Updated `.gitignore` to exclude build directories, compiled binaries, wave reports, GitPulse tasks and state, agent handoffs, secrets/credentials, and coverage/profiling caches.
+- Updated `.gitignore` to exclude build directories, compiled binaries, build and wave reports, GitPulse tasks and state, agent handoffs, secrets/credentials, and coverage/profiling caches.
 
 ### Fixed
 
