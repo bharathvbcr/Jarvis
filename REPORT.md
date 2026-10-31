@@ -2,7 +2,7 @@
 
 ## Architecture
 
-Three owners keep reusable behavior upstream: Manvi controls discovery, deterministic execution, journal privacy and the native broker; DevCouncil independently evaluates evidence; Jarvis composes the bank, tenant profiles, scenarios and native workbench. The Go host remains CGO-free. A separate Rust workspace confines platform FFI to macOS/Windows/Linux adapters. Each interactive desktop has one input owner; independent guest desktops may run concurrently.
+Three owners keep reusable behavior upstream: Manvi controls discovery, deterministic execution, journal privacy and the native broker; DevCouncil independently evaluates evidence; Jarvis composes the bank, tenant profiles, scenarios and native workbench. On Linux and macOS, the Go host links DevCouncil's dc-glob Gusset policy engine via cgo (with panics caught at the boundary and the panic firewall proven before the build counts); on Windows, or with `--engine=false`, it builds with `CGO_ENABLED=0`. A separate Rust workspace confines platform FFI to macOS/Windows/Linux adapters. Each interactive desktop has one input owner; independent guest desktops may run concurrently.
 
 ## Artifact schema
 

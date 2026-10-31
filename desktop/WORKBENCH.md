@@ -116,9 +116,12 @@ automatically approves anything. Another click remains disabled until a new
   microprogram to begin a new workflow sequence; epochs never regress and an
   older response cannot replace the new generation.
 - **Diagnostics:** run the backend doctor. Enter a Gemini credential in the
-  password field and send it to the backend's memory store. The field clears
-  after submission, including queue/connection refusal. Credential-setting errors
-  do not echo backend message text. This is not a claim of secure memory erasure.
+  password field and send it to the backend's memory store (`jarvis.key.set`). The field clears
+  after submission, including queue/connection refusal. The backend immediately validates the
+  key via resolution to fail fast on unsealable memory (`credentials.ErrLockedMemory`) rather
+  than returning a false configured status and failing during later discovery or assist runs.
+  Credential-setting errors do not echo backend message text or raw secret material. This is not a
+  claim of secure memory erasure.
 - **Evidence & replay:** verify a finished run, export its artifacts to a new
   `.zip` path, inspect a trace, or replay it with the compiled capability and
   typed inputs to compare the reconstructed final state. Trace inspection and

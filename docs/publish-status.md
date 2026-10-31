@@ -7,11 +7,11 @@ Recorded 2026-09-10 for TASK-010 / `p7-docs-publish`. Superseded for pins: `upst
 | Repo | SHA | Notes |
 |---|---|---|
 | https://github.com/bharathvbcr/Jarvis | `v0.2.0` (`0994985`) | Public release 0.2.0 |
-| https://github.com/bharathvbcr/Manvi | `5dbf47c78cc5a8637b222b4dc72d23b2906041f1` | Host module, reducer, and lifecycle API |
-| https://github.com/bharathvbcr/DevCouncil | `1ae3bc15a62a3875f9dd827899ba774aa1c50ab0` | `dc-evidence` / `dc-verify` independent verification |
-| https://github.com/bharathvbcr/gusset | `984209b542885b10b43e3d9aaf2073fd871e9eb9` | In-process Rust policy matching engine |
+| https://github.com/bharathvbcr/Manvi | `ddec7b0c907a9fba5b5c4aea02f414d16f43b927` | Host module, reducer, and lifecycle API |
+| https://github.com/bharathvbcr/DevCouncil | `782b9f1688334d14a7a17b533061acc6725920ee` | `dc-evidence` / `dc-verify` independent verification |
+| https://github.com/bharathvbcr/gusset | `e561435afaf6cbfc0331108a14dda4d9595dae54` | In-process Rust policy matching engine |
 
-Jarvis `go.mod` requires `github.com/bharathvbcr/Manvi/manvi v0.0.0-20260910143105-adeb253a76f2`. Smoke `go get` against that pseudo-version succeeded with `GOPROXY=direct`.
+Jarvis `go.mod` requires `github.com/bharathvbcr/Manvi/manvi v0.0.0-20261029005942-ddec7b0c907a`. Smoke `go get` against that pseudo-version succeeded with `GOPROXY=direct`.
 
 `go run ./cmd/dev check-pins` fails in this developer checkout while Manvi/DevCouncil working trees still have unrelated dirty files. Clean clones at the pinned revisions match.
 
@@ -28,7 +28,7 @@ Jarvis `go.mod` requires `github.com/bharathvbcr/Manvi/manvi v0.0.0-202609101431
 Offline Go/Rust suites used for this publish path:
 
 - Manvi: `go test ./workflow/... ./computer/... ./devcouncil/...` (pass)
-- DevCouncil: `cargo test --locked -p dc-evidence -p dc-verify` (pass)
+- DevCouncil: `cargo test --locked -p dc-evidence -p dc-verify` (pass; `dev test` builds DevCouncil's `./cmd/devcouncil` Go host in a temporary directory under `GOWORK=off` and the gusset cgo environment to provide `DEVCOUNCIL_BIN` for `dc-verify`'s `json_contract` test)
 - Jarvis: `go test ./internal/app/...` and `GOWORK=off go build ./cmd/jarvis` (pass at the Manvi pin of that run)
 
 Since the gusset pin, Manvi's `go.mod` replaces DevCouncil and gusset with

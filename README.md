@@ -1,6 +1,7 @@
 # Jarvis
 
 [![Website](https://img.shields.io/badge/website-jarvis.vbcr.dev-B91C1C?style=flat&logo=safari&logoColor=white)](https://jarvis.vbcr.dev/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Jarvis discovers desktop capabilities with Gemini, freezes them into typed artifacts, and executes those artifacts through Manvi with zero model decisions. DevCouncil evaluates an independent acceptance contract against the resulting evidence. The native bank has two tenant layouts; the native workbench exposes catalog, editing, execution, approvals, takeover, diagnostics, and evidence inspection.
 
@@ -238,6 +239,8 @@ DEVC_COUNCIL_EVIDENCE_ROOT=/path/to/DevCouncil go test github.com/bharathvbcr/Ma
 go run ./cmd/qualify --check-boundaries
 ```
 
+`dev test` executes the complete multi-repo test plan: Jarvis Go suites, Manvi Go packages (`workflow`, `computer`, `budget`, `session`, `tools`, `replay`, `gemini`, `transport`, `agent`, `serve`, `gussetcheck`), desktop and native Cargo workspaces, builds DevCouncil's `./cmd/devcouncil` Go host in a temporary directory outside the checkout (under `GOWORK=off` and the gusset cgo environment) to pass as `DEVCOUNCIL_BIN` for DevCouncil's `dc-verify` suite (`tests/json_contract.rs`), and finishes with `qualify --check-boundaries`.
+
 ### Gusset engine
 
 Manvi's policy gates make every pattern decision on an in-process Rust engine
@@ -269,3 +272,7 @@ panic caught at the boundary. The panic line on stderr is that proof running.
 Read-only qualification never approves a business change. The denial scenario records denied approval and checks that saved state stayed unchanged. Successful account-changing qualification requires real human approval on every OS/tenant combination. All-success 20/20 results have an approximately 86.1% one-sided 95% exact-binomial lower bound under independence; repeated desktop runs are regression evidence, not proof of independent reliability. [Exact-binomial method](https://itl.nist.gov/div898/software/dataplot/refman2/auxillar/exacbino.htm)
 
 See `REPORT.md` for the required assignment narrative and `docs/requirements-evidence.md` for the acceptance matrix.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
