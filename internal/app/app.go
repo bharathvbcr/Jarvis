@@ -66,12 +66,16 @@ type RunView struct {
 	Matching          *computer.MatchDiagnostics     `json:"matching,omitempty"`
 }
 type runEntry struct {
-	mu                sync.Mutex
-	startedAt         time.Time
-	program           *workflow.Program
-	privacy           computer.PrivacyPolicy
-	view              RunView
-	run               *computer.Run
+	mu        sync.Mutex
+	startedAt time.Time
+	program   *workflow.Program
+	privacy   computer.PrivacyPolicy
+	view      RunView
+	run       *computer.Run
+	// liveSource replaces run as the source of the live part of the view. It is
+	// nil in production; tests set it to a source whose values are deliberately
+	// shared, to prove Get hands out copies whatever the run returns.
+	liveSource        liveSource
 	cancel            context.CancelFunc
 	session           computer.Session
 	expected          evidence.Request
@@ -529,14 +533,17 @@ func (a *App) GetSince(id string, cursor int) (RunView, error) {
 	total := len(e.view.Records)
 	v := e.view
 	v.Records = v.Records[cursor:]
-	v = ownedCopy(v)
 	v.Assisted = e.assisted
 	v.TotalRecords = total
-	if e.run != nil {
-		v.State = e.run.Snapshot()
-		v.Observation = e.run.Observation()
-		v.Controller = e.run.Controller()
-		v.Interventions = e.run.Interventions()
+	live := e.liveSource
+	if live == nil && e.run != nil {
+		live = e.run
+	}
+	if live != nil {
+		v.State = live.Snapshot()
+		v.Observation = live.Observation()
+		v.Controller = live.Controller()
+		v.Interventions = live.Interventions()
 	}
 	if v.State.StepIndex >= 0 && v.State.StepIndex < len(v.Capability.Steps) {
 		if e.program != nil {
@@ -547,7 +554,18 @@ func (a *App) GetSince(id string, cursor int) (RunView, error) {
 			v.Matching = &diagnostic
 		}
 	}
-	return v, nil
+	// The copy is the last step, after every live value is in v, so nothing the
+	// caller can reach is owned by the run, whether or not the run copied it.
+	return ownedCopy(v), nil
+}
+
+// liveSource is what the view reads from a running run. *computer.Run is the
+// only production implementation.
+type liveSource interface {
+	Snapshot() workflow.State
+	Observation() *computer.Observation
+	Controller() string
+	Interventions() []computer.InterventionRequest
 }
 
 // RunList deliberately excludes inputs, outputs, frames and tool records. Full
