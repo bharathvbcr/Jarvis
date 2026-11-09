@@ -112,7 +112,7 @@ func run() error {
 		if _, err := os.Stat(filepath.Join(*manvi, "manvi", "go.mod")); err != nil {
 			return fmt.Errorf("Manvi checkout missing: %w", err)
 		}
-		text := fmt.Sprintf("go 1.26.6\nuse (\n .\n %q\n)\nreplace github.com/bharathvbcr/Manvi/manvi v0.0.0 => %q\n", filepath.Join(*manvi, "manvi"), filepath.Join(*manvi, "manvi"))
+		text := fmt.Sprintf("go 1.27.3\nuse (\n .\n %q\n)\nreplace github.com/bharathvbcr/Manvi/manvi v0.0.0 => %q\n", filepath.Join(*manvi, "manvi"), filepath.Join(*manvi, "manvi"))
 		return os.WriteFile(filepath.Join(root, "go.work"), []byte(text), 0600)
 	}
 	switch action {

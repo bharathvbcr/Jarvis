@@ -1,6 +1,6 @@
 module github.com/bharathvbcr/Jarvis
 
-go 1.26.6
+go 1.27.3
 
 require github.com/bharathvbcr/Manvi/manvi v0.0.0-20261029005942-ddec7b0c907a
 

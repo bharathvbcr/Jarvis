@@ -153,7 +153,7 @@ Manvi owns the workflow/compiler/catalog, native broker/client, provider integra
 
 ## Build and run
 
-Prerequisites: Rust and Cargo with the target platform toolchain, Go 1.26.6, platform accessibility and capture permissions, and the pinned Manvi/DevCouncil checkouts. `cmd/dev` uses Go/Rust only. Platform-specific prerequisites are in `docs/platforms.md`.
+Prerequisites: Rust and Cargo with the target platform toolchain, Go 1.27.3, platform accessibility and capture permissions, and the pinned Manvi/DevCouncil checkouts. `cmd/dev` uses Go/Rust only. Platform-specific prerequisites are in `docs/platforms.md`.
 
 The assignment archive includes `build/upstream/Manvi.bundle`,
 `build/upstream/DevCouncil.bundle` and `build/upstream/gusset.bundle`. Restore the exact reviewed revisions without
@@ -167,7 +167,7 @@ go run ./cmd/dev test
 ```
 
 Bootstrap creates `.local/upstream/` and the ignored Go workspace. It refuses a
-different or dirty existing upstream checkout. Go 1.26.6 must already be installed
+different or dirty existing upstream checkout. Go 1.27.3 must already be installed
 for a fully offline bootstrap; automatic Go toolchain acquisition needs network
 access. Rust/Go dependency downloads are separate from restoring source bundles.
 
