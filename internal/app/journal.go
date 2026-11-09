@@ -3,6 +3,8 @@ package app
 import (
 	"encoding/base64"
 	"encoding/json"
+	"encoding/json/jsontext"
+	jsonv2 "encoding/json/v2"
 	"errors"
 	"fmt"
 	"os"
@@ -33,6 +35,22 @@ func openDesktopJournal(dir string) (*desktopJournal, error) {
 	}
 	return &desktopJournal{dir: dir, file: f, sync: (*os.File).Sync}, nil
 }
+
+// encodeLine is the bytes of one events.jsonl line (without the newline) and
+// encodeTree the bytes of one frame-NNNNNN.json file. They are the journal's
+// wire contract, pinned by TestJournalEncodingIsStable.
+//
+// Both call encoding/json/v2 with the v1 option set, so the bytes are exactly
+// what encoding/json v1 wrote (HTML escaping, null for nil slices, v1 omitempty
+// and no zero-value fields added). Dropping an option changes the evidence
+// format: v2's own defaults add "strategy_index":0, "pointer_motion":false and
+// similar zero fields, write [] for nil slices, and stop escaping < > &.
+func encodeLine(record computer.Record) ([]byte, error) {
+	return jsonv2.Marshal(record, json.DefaultOptionsV1())
+}
+func encodeTree(o computer.Observation) ([]byte, error) {
+	return jsonv2.Marshal(o, json.DefaultOptionsV1(), jsontext.WithIndent("  "))
+}
 func (j *desktopJournal) append(record computer.Record, frameSequence uint64) (computer.Record, []evidence.Artifact, error) {
 	j.records++
 	if j.records > 4096 {
@@ -55,7 +73,7 @@ func (j *desktopJournal) append(record computer.Record, frameSequence uint64) (c
 		}
 		artifacts = append(artifacts, evidence.Artifact{ID: prefix, Path: prefix + ".png", SHA256: digest(imageBytes), SizeBytes: uint64(len(imageBytes))})
 		o.Screenshot.Base64 = ""
-		treeBytes, err := json.MarshalIndent(o, "", "  ")
+		treeBytes, err := encodeTree(o)
 		if err != nil {
 			return record, nil, err
 		}
@@ -65,7 +83,7 @@ func (j *desktopJournal) append(record computer.Record, frameSequence uint64) (c
 		artifacts = append(artifacts, evidence.Artifact{ID: prefix + "-tree", Path: prefix + ".json", SHA256: digest(treeBytes), SizeBytes: uint64(len(treeBytes))})
 		record.Observation = &o
 	}
-	data, err := json.Marshal(record)
+	data, err := encodeLine(record)
 	if err != nil {
 		return record, nil, err
 	}
