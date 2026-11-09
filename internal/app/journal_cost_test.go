@@ -99,7 +99,11 @@ func openTestJournal(tb testing.TB, dir string) *desktopJournal {
 	if err != nil {
 		tb.Fatal(err)
 	}
-	tb.Cleanup(func() { j.file.Close() })
+	tb.Cleanup(func() {
+		if err := j.file.Close(); err != nil {
+			tb.Errorf("closing the test journal: %v", err)
+		}
+	})
 	return j
 }
 

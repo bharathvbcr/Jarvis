@@ -120,7 +120,7 @@ func scribble(v reflect.Value) {
 	}
 }
 
-func mustJSON(tb testing.TB, v interface{}) string {
+func mustJSON(tb testing.TB, v any) string {
 	tb.Helper()
 	raw, err := json.Marshal(v)
 	if err != nil {

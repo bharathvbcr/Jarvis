@@ -113,6 +113,88 @@ func TestJournalEncodingIsStable(t *testing.T) {
 	}
 }
 
+// The journal encoders must write what encoding/json v1 writes. These cases
+// compare them to v1 at run time, so the check does not depend on the
+// transcribed constants above, over the inputs where v1 and v2 differ.
+func TestJournalEncodersMatchV1(t *testing.T) {
+	empty := ""
+	for name, mutate := range map[string]func(*computer.Observation){
+		"nil slices":           func(o *computer.Observation) { o.Nodes[0].Actions, o.Nodes[0].NativePath = nil, nil },
+		"empty non-nil slices": func(o *computer.Observation) { o.Nodes[0].Actions, o.Nodes[0].NativePath = []string{}, []uint32{} },
+		"nil nodes":            func(o *computer.Observation) { o.Nodes = nil },
+		"empty non-nil nodes":  func(o *computer.Observation) { o.Nodes = []computer.Node{} },
+		"invalid UTF-8":        func(o *computer.Observation) { o.Nodes[0].Name = "bad\xff\xfeutf8 \xc3" },
+		"html-sensitive":       func(o *computer.Observation) { o.Window.Title = "<script>&amp;</script>" },
+		"empty string pointer": func(o *computer.Observation) { o.Nodes[0].Value = &empty },
+		"zero-valued flags":    func(o *computer.Observation) { o.Complete, o.PointerMotion = false, false },
+		"truncated reason set": func(o *computer.Observation) { o.TruncatedReason, o.PointerMotion = "limit", true },
+		"line separators": func(o *computer.Observation) {
+			o.Nodes[1].Name = "a" + string(rune(0x2028)) + string(rune(0x2029)) + "b"
+		},
+		"large integers": func(o *computer.Observation) { o.CapturedAtMillis, o.Epoch = 1<<53+1, 1<<63 },
+	} {
+		t.Run(name, func(t *testing.T) {
+			record := encodingRecord()
+			mutate(record.Observation)
+			wantLine, err := jsonv1.Marshal(record)
+			if err != nil {
+				t.Fatal(err)
+			}
+			gotLine, err := encodeLine(record)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if string(gotLine) != string(wantLine) {
+				t.Errorf("events.jsonl line differs from v1:\nv1 %s\nv2 %s", wantLine, gotLine)
+			}
+			wantTree, err := jsonv1.MarshalIndent(record.Observation, "", "  ")
+			if err != nil {
+				t.Fatal(err)
+			}
+			gotTree, err := encodeTree(*record.Observation)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if string(gotTree) != string(wantTree) {
+				t.Errorf("tree file differs from v1:\nv1 %s\nv2 %s", wantTree, gotTree)
+			}
+		})
+	}
+}
+
+// The records carry no map today, so the map cases run on a probe type with the
+// same tags: they pin the option set the encoders rely on, which is what keeps
+// a map that is added later byte-compatible.
+func TestV1OptionSetMatchesV1ForMapsAndEmptyValues(t *testing.T) {
+	type probe struct {
+		NilMap     map[string]int    `json:"nil_map"`
+		EmptyMap   map[string]int    `json:"empty_map"`
+		OmitMap    map[string]int    `json:"omit_map,omitempty"`
+		FullMap    map[string]string `json:"full_map"`
+		NilSlice   []int             `json:"nil_slice"`
+		EmptySlice []int             `json:"empty_slice"`
+		OmitSlice  []int             `json:"omit_slice,omitempty"`
+		OmitZero   int               `json:"omit_zero,omitempty"`
+		OmitFalse  bool              `json:"omit_false,omitempty"`
+		OmitStruct struct{}          `json:"omit_struct,omitempty"`
+		Text       string            `json:"text"`
+		Raw        jsonv1.RawMessage `json:"raw"`
+	}
+	p := probe{EmptyMap: map[string]int{}, OmitMap: map[string]int{}, FullMap: map[string]string{"b": "<>&", "a": "x", "c": "bad\xff"},
+		EmptySlice: []int{}, OmitSlice: []int{}, Text: "<>&\xff", Raw: jsonv1.RawMessage(`{"k":  [1, 2]}`)}
+	want, err := jsonv1.Marshal(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := jsonv2.Marshal(p, jsonv1.DefaultOptionsV1())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Fatalf("v2 with the v1 option set differs from v1:\nv1 %s\nv2 %s", want, got)
+	}
+}
+
 // BenchmarkJournalEncoding compares the encoders for one observation record of
 // 20 nodes (the size of a bank window) and its tree file: encoding/json v1,
 // encoding/json/v2 with its own defaults, and v2 with the v1 option set, which
