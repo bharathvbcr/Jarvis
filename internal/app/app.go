@@ -399,21 +399,7 @@ func (a *App) execute(ctx context.Context, e *runEntry, p *workflow.Program, bin
 		if err := recorder.Record(record); err != nil {
 			return err
 		}
-		raw, err := json.Marshal(record)
-		if err != nil {
-			return err
-		}
-		var owned computer.Record
-		if err = json.Unmarshal(raw, &owned); err != nil {
-			return err
-		}
-		if owned.Observation != nil {
-			owned.Observation.Screenshot.Base64 = ""
-		}
-		e.mu.Lock()
-		e.view.Records = append(e.view.Records, owned)
-		e.mu.Unlock()
-		return nil
+		return e.appendRecord(record)
 	}
 	privacy := bankPrivacy(binding.Policy, req.Inputs)
 	privacy.PID = session.Window.PID
@@ -496,6 +482,26 @@ func (a *App) entry(id string) (*runEntry, error) {
 		return nil, errors.New("unknown run")
 	}
 	return e, nil
+}
+
+// appendRecord stores a frame-free copy of record in the run view. Frames are
+// evidence files (jarvis.frame.get serves them); the view never carries them.
+func (e *runEntry) appendRecord(record computer.Record) error {
+	raw, err := json.Marshal(record)
+	if err != nil {
+		return err
+	}
+	var owned computer.Record
+	if err = json.Unmarshal(raw, &owned); err != nil {
+		return err
+	}
+	if owned.Observation != nil {
+		owned.Observation.Screenshot.Base64 = ""
+	}
+	e.mu.Lock()
+	e.view.Records = append(e.view.Records, owned)
+	e.mu.Unlock()
+	return nil
 }
 func (a *App) Get(id string) (RunView, error) {
 	e, err := a.entry(id)

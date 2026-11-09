@@ -20,6 +20,10 @@ type desktopJournal struct {
 	records      int
 	imageBytes   int64
 	journalBytes int64
+	// sync is the only flush the journal issues: frame files, tree files and the
+	// event line all go through it. It is (*os.File).Sync (F_FULLFSYNC on
+	// darwin) except where a test counts the flushes.
+	sync func(*os.File) error
 }
 
 func openDesktopJournal(dir string) (*desktopJournal, error) {
@@ -27,7 +31,7 @@ func openDesktopJournal(dir string) (*desktopJournal, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &desktopJournal{dir: dir, file: f}, nil
+	return &desktopJournal{dir: dir, file: f, sync: (*os.File).Sync}, nil
 }
 func (j *desktopJournal) append(record computer.Record, frameSequence uint64) (computer.Record, []evidence.Artifact, error) {
 	j.records++
@@ -46,7 +50,7 @@ func (j *desktopJournal) append(record computer.Record, frameSequence uint64) (c
 			return record, nil, errors.New("run evidence exceeds 256 MiB")
 		}
 		prefix := fmt.Sprintf("frame-%06d", frameSequence)
-		if err = writeAtomic(filepath.Join(j.dir, prefix+".png"), imageBytes); err != nil {
+		if err = writeAtomicSync(filepath.Join(j.dir, prefix+".png"), imageBytes, j.sync); err != nil {
 			return record, nil, err
 		}
 		artifacts = append(artifacts, evidence.Artifact{ID: prefix, Path: prefix + ".png", SHA256: digest(imageBytes), SizeBytes: uint64(len(imageBytes))})
@@ -55,7 +59,7 @@ func (j *desktopJournal) append(record computer.Record, frameSequence uint64) (c
 		if err != nil {
 			return record, nil, err
 		}
-		if err = writeAtomic(filepath.Join(j.dir, prefix+".json"), treeBytes); err != nil {
+		if err = writeAtomicSync(filepath.Join(j.dir, prefix+".json"), treeBytes, j.sync); err != nil {
 			return record, nil, err
 		}
 		artifacts = append(artifacts, evidence.Artifact{ID: prefix + "-tree", Path: prefix + ".json", SHA256: digest(treeBytes), SizeBytes: uint64(len(treeBytes))})
@@ -75,5 +79,5 @@ func (j *desktopJournal) append(record computer.Record, frameSequence uint64) (c
 	if _, err = j.file.Write(append(data, '\n')); err != nil {
 		return record, nil, err
 	}
-	return record, artifacts, j.file.Sync()
+	return record, artifacts, j.sync(j.file)
 }
