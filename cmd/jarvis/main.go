@@ -237,6 +237,7 @@ func run() error {
 		ticker := time.NewTicker(150 * time.Millisecond)
 		defer ticker.Stop()
 		var prompted string
+		seen := 0
 		for {
 			select {
 			case <-ctx.Done():
@@ -280,11 +281,17 @@ func run() error {
 					}
 				}
 			case <-ticker.C:
-				v, err := a.Get(id)
+				// The poll needs the state, not the history: ask only for the
+				// records that arrived since the last tick.
+				v, err := a.GetSince(id, seen)
 				if err != nil {
 					return err
 				}
+				seen = v.TotalRecords
 				if v.Finished {
+					if v, err = a.Get(id); err != nil {
+						return err
+					}
 					if err = output(v); err != nil {
 						return err
 					}

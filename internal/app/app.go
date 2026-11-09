@@ -486,33 +486,52 @@ func (a *App) entry(id string) (*runEntry, error) {
 
 // appendRecord stores a frame-free copy of record in the run view. Frames are
 // evidence files (jarvis.frame.get serves them); the view never carries them.
+//
+// The copy is made field by field (ownedCopy) and the frame is dropped from it
+// before it is made, so nothing is encoded and the base64 string is never
+// touched: the caller's record is left exactly as it was.
 func (e *runEntry) appendRecord(record computer.Record) error {
-	raw, err := json.Marshal(record)
-	if err != nil {
-		return err
+	if record.Observation != nil {
+		withoutFrame := *record.Observation
+		withoutFrame.Screenshot.Base64 = ""
+		record.Observation = &withoutFrame
 	}
-	var owned computer.Record
-	if err = json.Unmarshal(raw, &owned); err != nil {
-		return err
-	}
-	if owned.Observation != nil {
-		owned.Observation.Screenshot.Base64 = ""
-	}
+	owned := ownedCopy(record)
 	e.mu.Lock()
 	e.view.Records = append(e.view.Records, owned)
 	e.mu.Unlock()
 	return nil
 }
-func (a *App) Get(id string) (RunView, error) {
+
+// errRecordCursor is returned by GetSince for a cursor past the records seen.
+var errRecordCursor = errors.New("record cursor out of range")
+
+// Get returns the whole run view, every record included.
+func (a *App) Get(id string) (RunView, error) { return a.GetSince(id, 0) }
+
+// GetSince returns the run view with only the records from index cursor on;
+// TotalRecords still counts them all. A poller that keeps the total it was last
+// given pays for the records that arrived since, not for every record of the
+// run on every poll. Records are append-only, so the cursor stays meaningful.
+//
+// The view is a private copy: nothing in it aliases run state, so a caller may
+// write to any part of it (TestGetViewCannotMutateRunState).
+func (a *App) GetSince(id string, cursor int) (RunView, error) {
 	e, err := a.entry(id)
 	if err != nil {
 		return RunView{}, err
 	}
 	e.mu.Lock()
 	defer e.mu.Unlock()
+	if cursor < 0 || cursor > len(e.view.Records) {
+		return RunView{}, errRecordCursor
+	}
+	total := len(e.view.Records)
 	v := e.view
+	v.Records = v.Records[cursor:]
+	v = ownedCopy(v)
 	v.Assisted = e.assisted
-	v.TotalRecords = len(v.Records)
+	v.TotalRecords = total
 	if e.run != nil {
 		v.State = e.run.Snapshot()
 		v.Observation = e.run.Observation()
@@ -528,13 +547,7 @@ func (a *App) Get(id string) (RunView, error) {
 			v.Matching = &diagnostic
 		}
 	}
-	raw, err := json.Marshal(v)
-	if err != nil {
-		return RunView{}, err
-	}
-	var owned RunView
-	err = json.Unmarshal(raw, &owned)
-	return owned, err
+	return v, nil
 }
 
 // RunList deliberately excludes inputs, outputs, frames and tool records. Full
