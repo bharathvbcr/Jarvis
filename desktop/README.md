@@ -6,8 +6,8 @@ Jarvis backend over bounded NDJSON pipes; `crates/desktop-ui` owns shared access
 text fields. The Jarvis runner and native broker own automation and action approval.
 See [WORKBENCH.md](WORKBENCH.md) for the operator workflow and protocol boundaries.
 
-The workspace pins eframe/egui 0.36.2 and egui_kittest 0.36.2. They require Rust
-1.95 or newer. AccessKit, built-in fonts, OpenGL and X11 are enabled explicitly.
+The workspace pins eframe/egui 0.36.2 and egui_kittest 0.36.2 and declares Rust
+1.100 as its minimum (`rust-version` in `Cargo.toml`). AccessKit, built-in fonts, OpenGL and X11 are enabled explicitly.
 eframe inspection and its default feature set are disabled. There is no local
 HTTP server, automation command API or application-state tool exposed to agents.
 
