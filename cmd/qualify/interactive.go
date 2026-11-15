@@ -52,8 +52,13 @@ func makeApprovalPrompt(view app.RunView, id string, expected expectedForm) (app
 		return approvalPrompt{}, errors.New("approval step is unavailable")
 	}
 	step := view.Capability.Steps[s.StepIndex]
-	if view.Capability.Application != "jarvis-bank" || step.Effect != "change" || step.Kind != "press" || view.Capability.Targets[step.Target].Name != "Confirm creation" {
-		return approvalPrompt{}, errors.New("qualification only admits explicit approval of the synthetic bank's Confirm creation action")
+	// Confirm creation is the bank's change control. Other applications are not
+	// refused here for failing that bank rule. An inputs profile never reaches
+	// a run: qualify loads tenants through the desktop loader first.
+	if view.Capability.Application == app.BankApplication {
+		if step.Effect != "change" || step.Kind != "press" || view.Capability.Targets[step.Target].Name != "Confirm creation" {
+			return approvalPrompt{}, errors.New("qualification only admits explicit approval of the synthetic bank's Confirm creation action")
+		}
 	}
 	form := approvalForm{RunID: id, SessionID: s.SessionID, ActionID: view.PendingActionID, ObservationID: o.ID, TargetID: s.Observation.TargetID, Epoch: s.Epoch, Window: o.Window, Expected: expected, Captured: []formField{}}
 	targets := 0

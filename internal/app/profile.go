@@ -10,6 +10,22 @@ import (
 	"github.com/bharathvbcr/Manvi/manvi/workflow"
 )
 
+// BankApplication is the synthetic bank. North and south are layouts of it,
+// not separate applications.
+const BankApplication = "jarvis-bank"
+
+// InputsApplication is Vani's contact catalog. It is not a tenant of the bank.
+const InputsApplication = "vani"
+
+// ProfileKindInputs marks a profile the desktop loader must refuse. An empty
+// window title is not this marker and is not a successful desktop load.
+const ProfileKindInputs = "inputs"
+
+// ErrDesktopRefusesInputs is returned by the desktop loader. Drift and qualify
+// load profiles through that loader, so an inputs profile cannot be admitted
+// by leaving its window title empty.
+var ErrDesktopRefusesInputs = errors.New("desktop loader refuses an inputs profile")
+
 // Profiles select a tenant/platform surface. Their policy can only narrow the
 // reviewed application policy loaded from policies/<application>.json.
 //
@@ -18,16 +34,21 @@ import (
 // overlays and each compile applies only the one naming that capability; a
 // capability no overlay names compiles from the reviewed base. Overlay is the
 // single-entry shorthand and is equivalent to a one-element Overlays.
+//
+// Kind "inputs" is a different loader (no window, no broker, no discovery).
+// profile stays the desktop loader and refuses that kind.
 type Profile struct {
-	SchemaVersion   int                 `json:"schema_version"`
-	Tenant          string              `json:"tenant"`
-	Application     string              `json:"application"`
-	Policy          string              `json:"policy"`
-	Platforms       []string            `json:"platforms"`
-	WindowTitle     string              `json:"window_title"`
-	ReadOnlyTargets []computer.Selector `json:"read_only_targets"`
-	Overlay         string              `json:"overlay,omitempty"`
-	Overlays        []string            `json:"overlays,omitempty"`
+	SchemaVersion   int                  `json:"schema_version"`
+	Tenant          string               `json:"tenant"`
+	Application     string               `json:"application"`
+	Policy          string               `json:"policy"`
+	Platforms       []string             `json:"platforms"`
+	WindowTitle     string               `json:"window_title"`
+	ReadOnlyTargets []computer.Selector  `json:"read_only_targets"`
+	Overlay         string               `json:"overlay,omitempty"`
+	Overlays        []string             `json:"overlays,omitempty"`
+	Kind            string               `json:"kind,omitempty"`
+	Parameters      []workflow.Parameter `json:"parameters,omitempty"`
 }
 
 // tenantOverlay is one reviewed specialization and the exact bytes it was read
@@ -78,8 +99,22 @@ func (a *App) profile(tenant string) (tenantBinding, error) {
 	if err = workflow.DecodeStrict(raw, &p); err != nil {
 		return out, err
 	}
-	if p.SchemaVersion != 1 || p.Tenant != tenant || p.Application == "" || p.WindowTitle == "" {
+	if p.SchemaVersion != 1 || p.Tenant != tenant || p.Application == "" {
 		return out, errors.New("profile identity mismatch")
+	}
+	// An inputs profile is refused here even when its window title is empty.
+	// Empty is not rewritten into a successful inputs load.
+	if p.Kind == ProfileKindInputs {
+		return out, ErrDesktopRefusesInputs
+	}
+	if p.Kind != "" {
+		return out, errors.New("unknown profile kind")
+	}
+	if p.WindowTitle == "" {
+		return out, errors.New("profile identity mismatch")
+	}
+	if err = validateParameterList(p.Parameters, false); err != nil {
+		return out, err
 	}
 	if p.Policy == "" {
 		p.Policy = p.Application

@@ -3,9 +3,11 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -78,6 +80,43 @@ func TestTerminalApprovalRequiresExactIdentityAndRejectsPipedInput(t *testing.T)
 		t.Fatal("piped automatic approval accepted")
 	}
 }
+func TestConfirmCreationAdmissionRunsOnlyForTheBank(t *testing.T) {
+	view := reviewedView()
+	view.Capability.Application = "fixture-app"
+	view.Capability.Steps[0].Kind = "extract"
+	view.Capability.Steps[0].Effect = "read"
+	if _, err := makeApprovalPrompt(view, "run-1", expectedForm{}); err != nil {
+		t.Fatalf("bank confirm admission ran for %s: %v", view.Capability.Application, err)
+	}
+	bank := reviewedView()
+	bank.Capability.Steps[0].Effect = "read"
+	if _, err := makeApprovalPrompt(bank, "run-1", expectedForm{}); err == nil {
+		t.Fatal("jarvis-bank admitted a step that is not Confirm creation")
+	}
+}
+
+func TestQualifyRefusesInputsProfile(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "profiles"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := json.Marshal(app.Profile{SchemaVersion: 1, Tenant: "north", Application: app.InputsApplication, Kind: app.ProfileKindInputs})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = os.WriteFile(filepath.Join(root, "profiles", "north.json"), raw, 0600); err != nil {
+		t.Fatal(err)
+	}
+	a, err := app.New(context.Background(), app.Config{Root: root, Bank: filepath.Join(root, "missing-bank")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer a.Close()
+	if err = a.RequireDesktopProfile("north"); !errors.Is(err, app.ErrDesktopRefusesInputs) {
+		t.Fatalf("qualify desktop loader: %v", err)
+	}
+}
+
 func TestApprovalRejectsIncompleteOrAmbiguousNativeBinding(t *testing.T) {
 	for _, mutate := range []func(*app.RunView){func(v *app.RunView) { v.State.Observation.Matches = 2 }, func(v *app.RunView) { v.Observation.Complete = false }, func(v *app.RunView) { v.PendingActionID = "" }, func(v *app.RunView) { v.State.Epoch++ }, func(v *app.RunView) { v.Capability.Steps[0].Effect = "read" }, func(v *app.RunView) { v.State.RunID = "other" }} {
 		view := reviewedView()

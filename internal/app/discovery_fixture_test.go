@@ -87,7 +87,7 @@ func TestAssemblePublishedCapabilityDeclaresSchemaContract(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cap, err := assemblePublishedCapability(discoveryPublishArgs{
+	cap, err := assemblePublishedCapability("jarvis-bank", discoveryPublishArgs{
 		ID: "bank.balance", Revision: "1", Description: "Look up a member and return an independently verified USD balance.",
 		Outputs: []workflow.OutputDecl{{Name: "balance", Type: "money", Currency: "USD", Description: "Verified member balance in USD minor units"}},
 		Outcomes: []workflow.OutcomeDef{
@@ -111,6 +111,9 @@ func TestAssemblePublishedCapabilityDeclaresSchemaContract(t *testing.T) {
 	}
 	if cap.SchemaVersion != 1 {
 		t.Fatalf("schema_version = %d", cap.SchemaVersion)
+	}
+	if cap.Application != "jarvis-bank" {
+		t.Fatalf("application = %q, want the bank profile's application", cap.Application)
 	}
 	if len(cap.Outputs) != 1 || len(cap.Outcomes) != 2 || len(cap.Recoveries) != 1 {
 		t.Fatalf("contract fields missing: %+v", cap)
@@ -192,7 +195,7 @@ func TestDiscoveryFixtureTranscriptDrivesPublishAssembly(t *testing.T) {
 		if err := workflow.DecodeStrict(call.Arguments, &args); err != nil {
 			return tools.Result{Text: err.Error(), IsError: true}
 		}
-		cap, err := assemblePublishedCapability(args, params, targets, steps)
+		cap, err := assemblePublishedCapability("jarvis-bank", args, params, targets, steps)
 		if err != nil {
 			return tools.Result{Text: err.Error(), IsError: true}
 		}
@@ -211,7 +214,7 @@ func TestDiscoveryFixtureTranscriptDrivesPublishAssembly(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if published.ID != "bank.balance" || published.SchemaVersion != 1 {
+	if published.ID != "bank.balance" || published.SchemaVersion != 1 || published.Application != "jarvis-bank" {
 		t.Fatalf("published = %+v outcome=%+v", published, out)
 	}
 	if discoveryEvidenceClass(DiscoveryProviderFixture) != DiscoveryEvidenceNotLive {

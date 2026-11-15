@@ -29,6 +29,7 @@ type App struct {
 	ctx         context.Context
 	cancel      context.CancelFunc
 	mu          sync.Mutex
+	inputsMu    sync.Mutex
 	active      string
 	runs        map[string]*runEntry
 	client      *computer.Client

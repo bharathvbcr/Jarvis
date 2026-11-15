@@ -37,7 +37,9 @@ the run timeout cause bounded cancellation. Cleanup has an additional eight
 second bound. Piped input is refused in interactive mode.
 
 No approval is sent because a flag was selected, a line contained only `approve`,
-or an earlier checkpoint was approved. The qualifier re-reads the coordinator
+or an earlier checkpoint was approved. Profile loading enforces desktop profile
+admission (`kind: "inputs"` profiles are refused), and explicit confirmation
+rules scope bank-specific `Confirm creation` checks to `BankApplication`. The qualifier re-reads the coordinator
 after input; changed form, epoch, observation or action ID discards that approval.
 The broker independently focuses and revalidates before native input. A safe
 pre-dispatch retry gets a different action-attempt ID and needs another explicit
@@ -66,6 +68,7 @@ Reports keep native workflow outcome separate from expected fault behavior:
 | `delay` | Delay actually observed, explicit approval, completed creation and exact saved state |
 | `overlay`, `missing-control`, `duplicate-control` | Fault visible in a complete observation, no approval, safe termination and unchanged seed |
 | `commit-noop` | Approved input was dispatched, the same action's post-observation shows no completion, no acceptance pass and no saved write |
+| `false-ack` | Approved input was dispatched, normal success UI acknowledgment observed, no acceptance pass and unchanged saved seed |
 | `crash-after-commit` | Approved input was dispatched, exactly one durable creation, and terminal `outcome_unknown` with no acceptance pass |
 
 `expected_behavior_verified` can be true for a caught no-op or correctly unknown

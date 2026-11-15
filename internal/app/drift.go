@@ -52,13 +52,25 @@ func (a *App) CompileForTenant(path, tenant string) (*workflow.Program, tenantBi
 			return nil, binding, err
 		}
 	}
-	if p.Capability().Application != "jarvis-bank" {
-		return nil, binding, errors.New("this product profile only admits jarvis-bank capabilities")
+	if p.Capability().Application != binding.Profile.Application {
+		return nil, binding, fmt.Errorf("capability application %q is not admitted by profile %q", p.Capability().Application, binding.Profile.Application)
 	}
-	if err = validateBankProgram(p, binding.Profile, binding.Policy); err != nil {
-		return nil, binding, err
+	// Window, editable-field, and confirm-creation rules belong to the bank.
+	// Another application's profile does not inherit them.
+	if binding.Profile.Application == BankApplication {
+		if err = validateBankProgram(p, binding.Profile, binding.Policy); err != nil {
+			return nil, binding, err
+		}
 	}
 	return p, binding, nil
+}
+
+// RequireDesktopProfile is the check qualify runs before a campaign. It uses
+// the desktop loader, so an inputs profile is refused and an empty window is
+// not treated as success.
+func (a *App) RequireDesktopProfile(tenant string) error {
+	_, err := a.profile(tenant)
+	return err
 }
 
 // BuildDriftReport walks every target ladder against one observation.

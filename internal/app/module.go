@@ -310,6 +310,9 @@ func (a *App) Configure(r *serve.Router) error {
 			return err
 		}
 	}
+	if err := a.configureInputs(r); err != nil {
+		return err
+	}
 	return a.configureDiscovery(r)
 }
 func (a *App) history(id string) ([]promotion, error) {

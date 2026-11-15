@@ -131,6 +131,11 @@ func run() (returnErr error) {
 		return err
 	}
 	defer a.Close()
+	for _, tenant := range tenantNames {
+		if err = a.RequireDesktopProfile(tenant); err != nil {
+			return err
+		}
+	}
 	r := report{SchemaVersion: 3, Platform: runtime.GOOS, Architecture: runtime.GOARCH, DesktopSession: os.Getenv("XDG_SESSION_TYPE"), StartedAt: time.Now().UTC().Format(time.RFC3339), Mode: "fresh_process", Scenario: *scenario, RequestedPerTenant: *count, Tenants: tenantNames, Results: []result{}, Interactive: *interactive, Provenance: provenance}
 	if *pid != 0 {
 		r.Mode = "same_process"

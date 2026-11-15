@@ -167,7 +167,10 @@ func finalizeDiscoverySteps(steps []workflow.Step, outcomes []workflow.OutcomeDe
 	return out, nil
 }
 
-func assemblePublishedCapability(args discoveryPublishArgs, params []workflow.Parameter, targets map[string]workflow.Selector, steps []workflow.Step) (workflow.Capability, error) {
+func assemblePublishedCapability(application string, args discoveryPublishArgs, params []workflow.Parameter, targets map[string]workflow.Selector, steps []workflow.Step) (workflow.Capability, error) {
+	if application == "" {
+		return workflow.Capability{}, errors.New("discovery requires the profile application")
+	}
 	if len(args.Outputs) == 0 {
 		return workflow.Capability{}, errors.New("capability_publish requires outputs")
 	}
@@ -189,7 +192,7 @@ func assemblePublishedCapability(args discoveryPublishArgs, params []workflow.Pa
 		SchemaVersion: 1,
 		ID:            args.ID,
 		Revision:      args.Revision,
-		Application:   "jarvis-bank",
+		Application:   application,
 		Description:   args.Description,
 		Parameters:    append([]workflow.Parameter(nil), params...),
 		Targets:       copiedTargets,

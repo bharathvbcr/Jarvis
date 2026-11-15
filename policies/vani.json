@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "application": "vani",
+  "parameters": [
+    {"name": "given_name", "type": "string", "sensitive": true},
+    {"name": "family_name", "type": "string", "sensitive": true},
+    {"name": "email", "type": "string", "sensitive": true},
+    {"name": "phone", "type": "string", "sensitive": true},
+    {"name": "city", "type": "string", "sensitive": true},
+    {"name": "country", "type": "string", "sensitive": true},
+    {"name": "linkedin", "type": "string", "sensitive": true},
+    {"name": "github", "type": "string", "sensitive": true},
+    {"name": "website", "type": "string", "sensitive": true}
+  ]
+}

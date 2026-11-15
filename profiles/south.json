@@ -17,5 +17,9 @@
     {"role": "text_field", "name": "Member ID"},
     {"role": "text_field", "name": "Subaccount name"},
     {"role": "text_field", "name": "Passcode"}
+  ],
+  "parameters": [
+    {"name": "member_id", "type": "string", "sensitive": true},
+    {"name": "subaccount_name", "type": "string", "sensitive": true}
   ]
 }

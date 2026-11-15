@@ -71,18 +71,11 @@ func (a *App) Discover(req DiscoveryRequest) (string, error) {
 			return "", err
 		}
 	}
-	for k, v := range req.Inputs {
-		if k != "member_id" && k != "subaccount_name" {
-			return "", errors.New("unknown bank parameter")
-		}
-		if v.Type != "string" {
-			return "", errors.New("bank parameters are strings")
-		}
-		if err := v.Validate(); err != nil {
-			return "", err
-		}
+	binding, err := a.profile(req.Tenant)
+	if err != nil {
+		return "", err
 	}
-	if _, err := a.profile(req.Tenant); err != nil {
+	if _, err = sensitiveInputs(binding.Profile, req.Inputs); err != nil {
 		return "", err
 	}
 	id, err := identifier()
@@ -219,11 +212,10 @@ func (a *App) discover(ctx context.Context, e *runEntry, req DiscoveryRequest) {
 	e.mu.Lock()
 	e.privacy = privacy
 	e.mu.Unlock()
-	params := []workflow.Parameter{}
-	for _, k := range []string{"member_id", "subaccount_name"} {
-		if _, ok := req.Inputs[k]; ok {
-			params = append(params, workflow.Parameter{Name: k, Type: "string", Sensitive: true})
-		}
+	params, err := sensitiveInputs(binding.Profile, req.Inputs)
+	if err != nil {
+		failure = err
+		return
 	}
 	clean := func(text string) string {
 		out := scrubber.Clean(text)
@@ -346,7 +338,7 @@ func (a *App) discover(ctx context.Context, e *runEntry, req DiscoveryRequest) {
 		if args.Kind != "extract" && args.Kind != "wait" && args.Kind != "branch" {
 			currentSteps = append(currentSteps, workflow.Step{ID: "checkpoint", Kind: "extract", Target: "checkpoint_status", Effect: "read", Output: "checkpoint_status", OutputType: "string"})
 		}
-		capability := workflow.Capability{SchemaVersion: 1, ID: "discovery_step", Revision: fmt.Sprint(actions), Application: "jarvis-bank", Description: "Scoped discovery activity", Parameters: params, Targets: currentTargets, Steps: currentSteps, Limits: workflow.DefaultLimits()}
+		capability := workflow.Capability{SchemaVersion: 1, ID: "discovery_step", Revision: fmt.Sprint(actions), Application: binding.Profile.Application, Description: "Scoped discovery activity", Parameters: params, Targets: currentTargets, Steps: currentSteps, Limits: workflow.DefaultLimits()}
 		raw, err := json.Marshal(capability)
 		if err != nil {
 			return tools.Result{Text: err.Error(), IsError: true}
@@ -405,7 +397,7 @@ func (a *App) discover(ctx context.Context, e *runEntry, req DiscoveryRequest) {
 		if err := workflow.DecodeStrict(call.Arguments, &args); err != nil {
 			return tools.Result{Text: err.Error(), IsError: true}
 		}
-		capability, err := assemblePublishedCapability(args, params, targets, steps)
+		capability, err := assemblePublishedCapability(binding.Profile.Application, args, params, targets, steps)
 		if err != nil {
 			return tools.Result{Text: err.Error(), IsError: true}
 		}
