@@ -13,7 +13,7 @@ Recorded 2026-09-10 for TASK-010 / `p7-docs-publish`. Superseded for pins: `upst
 
 Jarvis `go.mod` requires `github.com/bharathvbcr/Manvi/manvi v0.0.0-20261114185916-44cf392fa6f6` (Go 1.27.4 workspace; desktop workspace uses Rust 1.100).
 
-`go run ./cmd/dev check-pins` checks agreement between `upstream.lock.json` and `go.mod` (passing at `ab65f14`, assuming clean upstream checkouts when validating sibling directories). Note that `cmd/dev package` (`cmd/dev/package.go`) archives `cmd`, `internal`, `examples`, `profiles`, `scenarios`, `docs`, `tests`, `desktop/crates`, `desktop/packaging`, and `build/upstream` (it does not separately walk `policies/`).
+`go run ./cmd/dev check-pins` requires each upstream checkout (Manvi, DevCouncil, gusset) to sit at the revision `upstream.lock.json` pins and to be clean, requires the upstreams' own pin files to agree with the lock, and requires the Manvi version in `go.mod` to match the lock. It fails when a checkout lags the lock, so it passes only on a machine whose checkouts have been advanced to the current pins. Note that `cmd/dev package` (`cmd/dev/package.go`) archives `cmd`, `internal`, `examples`, `profiles`, `scenarios`, `docs`, `tests`, `desktop/crates`, `desktop/packaging`, and `build/upstream` (it does not separately walk `policies/`).
 
 ## DevCouncil tasks (local `.devcouncil` state)
 
