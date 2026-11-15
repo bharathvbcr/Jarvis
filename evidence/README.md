@@ -1,11 +1,15 @@
 # Evidence inventory
 
-The pinned build is recorded in [build-verification.json](build-verification.json).
+The build recorded in [build-verification.json](build-verification.json) (2026-09-09, Manvi `4818dc2`, DevCouncil `4ccadc6`) has not been re-recorded at current `upstream.lock.json` pins.
 [macos-pinned-40.json](macos-pinned-40.json) contains 23 successful replays and
 17 suspensions after native input-counter changes; all 40 saved-state checks passed.
 North passed 14/20 and South 9/20. This campaign is not a clean stability pass.
 [macos-pinned-denial.json](macos-pinned-denial.json) reached and denied approval on
 South; North suspended before approval. Both saved-state checks passed.
+[macos-guard-partition-denial.json](macos-guard-partition-denial.json) recorded
+4/4 denial behavior on the narrowed guard with saved seeds unchanged, and
+[multi-tenant-drift/](multi-tenant-drift/) records `jarvis drift` variant reports across
+North and South.
 Those 17 suspensions were attributed to bare pointer motion and the guard was
 narrowed. [guard-partition/](guard-partition/) records the controlled experiment:
 with one variable changed on one host under identical injected pointer motion, the
@@ -49,6 +53,8 @@ Additional `macos-*-probe.json` reports and Linux build/probe text logs retain i
 | [examples/linux-balance](examples/linux-balance/) | Complete sanitized North run `09a8bb6c81691e2e5b8c16d6e275e61d`, trial 1 of the Linux 40-run campaign. Twenty original evidence files copied byte-for-byte; all three evidence criteria passed and seed remained unchanged. Its README records X11/AT-SPI/XTest and renderer readiness. |
 | [examples/macos-window-refusal](examples/macos-window-refusal/) | Preserved South run `5c25ec24dd665d2febe30710061ad87e`: geometry changed from 880×732 to 102×125 before dispatch. The failure predates bounded confirmed-not-sent recovery and remains unchanged. |
 | [examples/macos-visual-no-grant](examples/macos-visual-no-grant/) | Genuine protected crop creation and unique native visual matching in a 1760×1464 bank frame. An unapproved visual click returned `approval_required/not_sent`; saved state was unchanged. No human grant or live click was exercised. |
+| [examples/macos-pinned-balance](examples/macos-pinned-balance/) | Sanitized passing North run copied byte-for-byte from the current-binary campaign and re-verified with the independent verifier. |
+| [examples/macos-input-counter-refusal](examples/macos-input-counter-refusal/) | Sanitized run refused by the input-counter guard and copied byte-for-byte for independent verification. |
 
 Curated observations contain only the synthetic bank. Member-input pixels are masked and semantic values redacted before persistence. Original artifact bytes remain unchanged when copied; verify each bundle against its hashes. Provider-private continuation and local credentials are excluded. Checksums establish consistency of supplied bytes, not truthful observation independently of the trusted coordinator and native workers.
 

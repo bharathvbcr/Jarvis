@@ -10,7 +10,10 @@ oracles unchanged. It does not pass the clean stability gate. After the admissio
 guard was narrowed, `evidence/macos-guard-partition-40.json` passed 35/40 with all
 40 saved-state oracles unchanged (five runs blocked); that is also not a clean pass.
 The current denial
-campaign reached denial on South; North suspended before approval. UTM now crashes
+campaign (`evidence/macos-pinned-denial.json`) reached denial on South; North
+suspended before approval. The narrowed-guard denial campaign
+(`evidence/macos-guard-partition-denial.json`) completed denial on both tenants.
+Multi-tenant layout drift probes are recorded in `evidence/multi-tenant-drift/`. UTM now crashes
 before guest startup, so Linux refresh attempted zero runs; see
 `evidence/linux-refresh-blocked.json`. The historical successful campaigns below
 remain bound to their original binary hashes.
@@ -46,7 +49,7 @@ go run ./cmd/qualify --pid 12345 --tenants north --oracle-state /absolute/path/t
 
 Replace the PID and state path with those of that exact synthetic bank. This mode requires one explicit tenant and records a partial matrix; it cannot qualify the whole platform. It is useful for distinguishing new-window/Stage Manager transitions from steady-process behavior. Both modes allow explicit `--broker`, `--verifier`, `--bank`, and `--run-timeout` paths/settings.
 
-Fault campaigns use `--scenario denial`, `overlay`, `delay`, `missing-control`, `duplicate-control`, `commit-noop`, or `crash-after-commit`. They never approve a business mutation. `fault_reached` requires observed evidence; a requested fault flag is not evidence it ran. In particular, denial before Confirm does not exercise commit-noop or crash-after-commit. Those post-commit cases require a separate human-approved test and reconciliation of the independent state oracle.
+Fault campaigns use `--scenario denial`, `overlay`, `delay`, `missing-control`, `duplicate-control`, `commit-noop`, `false-ack`, or `crash-after-commit`. They never approve a business mutation. `fault_reached` requires observed evidence; a requested fault flag is not evidence it ran. In particular, denial before Confirm does not exercise commit-noop or crash-after-commit. Those post-commit cases require a separate human-approved test and reconciliation of the independent state oracle.
 
 ## Reproducible Linux ARM64 lab on Apple Silicon
 

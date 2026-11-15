@@ -189,11 +189,12 @@ resolve. Build outputs are under `build/`. On Linux and macOS the Go host links 
 ./build/jarvis compile --capability examples/balance.json --register
 ./build/jarvis replay --capability examples/balance.json --tenant north
 ./build/jarvis replay --capability examples/balance.json --tenant south
+./build/jarvis replay --capability examples/balance.json --tenant south --variant renamed-controls
 ./build/jarvis codegen --capability examples/balance.json --out examples/generated/balance/capability.go
 go run ./cmd/qualify --n 20 --out evidence/platform-fresh-40.json
 ```
 
-The default typed input is the synthetic member M-1001. Use `--inputs scenarios/m1002.inputs.json --contract scenarios/balance-m1002.contract.json` for the second independent expectation. `--pid` attaches an existing bank process; absent `--pid`, Jarvis starts and owns a new bank process. Each interactive desktop has one input owner, including cooperating broker processes.
+The default typed input is the synthetic member M-1001. Use `--inputs scenarios/m1002.inputs.json --contract scenarios/balance-m1002.contract.json` for the second independent expectation. `--pid` attaches an existing bank process; absent `--pid`, Jarvis starts and owns a new bank process (and `--variant renamed-controls` runs the renamed-control build variant on `--tenant south`). Each interactive desktop has one input owner, including cooperating broker processes. Profiles may declare application-specific sensitive parameters; non-bank `kind: "inputs"` profiles (such as `profiles/vani.json`, exposed via `jarvis.inputs.*` stdio operations) supply reusable sensitive inputs without admitting a desktop target or window.
 
 Account-changing replay:
 
@@ -209,10 +210,11 @@ Enter a Gemini credential in the workbench, or set `GEMINI_API_KEY` in the proce
 
 ```sh
 ./build/jarvis discover --tenant north --task 'Look up the member balance, extract USD money, and publish bank.balance.'
+./build/jarvis discover --provider fixture --tenant north --task 'Look up the member balance and publish bank.balance.'
 ./build/jarvis discover --tenant north --resume-session .local/discovery/RUN_ID/session.json --task 'Continue from a fresh scoped observation.'
 ```
 
-The initial model is `gemini-3.8-flash`, prompt revision `jarvis-desktop-v2`. A durable $25 campaign ledger reserves the maximum configured input/output charge before every actual HTTP attempt, including transport retries. Unknown/rejected attempts retain reservations; validated usage settles the successful attempt. The conservative rates are $1.50/M input and $7.50/M output including thinking, above the September 2026 promotional rates. This governs this campaign's admission, not unrelated account spending. [Google pricing](https://ai.google.dev/gemini-api/docs/pricing)
+Use `--provider fixture` (optionally `--fixture PATH`, defaulting to the bundled transcript) for offline mock-wire rehearsals labelled `not live`. For live Gemini runs, the initial model is `gemini-3.8-flash`, prompt revision `jarvis-desktop-v2`. A durable $25 campaign ledger reserves the maximum configured input/output charge before every actual HTTP attempt, including transport retries. Unknown/rejected attempts retain reservations; validated usage settles the successful attempt. The conservative rates are $1.50/M input and $7.50/M output including thinking, above the September 2026 promotional rates. This governs this campaign's admission, not unrelated account spending. [Google pricing](https://ai.google.dev/gemini-api/docs/pricing)
 
 Enable `--assisted` or the workbench checkbox for one explicitly requested safe model recovery while paused. The only recovery choices are a unique enabled Back or Dismiss button. Recovery stays paused, records actor `model_recovery`, and requires canonical checkpoint resume. Matching scores never grant approval.
 
@@ -226,10 +228,10 @@ The structured editor edits parameters, targets, ordered steps, references and l
 
 ```sh
 ./build/jarvis trace replay --capability evidence/private/RUN_ID/capability.json --trace evidence/private/RUN_ID/trace.json
-./build/jarvis verify --contract CONTRACT --bundle BUNDLE --contract-sha256 EXPECTED_CONTRACT_HASH --capability-sha256 EXPECTED_CAPABILITY_HASH --run-id EXPECTED_RUN --session-id EXPECTED_SESSION --epoch 1
+./build/jarvis verify --contract CONTRACT --bundle BUNDLE --contract-sha256 EXPECTED_CONTRACT_HASH --capability-sha256 EXPECTED_CAPABILITY_HASH --run-id EXPECTED_RUN --session-id EXPECTED_SESSION --epoch 1 [--verifier-sha256 EXPECTED_VERIFIER_HASH] [--policy-sha256 EXPECTED_POLICY_HASH] [--artifacts-root DIR]
 ```
 
-`trace replay` uses the exported pure workflow reducer and has no desktop backend. `verify` requires independent expected identities; it does not read a runner's `passed` flag. Missing prerequisites produce `incomplete`. Hashes identify exact bytes and detect inconsistency, not truthful observation by an untrusted coordinator. A separate qualification-only oracle checks saved bank state and is unavailable to discovery.
+`trace replay` uses the exported pure workflow reducer and has no desktop backend. `verify` runs out-of-band without initializing the broker or bank and requires independent expected identities (when `--verifier-sha256` or `--policy-sha256` is supplied, `VerifyAgainstHeldOutLock` enforces held-out verifier/contract/capability/policy SHA-256 locks and verdict soundness); it does not read a runner's `passed` flag. Missing prerequisites produce `incomplete`. Hashes identify exact bytes and detect inconsistency, not truthful observation by an untrusted coordinator. A separate qualification-only oracle checks saved bank state and is unavailable to discovery.
 
 ## Validation
 

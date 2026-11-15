@@ -6,7 +6,7 @@ Three owners keep reusable behavior upstream: Manvi controls discovery, determin
 
 ## Artifact schema
 
-An application contains capabilities with immutable revisions. Each revision declares typed parameters, semantic or bounded visual targets, ordered bounded steps, explicit business effects and output types. Money uses integer minor units and currency. Visual templates contain exact hashed PNG bytes and geometry; they support approved clicks, not text extraction. Tenant/platform bindings can narrow reviewed input policy. An invocation adds run/session identities, control epoch, independent expected contract and a byte hash of the exact capability. No credentials, executable expressions or arbitrary code appear in capabilities.
+An application contains capabilities with immutable revisions. Each revision declares typed parameters (admitted from profile-declared `parameters` without bank-only hardcoded lists), semantic or bounded visual targets, ordered bounded steps, explicit business effects and output types. Money uses integer minor units and currency. Visual templates contain exact hashed PNG bytes and geometry; they support approved clicks, not text extraction. Tenant/platform bindings can narrow reviewed input policy, while non-bank `kind: "inputs"` profiles (e.g., `vani`) are kept separate from desktop execution via `RequireDesktopProfile`. An invocation adds run/session identities, control epoch, independent expected contract (optionally verified out-of-band against held-out SHA-256 locks and safety-first Pareto dominance in `internal/evidence/formal_comparator.go`) and a byte hash of the exact capability. No credentials, executable expressions or arbitrary code appear in capabilities.
 
 ## Determinism & error handling
 

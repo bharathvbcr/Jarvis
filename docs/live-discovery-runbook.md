@@ -18,7 +18,7 @@ continuation under `.local/discovery/` is never a submission artifact.
 ## Stage 0 — Build and doctor
 
 ```sh
-go run ./cmd/dev build --manvi /Users/bharath/Code/devtools/Manvi --devcouncil /Users/bharath/Code/devtools/DevCouncil
+go run ./cmd/dev build --manvi /path/to/Manvi --devcouncil /path/to/DevCouncil
 ./build/jarvis doctor
 ```
 
@@ -102,6 +102,8 @@ Must prove: zero model requests during replay; independent contract evaluation
 runs against the fresh bundle; saved-state oracle (qualification harness) still
 matches when you run it separately.
 
+Stage 1 and Stage 2 load a desktop profile (`kind: ""` — `kind: "inputs"` profiles are refused) and derive sensitive capability parameters from the profile's declared `parameters` list, binding published capabilities to `binding.Profile.Application`.
+
 ## Stage 5 — Verify the replay bundle
 
 ```sh
@@ -112,12 +114,13 @@ matches when you run it separately.
   --capability-sha256 <EXPECTED_CAPABILITY_HASH> \
   --run-id <REPLAY_RUN_ID> \
   --session-id <EXPECTED_SESSION_ID> \
-  --epoch 1
+  --epoch 1 \
+  [--verifier-sha256 <EXPECTED_VERIFIER_HASH>] \
+  [--policy-sha256 <EXPECTED_POLICY_HASH>] \
+  [--artifacts-root <ARTIFACTS_DIR>]
 ```
 
-Must prove: DevCouncil `dcverify evidence-check` verdict is `passed` with
-independently supplied identities. Missing prerequisites remain `incomplete`,
-never a silent pass.
+Must prove: `verify` runs out-of-band without initializing the broker or bank, returning DevCouncil `dcverify evidence-check` verdict `passed` against independently supplied identities (and, when `--verifier-sha256` or `--policy-sha256` is provided, enforcing `VerifyAgainstHeldOutLock` SHA-256 locks and verdict soundness). Missing prerequisites remain `incomplete`, never a silent pass.
 
 ## Stage 6 — Sanitize into `evidence/discovery/<RUN_ID>`
 

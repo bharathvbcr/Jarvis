@@ -56,7 +56,7 @@ automated press must occur in the external broker before any native input.
 
 ## Controlled fault modes
 
-Pass `--fault` with one of the following values (default `none`):
+Pass `--fault` with one of the following values (default `none`), and optionally `--variant none|renamed-controls` (`renamed-controls` requires `--tenant south`):
 
 | Mode | Observable behavior |
 |---|---|
@@ -65,7 +65,10 @@ Pass `--fault` with one of the following values (default `none`):
 | `missing-control` | The creation form omits Review |
 | `duplicate-control` | The review has two buttons labeled Confirm creation |
 | `commit-noop` | Confirmation changes no state and reports Creation did not complete |
+| `false-ack` | Displays a normal creation success acknowledgment without changing saved state |
 | `crash-after-commit` | Native process exits with code 86 after a persisted creation |
+| `permission-denied` | Refuses creation with a permission error and leaves saved state unchanged |
+| `session-expired` | Blocks actions behind a session-expired passcode prompt (`BRANCH-7741`) until entered |
 
 Faults act through the real UI/state flow. A fault does not create a fabricated
 successful result. The process-crash flag is observed after drawing in the native
@@ -88,8 +91,8 @@ input state is capped at 1 MiB, 128 members and 64 subaccounts per member.
 This is a trusted local synthetic state directory, not an adversarial filesystem
 sandbox or financial service.
 
-Locally verified on macOS: compilation/linking, seven state tests and ten
-headless egui accessibility interaction tests, plus Clippy with warnings denied.
+Locally verified on macOS: compilation/linking, seven state tests and 16
+headless egui accessibility interaction tests (23 bank tests total), plus Clippy with warnings denied.
 Tests exercise both tenant layouts, read-only values, staged creation, persistent
 commit, idempotent retries, lock ownership, invalid state, symlink refusal and
 all fault modes. Those tests do not establish native OS accessibility delivery,

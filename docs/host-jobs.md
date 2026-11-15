@@ -1,7 +1,7 @@
 # Host background jobs
 
 The stdio host handles requests serially. `jarvis.doctor`, `jarvis.evidence.verify`,
-`jarvis.frame.get`, and `jarvis.evidence.export` therefore admit bounded background
+`jarvis.frame.get`, `jarvis.evidence.export`, and `jarvis.anchor.create` therefore admit bounded background
 jobs, allowing status and control requests to proceed while those operations run.
 Their initial response contains `job_id`, the original `operation`, and
 `status: "pending"`. Admission does not indicate that a diagnostic or verification
@@ -22,8 +22,8 @@ the workbench's 20 MiB response-line bound; total retained results are capped at
 slot until it physically returns, so repeated timeouts cannot create an unbounded
 number of background workers. Unknown or expired IDs return an error.
 
-Doctor, verification, frame loading, and export have respective outer deadlines of
-10, 15, 15, and 30 seconds. They inherit application shutdown cancellation. Frame
+Doctor, verification, frame loading, anchor creation, and export have respective outer deadlines of
+10, 15, 15, 15, and 30 seconds. They inherit application shutdown cancellation. Frame
 scans and export copies check cancellation between files and reads. Export stages a
 complete ZIP beside the destination and publishes it without replacing an existing
 file; a failed copy leaves no partial destination. Cancellation racing publication

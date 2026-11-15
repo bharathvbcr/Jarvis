@@ -49,6 +49,10 @@ usable while backend requests run; errors and pending work are visible at the to
   are masked. Select a tenant, supply an independent acceptance contract, and
   either attach a PID or let the backend launch its native bank. Assisted
   recovery is disabled by default and may be enabled for that invocation.
+  The stdio host also exposes `jarvis.inputs.put`, `jarvis.inputs.list-keys`,
+  and `jarvis.inputs.get` for non-bank `kind: "inputs"` catalogs (such as
+  `vani`), keeping sensitive user inputs in host storage without admitting a
+  desktop window.
 - **Run & takeover:** inspect session ownership, epoch, phase, outputs and
   before/action/after records. Select an observation record to fetch its sanitized
   historical frame; the current capture and accessibility tree are also available.
