@@ -17,6 +17,8 @@ github.com/bharathvbcr/Manvi/manvi v0.0.0-20261029005942-ddec7b0c907a h1:Wkhj4sq
 github.com/bharathvbcr/Manvi/manvi v0.0.0-20261029005942-ddec7b0c907a/go.mod h1:7dsFqdP1urVfMijUMXrYeXxIAN3/J87pwYUAPcyZPQ8=
 github.com/bharathvbcr/Manvi/manvi v0.0.0-20261113155013-c0944c06f110 h1:YiKBtWpprz+AG86+oxBrb3itLnnXXes14l2WrZkO88M=
 github.com/bharathvbcr/Manvi/manvi v0.0.0-20261113155013-c0944c06f110/go.mod h1:JXiAcvAOnQBwILNPYsIr8o9gxM8iz1H9T9e/rqGf4HY=
+github.com/bharathvbcr/Manvi/manvi v0.0.0-20261115001930-8a7bada404db h1:BoZMgl30iPYYghNZQDg1/YlmwSjMeonvPjgmWYBNMm4=
+github.com/bharathvbcr/Manvi/manvi v0.0.0-20261115001930-8a7bada404db/go.mod h1:JXiAcvAOnQBwILNPYsIr8o9gxM8iz1H9T9e/rqGf4HY=
 github.com/samber/mo v1.17.0 h1:EbeLc7nxIdpalstxQQakLOcXxULuMRqo7PJPtY18bQg=
 github.com/samber/mo v1.17.0/go.mod h1:DlgzJ4SYhOh41nP1L9kh9rDNERuf8IqWSAs+gj2Vxag=
 golang.org/x/crypto v0.56.0 h1:GUh5Ii4J5jtcseSMiRqr1jXCNHoxjeV9Fmekc2oLy6Y=
