@@ -74,6 +74,9 @@ func run() error {
 	epoch := f.Uint64("epoch", 1, "independent admission epoch")
 	contractSHA := f.String("contract-sha256", "", "independently expected contract hash")
 	capabilitySHA := f.String("capability-sha256", "", "independently expected capability hash")
+	verifierSHA := f.String("verifier-sha256", "", "independently expected verifier binary SHA-256 (enables held-out lock comparator)")
+	policySHA := f.String("policy-sha256", "", "independently expected policy SHA-256 for held-out lock comparator")
+	artifactsRoot := f.String("artifacts-root", "", "evidence artifacts root directory (defaults to bundle parent directory)")
 	if err := f.Parse(args); err != nil {
 		return err
 	}
@@ -127,6 +130,55 @@ func run() error {
 			return err
 		}
 		return output(state)
+	}
+	// Independent verification runs out-of-band without initializing the product broker or bank.
+	if command == "verify" {
+		binary := *verifier
+		if binary == "" {
+			binary = filepath.Join(absRoot, "build", "dcverify")
+		} else {
+			binary = resolve(binary)
+		}
+		resolvedBundle := resolve(*bundle)
+		artRoot := filepath.Dir(resolvedBundle)
+		if *artifactsRoot != "" {
+			artRoot = resolve(*artifactsRoot)
+		}
+		req := evidence.Request{
+			Binary:           binary,
+			ContractPath:     resolve(*contract),
+			BundlePath:       resolvedBundle,
+			ArtifactsRoot:    artRoot,
+			ContractSHA256:   *contractSHA,
+			CapabilitySHA256: *capabilitySHA,
+			RunID:            *runID,
+			SessionID:        *sessionID,
+			Epoch:            *epoch,
+		}
+		var (
+			report evidence.Report
+			err    error
+		)
+		if *verifierSHA != "" || *policySHA != "" {
+			report, err = evidence.VerifyAgainstHeldOutLock(ctx, req, evidence.HeldOutLock{
+				VerifierSHA256:   *verifierSHA,
+				ContractSHA256:   *contractSHA,
+				CapabilitySHA256: *capabilitySHA,
+				PolicySHA256:     *policySHA,
+			})
+		} else {
+			report, err = evidence.Verify(ctx, req)
+		}
+		if err != nil {
+			return err
+		}
+		if err = output(report); err != nil {
+			return err
+		}
+		if report.Verdict != "passed" {
+			return fmt.Errorf("evidence verdict: %s", report.Verdict)
+		}
+		return nil
 	}
 	a, err := app.New(ctx, app.Config{Root: absRoot, Broker: *broker, Verifier: *verifier, Bank: *bank})
 	if err != nil {
@@ -187,22 +239,6 @@ func run() error {
 		}
 		_, err = os.Stdout.Write(source)
 		return err
-	case "verify":
-		binary := *verifier
-		if binary == "" {
-			binary = filepath.Join(absRoot, "build", "dcverify")
-		}
-		report, err := evidence.Verify(ctx, evidence.Request{Binary: binary, ContractPath: resolve(*contract), BundlePath: resolve(*bundle), ArtifactsRoot: filepath.Dir(resolve(*bundle)), ContractSHA256: *contractSHA, CapabilitySHA256: *capabilitySHA, RunID: *runID, SessionID: *sessionID, Epoch: *epoch})
-		if err != nil {
-			return err
-		}
-		if err = output(report); err != nil {
-			return err
-		}
-		if report.Verdict != "passed" {
-			return fmt.Errorf("evidence verdict: %s", report.Verdict)
-		}
-		return nil
 	case "replay", "discover":
 		inputs, err := readInputs()
 		if err != nil {
