@@ -48,6 +48,37 @@ After resolution `go.mod`, `cmd/dev/main.go` and `README.md` were identical to m
 - Branches are **kept**, not deleted: you asked to commit and merge, not delete. All four are fully merged and each has a backup ref, so they are now deletion candidates whenever you ask.
 - To undo the three merges: `git reset --hard 3226fe9` on main (discards the merges; every branch tip still exists), or restore from the 2026-11-15-post backup.
 
+## Update 2026-11-16 (later) — stale branches deleted on the owner's instruction
+
+Rules applied: tip reachable from main, a backup ref at the tip, worktree clean, no process with its cwd there; `git worktree remove` without `--force`; `git branch -d` (refuses unmerged), never `-D`. Re-checked immediately before deleting [V].
+
+| Branch | Backup ref | Worktree removed |
+|---|---|---|
+| `winddown/jarvis-candidate` (was `6ae21cf`) | `refs/backup/2026-11-16/winddown/jarvis-candidate` | `.antigravity/worktrees/winddown-jarvis-candidate` (clean, nothing ignored) |
+| `perf1109/jarvis-records` (was `6dd459f`) | `refs/backup/2026-11-15/perf1109/jarvis-records` | `.claude/worktrees/perf1109-records` (clean; only the regenerable `go.work` and `go.work.sum` were ignored files) |
+
+Both tips are still reachable from main, and `git fsck` is clean [V].
+
+**Kept, with the reason:**
+| Branch | Reason |
+|---|---|
+| `main` | trunk |
+| `claude/pin-manvi-8a7bada-c8f201` | **live `claude` process (pid 32443, up 1d+) has its cwd in the worktree** [V]; the branch is fully merged and backed up, so delete it once that session is closed |
+| `perf/dev-test-lanes` | worktree has 9 uncommitted, actively edited paths [V]; someone appears to be mid-work on the `cmd/dev` test hang |
+| `refs/backup/*`, `origin/main` | backups are kept on purpose; no remote branches were touched |
+
+The earlier backup `refs/backup/2026-11-15/winddown/jarvis-candidate` points at the old tip `ab65f14`; the current one is the 2026-11-16 ref.
+
+**Restore a deleted branch:**
+```
+git branch winddown/jarvis-candidate refs/backup/2026-11-16/winddown/jarvis-candidate
+git branch perf1109/jarvis-records   refs/backup/2026-11-15/perf1109/jarvis-records
+# or from the bundle (all five branches as of 2026-11-16):
+git fetch /Users/bharath/Code/devtools/_branch-backups/jarvis-all-2026-11-16-after-merges.bundle refs/heads/<name>:<name>
+# worktrees are not restored by this; recreate with: git worktree add <path> <name>
+```
+Restoring a branch does **not** bring back the winddown worktree's pre-commit files; those are in `/Users/bharath/Code/devtools/_branch-backups/winddown-merge-state-2026-11-15.tar`, though the merge they led to is now commit `6ae21cf`.
+
 **Status of the earlier (2026-11-15) record below: Phases 1–3 done; nothing merged at that point.**
 Main's pending work was committed as three commits (owner confirmed it was theirs). Everything else is blocked on the items under "Blocked", none of which I can clear myself.
 
