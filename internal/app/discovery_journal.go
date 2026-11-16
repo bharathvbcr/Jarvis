@@ -1,7 +1,6 @@
 package app
 
 import (
-	"encoding/json"
 	"errors"
 	"github.com/bharathvbcr/Jarvis/internal/evidence"
 	"github.com/bharathvbcr/Manvi/manvi/computer"
@@ -32,21 +31,7 @@ func (w *discoveryWriter) record(e *runEntry, r computer.Record) error {
 	if r.Kind == "action_started" {
 		w.lastAction = r.ActionID
 	}
-	raw, err := json.Marshal(stored)
-	if err != nil {
-		return err
-	}
-	var owned computer.Record
-	if err = json.Unmarshal(raw, &owned); err != nil {
-		return err
-	}
-	if owned.Observation != nil {
-		owned.Observation.Screenshot.Base64 = ""
-	}
-	e.mu.Lock()
-	e.view.Records = append(e.view.Records, owned)
-	e.mu.Unlock()
-	return nil
+	return e.appendRecord(stored)
 }
 func (w *discoveryWriter) lastActionID() string {
 	w.mu.Lock()

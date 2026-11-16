@@ -67,12 +67,16 @@ type RunView struct {
 	Matching          *computer.MatchDiagnostics     `json:"matching,omitempty"`
 }
 type runEntry struct {
-	mu                sync.Mutex
-	startedAt         time.Time
-	program           *workflow.Program
-	privacy           computer.PrivacyPolicy
-	view              RunView
-	run               *computer.Run
+	mu        sync.Mutex
+	startedAt time.Time
+	program   *workflow.Program
+	privacy   computer.PrivacyPolicy
+	view      RunView
+	run       *computer.Run
+	// liveSource replaces run as the source of the live part of the view. It is
+	// nil in production; tests set it to a source whose values are deliberately
+	// shared, to prove Get hands out copies whatever the run returns.
+	liveSource        liveSource
 	cancel            context.CancelFunc
 	session           computer.Session
 	expected          evidence.Request
@@ -400,21 +404,7 @@ func (a *App) execute(ctx context.Context, e *runEntry, p *workflow.Program, bin
 		if err := recorder.Record(record); err != nil {
 			return err
 		}
-		raw, err := json.Marshal(record)
-		if err != nil {
-			return err
-		}
-		var owned computer.Record
-		if err = json.Unmarshal(raw, &owned); err != nil {
-			return err
-		}
-		if owned.Observation != nil {
-			owned.Observation.Screenshot.Base64 = ""
-		}
-		e.mu.Lock()
-		e.view.Records = append(e.view.Records, owned)
-		e.mu.Unlock()
-		return nil
+		return e.appendRecord(record)
 	}
 	privacy := bankPrivacy(binding.Policy, req.Inputs)
 	privacy.PID = session.Window.PID
@@ -498,21 +488,63 @@ func (a *App) entry(id string) (*runEntry, error) {
 	}
 	return e, nil
 }
-func (a *App) Get(id string) (RunView, error) {
+
+// appendRecord stores a frame-free copy of record in the run view. Frames are
+// evidence files (jarvis.frame.get serves them); the view never carries them.
+//
+// The copy is made field by field (ownedCopy) and the frame is dropped from it
+// before it is made, so nothing is encoded and the base64 string is never
+// touched: the caller's record is left exactly as it was.
+func (e *runEntry) appendRecord(record computer.Record) error {
+	if record.Observation != nil {
+		withoutFrame := *record.Observation
+		withoutFrame.Screenshot.Base64 = ""
+		record.Observation = &withoutFrame
+	}
+	owned := ownedCopy(record)
+	e.mu.Lock()
+	e.view.Records = append(e.view.Records, owned)
+	e.mu.Unlock()
+	return nil
+}
+
+// errRecordCursor is returned by GetSince for a cursor past the records seen.
+var errRecordCursor = errors.New("record cursor out of range")
+
+// Get returns the whole run view, every record included.
+func (a *App) Get(id string) (RunView, error) { return a.GetSince(id, 0) }
+
+// GetSince returns the run view with only the records from index cursor on;
+// TotalRecords still counts them all. A poller that keeps the total it was last
+// given pays for the records that arrived since, not for every record of the
+// run on every poll. Records are append-only, so the cursor stays meaningful.
+//
+// The view is a private copy: nothing in it aliases run state, so a caller may
+// write to any part of it (TestGetViewCannotMutateRunState).
+func (a *App) GetSince(id string, cursor int) (RunView, error) {
 	e, err := a.entry(id)
 	if err != nil {
 		return RunView{}, err
 	}
 	e.mu.Lock()
 	defer e.mu.Unlock()
+	if cursor < 0 || cursor > len(e.view.Records) {
+		return RunView{}, errRecordCursor
+	}
+	total := len(e.view.Records)
 	v := e.view
+	v.Records = v.Records[cursor:]
 	v.Assisted = e.assisted
-	v.TotalRecords = len(v.Records)
-	if e.run != nil {
-		v.State = e.run.Snapshot()
-		v.Observation = e.run.Observation()
-		v.Controller = e.run.Controller()
-		v.Interventions = e.run.Interventions()
+	v.TotalRecords = total
+	live := e.liveSource
+	if live == nil && e.run != nil {
+		live = e.run
+	}
+	if live != nil {
+		v.State = live.Snapshot()
+		v.Observation = live.Observation()
+		v.Controller = live.Controller()
+		v.Interventions = live.Interventions()
 	}
 	if v.State.StepIndex >= 0 && v.State.StepIndex < len(v.Capability.Steps) {
 		if e.program != nil {
@@ -523,13 +555,18 @@ func (a *App) Get(id string) (RunView, error) {
 			v.Matching = &diagnostic
 		}
 	}
-	raw, err := json.Marshal(v)
-	if err != nil {
-		return RunView{}, err
-	}
-	var owned RunView
-	err = json.Unmarshal(raw, &owned)
-	return owned, err
+	// The copy is the last step, after every live value is in v, so nothing the
+	// caller can reach is owned by the run, whether or not the run copied it.
+	return ownedCopy(v), nil
+}
+
+// liveSource is what the view reads from a running run. *computer.Run is the
+// only production implementation.
+type liveSource interface {
+	Snapshot() workflow.State
+	Observation() *computer.Observation
+	Controller() string
+	Interventions() []computer.InterventionRequest
 }
 
 // RunList deliberately excludes inputs, outputs, frames and tool records. Full
