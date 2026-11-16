@@ -144,15 +144,7 @@ func (a *App) Configure(r *serve.Router) error {
 			RunID         string `json:"run_id"`
 			CursorRecords int    `json:"cursor_records,omitempty"`
 		}) (RunView, error) {
-			v, err := a.Get(p.RunID)
-			if err != nil {
-				return v, err
-			}
-			if p.CursorRecords < 0 || p.CursorRecords > len(v.Records) {
-				return v, errors.New("record cursor out of range")
-			}
-			v.Records = v.Records[p.CursorRecords:]
-			return v, nil
+			return a.GetSince(p.RunID, p.CursorRecords)
 		}),
 		"jarvis.run.control": handler(func(ctx context.Context, p struct {
 			RunID   string           `json:"run_id"`

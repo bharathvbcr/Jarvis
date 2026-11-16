@@ -31,6 +31,13 @@ func readBounded(path string, limit int64) ([]byte, error) {
 	return b, err
 }
 func writeAtomic(path string, data []byte) error {
+	return writeAtomicSync(path, data, (*os.File).Sync)
+}
+
+// writeAtomicSync is writeAtomic with the flush injected, so the evidence
+// journal can count the flushes it issues. sync is called exactly once, on the
+// temporary file, before the rename.
+func writeAtomicSync(path string, data []byte, sync func(*os.File) error) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return err
 	}
@@ -44,7 +51,7 @@ func writeAtomic(path string, data []byte) error {
 		f.Close()
 		return err
 	}
-	if err = f.Sync(); err != nil {
+	if err = sync(f); err != nil {
 		f.Close()
 		return err
 	}
