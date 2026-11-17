@@ -1,5 +1,24 @@
 # BRANCH_REPORT — branch consolidation (2026-11-15)
 
+## Update 2026-11-17 — wind-down, four branches merged, merged branches pruned
+
+Evidence labels as below: **[V]** verified by a command in this session, **[P]** peer-reported (session a7e8b48b) and re-checked only where stated, **[I]** inferred.
+
+**Merged into main** (one fast-forward from `integrate/1117`; every branch had a backup ref `refs/backup/2026-11-17/<branch>` first):
+
+| Branch | What | Review |
+|---|---|---|
+| `fix/held-out-lock-criticals` | the verifier that runs is a private copy of the bytes that were hashed; a held-out pass takes `required` from the contract, not the report, and rejects repeated or undeclared criterion ids | two Opus reviews of the original code (peer) and an independent Opus review of the fix: safe to merge [V for mine, P for the first two] |
+| `fix/inputs-log-redaction` | a stored input value never enters the serve log line | same |
+| `fix/discovery-log-redaction` | the discovery log scrub masked watched values one at a time in map order and left fragments of overlapping ones; matches are now merged before replacing. Reproduced first: 3 cases and the order property failed on the old algorithm [V] | independent Opus review: safe to merge [V] |
+| `perf/dev-test-lanes` | `dev test` overlaps one Go and one Cargo step, cancels whole process groups, bounds the fixture build by the package timeout; a never-run CI workflow (`.github/workflows/ci.yml`) | independent Opus review: no blockers, 10 non-critical findings, filed on the board [V] |
+
+**Verification** [V]: on the integrated tree `gofmt`, `go vet ./...`, `go test` for `internal/*`, `cmd/jarvis`, `cmd/qualify`, `tests/*`, and `cmd/dev` under `-race` (cargo fixture test skipped) all pass. The real gate (`dev bootstrap`, which ends in `check-pins`, then `dev test`) ran in a fresh worktree against fresh clones at the lock's pins (Manvi `8a7bada4`, DevCouncil `230bbf04`, gusset `19383ad1`): bootstrap and `check-pins` passed; every plan step passed except one upstream Manvi test (`serve` `TestVerifyJobDeadlineDegradesASlowCriticAndLeavesTheServerResponsive`, a 5s bound) that failed at host load 70-96 and passed alone 3/3 and in a full `serve` rerun at load 16 [V]. The three steps the failure skipped were run by hand as `testSteps` defines them and passed. Not verified: the Manvi/DevCouncil consumer checks the pin rule names (`manvi doctor`, `devmap --version`, GitPulse `check:schema-parity`), and any speedup from the new scheduler (the host was loaded).
+
+**Pruned**: the merged `fix/*`, `perf/dev-test-lanes` and `integrate/1117` branches and their worktrees. **Kept**: `claude/pin-manvi-8a7bada-c8f201` and its worktree, because session pid 32443 (last activity about two days old) has not answered the wind-down request and still has its cwd there; it is merged and backed up, so delete it once that session is closed (`git worktree remove`, then `git branch -d`).
+
+**Open items** are on the GitPulse board; none is critical.
+
 ## Update 2026-11-16 — merges done on the owner's instruction ("commit all branches and merge them")
 
 **Result: all four branches are merged into main. Nothing deleted, nothing pushed.** The sections below this one are the 2026-11-15 record and describe the pre-merge state; where they say "not merged", "blocked" or "kept pending", this section supersedes them. This instruction replaced the earlier "pin: not now" and "owner finishes winddown's merge" answers.
