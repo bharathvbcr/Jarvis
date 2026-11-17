@@ -249,6 +249,54 @@ func TestInputsServeRoundTripRedactsTheLog(t *testing.T) {
 	}
 }
 
+// Redacting a value out of a log line by search-and-replace fails when stored
+// values overlap the fixed log text: the longer value is replaced first and the
+// shorter one is left half in the clear. Values therefore never enter the line.
+func TestInputsLogNeverContainsValuesEvenWhenStoredValuesOverlap(t *testing.T) {
+	root := t.TempDir()
+	installVaniInputs(t, root)
+	bank := filepath.Join(root, "bank-placeholder")
+	if err := os.WriteFile(bank, []byte("not executed"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	a, err := New(context.Background(), Config{Root: root, Bank: bank})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer a.Close()
+	ctx := context.Background()
+	const email = "abcdefghijkl"
+	// A second stored value that spells the log's fixed text followed by the head
+	// of the first one, so it is longer than the first and is replaced first.
+	const overlap = "key=email value=ab"
+	if err = a.inputsPut(ctx, InputsApplication, "email", workflow.Value{Type: "string", Text: email}); err != nil {
+		t.Fatal(err)
+	}
+	if err = a.inputsPut(ctx, InputsApplication, "city", workflow.Value{Type: "string", Text: overlap}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = a.inputsGet(ctx, InputsApplication, "email"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = a.inputsList(ctx, InputsApplication); err != nil {
+		t.Fatal(err)
+	}
+	logRaw, err := os.ReadFile(filepath.Join(root, ".local", "inputs", "serve.log"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{
+		"op=put application=vani key=email value=[redacted]",
+		"op=put application=vani key=city value=[redacted]",
+		"op=get application=vani key=email value=[redacted]",
+		"op=list-keys application=vani key=",
+	}
+	got := strings.Split(strings.TrimSpace(string(logRaw)), "\n")
+	if strings.Join(got, "\n") != strings.Join(want, "\n") {
+		t.Fatalf("serve log carries more than the operation, application, key and a redaction marker:\n%s", logRaw)
+	}
+}
+
 func installVaniInputs(t *testing.T, root string) {
 	t.Helper()
 	for _, dir := range []string{"profiles", "policies"} {
