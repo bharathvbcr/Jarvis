@@ -140,13 +140,14 @@ func verifyArtifactConfinementAndDigests(artifactsRoot string, artifacts []Artif
 // stagePinnedVerifier writes the already-hashed verifier bytes to a new private
 // (0700) directory and returns the executable's path with a function that
 // removes it. The file is closed before it is returned so it can be executed.
-func stagePinnedVerifier(raw []byte) (string, func(), error) {
+// ext keeps the original file extension, which Windows needs to execute it.
+func stagePinnedVerifier(raw []byte, ext string) (string, func(), error) {
 	dir, err := os.MkdirTemp("", "jarvis-verifier-")
 	if err != nil {
 		return "", nil, err
 	}
 	discard := func() { _ = os.RemoveAll(dir) }
-	path := filepath.Join(dir, "verifier")
+	path := filepath.Join(dir, "verifier"+ext)
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o700)
 	if err != nil {
 		discard()
@@ -192,11 +193,6 @@ func VerifyAgainstHeldOutLock(ctx context.Context, r Request, lock HeldOutLock) 
 	if binSHA != lock.VerifierSHA256 {
 		return empty, fmt.Errorf("verifier binary sha256 %s does not match held-out lock %s", binSHA, lock.VerifierSHA256)
 	}
-	pinnedBinary, discardPinned, err := stagePinnedVerifier(binRaw)
-	if err != nil {
-		return empty, fmt.Errorf("stage verifier binary: %w", err)
-	}
-	defer discardPinned()
 
 	contractSHA, contractRaw, _, err := hashRegularFileBounded(r.ContractPath, maxHeldOutFileBytes)
 	if err != nil {
@@ -234,7 +230,13 @@ func VerifyAgainstHeldOutLock(ctx context.Context, r Request, lock HeldOutLock) 
 		return empty, err
 	}
 
-	// 2. Run the child verifier from the pinned private copy.
+	// 2. Run the child verifier from the pinned private copy. It is staged only
+	// now, after every check that can reject without running it.
+	pinnedBinary, discardPinned, err := stagePinnedVerifier(binRaw, filepath.Ext(r.Binary))
+	if err != nil {
+		return empty, fmt.Errorf("stage verifier binary: %w", err)
+	}
+	defer discardPinned()
 	pinned := r
 	pinned.Binary = pinnedBinary
 	report, err := Verify(ctx, pinned)

@@ -322,6 +322,10 @@ func TestHeldOutLockPassedGateUsesContractNotReportFlags(t *testing.T) {
 			{ID: "crit-tests", Required: false, Verdict: "failed"},
 			{ID: "crit-tests", Required: true, Verdict: "passed"},
 		}},
+		{"duplicate_id_even_when_both_pass", []CriterionResult{
+			{ID: "crit-tests", Required: true, Verdict: "passed"},
+			{ID: "crit-tests", Required: true, Verdict: "passed"},
+		}},
 		{"criterion_not_in_contract", []CriterionResult{
 			{ID: "crit-tests", Required: true, Verdict: "passed"},
 			{ID: "ghost", Required: false, Verdict: "failed"},
