@@ -244,12 +244,7 @@ func (a *App) inputsPut(ctx context.Context, application, key string, value work
 	if err = doc.matches(application, binding.Profile.Parameters); err != nil {
 		return err
 	}
-	watched := watchedValues(doc.Values)
-	watched = append(watched, value.Text)
-	line, err := redactedInputsLine("put", application, key, value.Text, watched)
-	if err != nil {
-		return err
-	}
+	line := inputsLogLine("put", application, key)
 	if doc.Values == nil {
 		doc.Values = map[string]workflow.Value{}
 	}
@@ -296,11 +291,7 @@ func (a *App) inputsGet(ctx context.Context, application, key string) (workflow.
 	if !ok || value.Text == "" {
 		return workflow.Value{}, errors.New("inputs value is not stored")
 	}
-	line, err := redactedInputsLine("get", application, key, value.Text, watchedValues(doc.Values))
-	if err != nil {
-		return workflow.Value{}, err
-	}
-	if err = a.appendInputsLog(line); err != nil {
+	if err = a.appendInputsLog(inputsLogLine("get", application, key)); err != nil {
 		return workflow.Value{}, err
 	}
 	return value, nil
@@ -337,11 +328,7 @@ func (a *App) inputsList(ctx context.Context, application string) ([]string, err
 		keys = append(keys, name)
 	}
 	sort.Strings(keys)
-	line, err := redactedInputsLine("list-keys", application, "", "", watchedValues(doc.Values))
-	if err != nil {
-		return nil, err
-	}
-	if err = a.appendInputsLog(line); err != nil {
+	if err = a.appendInputsLog(inputsLogLine("list-keys", application, "")); err != nil {
 		return nil, err
 	}
 	return keys, nil
@@ -402,40 +389,16 @@ func (a *App) writeInputsStore(application string, doc inputsDocument) error {
 	return writeJSON(a.inputsStorePath(application), doc)
 }
 
-func watchedValues(values map[string]workflow.Value) []string {
-	out := make([]string, 0, len(values))
-	for _, value := range values {
-		if value.Type == "string" && value.Text != "" {
-			out = append(out, value.Text)
-		}
-	}
-	return out
-}
-
-// redactedInputsLine watches stored strings and replaces them, the same way
-// discovery scrubs a session log. Longer values are replaced first so a
-// shorter secret cannot split a longer one and leave a tail in the log.
-func redactedInputsLine(op, application, key, value string, watched []string) (string, error) {
+// inputsLogLine is the serve log entry for one operation. A stored value never
+// enters the line: removing it afterwards by search-and-replace fails when
+// stored values overlap each other or the fixed text, so the line is built from
+// the catalog-validated application and key plus a fixed marker for the value.
+func inputsLogLine(op, application, key string) string {
 	line := fmt.Sprintf("op=%s application=%s key=%s", op, application, key)
 	if op != "list-keys" {
-		line += " value=" + value
+		line += " value=[redacted]"
 	}
-	ordered := append([]string(nil), watched...)
-	sort.Slice(ordered, func(i, j int) bool { return len(ordered[i]) > len(ordered[j]) })
-	for _, secret := range ordered {
-		if secret != "" {
-			line = strings.ReplaceAll(line, secret, "[redacted]")
-		}
-	}
-	for _, secret := range ordered {
-		if secret == "" || strings.Contains("[redacted]", secret) {
-			continue
-		}
-		if strings.Contains(line, secret) {
-			return "", errors.New("inputs log would retain a sensitive value")
-		}
-	}
-	return line, nil
+	return line
 }
 
 func (a *App) appendInputsLog(line string) error {
