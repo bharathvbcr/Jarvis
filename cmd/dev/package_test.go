@@ -259,6 +259,42 @@ func TestBootstrapRunsOfflineWithoutWorkspaceOrUpstreamModules(t *testing.T) {
 	}
 }
 
+// fixtureBuildTimeout bounds a build of the Rust fixtures. They compile in
+// about a second, but cargo can wait in a host's build-slot queue first, and
+// that wait counts against any bound set here: a 295s wait at load 58 failed
+// this test under its old fixed 45s without the code being wrong. So the bound
+// is what the package's own timeout leaves, less a margin to report a failure
+// in, and never tighter than the 45s it had. Past the package timeout the
+// test is still red; that is host contention, not a defect in the build.
+func fixtureBuildTimeout(remaining time.Duration, hasDeadline bool) time.Duration {
+	const margin, floor, fallback = 15 * time.Second, 45 * time.Second, 10 * time.Minute
+	if !hasDeadline {
+		return fallback
+	}
+	return max(remaining-margin, floor)
+}
+
+func TestFixtureBuildTimeoutLeavesRoomForAHostBuildQueue(t *testing.T) {
+	for _, c := range []struct {
+		name      string
+		remaining time.Duration
+		has       bool
+		want      time.Duration
+	}{
+		{"default go test timeout", 10 * time.Minute, true, 10*time.Minute - 15*time.Second},
+		{"a recorded 295s queue wait fits", 10 * time.Minute, true, 585 * time.Second},
+		{"never tighter than the old bound", 20 * time.Second, true, 45 * time.Second},
+		{"no timeout set", 0, false, 10 * time.Minute},
+	} {
+		if got := fixtureBuildTimeout(c.remaining, c.has); got != c.want {
+			t.Errorf("%s: %s, want %s", c.name, got, c.want)
+		}
+	}
+	if fixtureBuildTimeout(10*time.Minute, true) < 295*time.Second+10*time.Second {
+		t.Error("the bound would not survive the 295s queue wait this test was recorded failing on")
+	}
+}
+
 func TestBuildFindsBinariesWithInheritedCargoTargetDirectory(t *testing.T) {
 	if _, err := exec.LookPath("cargo"); err != nil {
 		t.Skip("Cargo unavailable; Rust build integration not exercised")
@@ -283,7 +319,11 @@ func TestBuildFindsBinariesWithInheritedCargoTargetDirectory(t *testing.T) {
 	writeFixture(t, root, "desktop/packaging/macos/Info.plist", []byte("<plist/>"))
 	manvi, dc := filepath.Join(root, "Manvi"), filepath.Join(root, "DevCouncil")
 	writeFixture(t, manvi, "manvi/go.mod", []byte("module github.com/bharathvbcr/Manvi/manvi\n\ngo 1.26.6\n"))
-	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+	remaining, hasDeadline := time.Duration(0), false
+	if d, ok := t.Deadline(); ok {
+		remaining, hasDeadline = time.Until(d), true
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), fixtureBuildTimeout(remaining, hasDeadline))
 	defer cancel()
 	for _, item := range []struct {
 		dir, name string

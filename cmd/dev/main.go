@@ -9,12 +9,11 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"runtime"
 	"strings"
-	"time"
+	"syscall"
 )
 
 type lock struct {
@@ -61,6 +60,7 @@ func run() error {
 	release := f.Bool("release", false, "optimized Rust build")
 	engine := f.Bool("engine", runtime.GOOS == "linux" || runtime.GOOS == "darwin", "build: link the Gusset engine into the jarvis host, so policy decisions run on it (unix only)")
 	bundles := f.String("bundles", "build/upstream", "directory containing portable upstream Git bundles")
+	serial := f.Bool("serial", false, "test: run the steps one at a time in plan order, instead of one Go and one Rust step at once")
 	if err := f.Parse(os.Args[2:]); err != nil {
 		return err
 	}
@@ -89,21 +89,14 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
 	defer stop()
 	// commandEnv runs one step. Every step gets CGO_ENABLED=0 unless extra
 	// overrides it: exec keeps the last value of a repeated key, and extra
 	// comes last. `dev gusset` and the jarvis host in `dev build` do.
 	commandEnv := func(extra []string, dir, name string, args ...string) error {
 		fmt.Fprintln(os.Stderr, name, strings.Join(args, " "))
-		cmd := exec.CommandContext(ctx, name, args...)
-		cmd.Dir = dir
-		cmd.Env = append(append(os.Environ(), "CGO_ENABLED=0"), extra...)
-		cmd.Stdin = os.Stdin
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		cmd.WaitDelay = 2 * time.Second
-		return cmd.Run()
+		return runCommand(ctx, os.Stdin, os.Stdout, os.Stderr, extra, dir, name, args...)
 	}
 	command := func(dir, name string, args ...string) error {
 		return commandEnv(nil, dir, name, args...)
@@ -207,12 +200,7 @@ func run() error {
 		if runtime.GOOS == "windows" {
 			host += ".exe"
 		}
-		for _, item := range testSteps(root, *manvi, *dc, host, hostEnv) {
-			if err := commandEnv(item.env, item.dir, item.name, item.args...); err != nil {
-				return err
-			}
-		}
-		return command(root, "go", "run", "./cmd/qualify", "--check-boundaries")
+		return runSteps(ctx, testSteps(root, *manvi, *dc, host, hostEnv), *serial, os.Stderr, execTestStep)
 	case "gusset":
 		// The engine's test leg: `dev build` links the engine into the host
 		// and runs its gusset-check; this runs the race detector over the
@@ -247,14 +235,25 @@ func run() error {
 	}
 }
 
-// testStep is one command `dev test` runs; env is added after commandEnv's
-// CGO_ENABLED=0, so it wins.
+// testStep is one command `dev test` runs; env is added after runCommand's
+// CGO_ENABLED=0, so it wins. id names the step in output and in needs, which
+// lists the steps that must pass before this one starts. name picks the lane:
+// see stepLane.
 type testStep struct {
+	id        string
 	dir, name string
 	args, env []string
+	needs     []string
 }
 
-// testSteps is the plan `dev test` runs, in order.
+// testSteps is the plan `dev test` runs: one Go step and one cargo step at a
+// time, in the order listed within each, with the Go host build ahead of
+// dc-verify. --serial runs it in this order, one step at a time.
+//
+// cargo-desktop waits for go-jarvis because go-jarvis runs cargo itself: the
+// cmd/dev tests build Rust fixtures. Left to overlap, that is two cargo jobs
+// at once, and on a host that gates cargo to one slot the fixture build waits
+// behind the whole desktop run.
 //
 // dc-verify's json_contract audits DevCouncil's Go host and fails, by design,
 // when there is none, so the host is built from the pinned checkout first and
@@ -264,12 +263,13 @@ type testStep struct {
 // cgo environment) because gusset does not compile without cgo.
 func testSteps(root, manvi, dc, host string, hostEnv []string) []testStep {
 	return []testStep{
-		{dir: root, name: "go", args: []string{"test", "./..."}},
-		{dir: filepath.Join(manvi, "manvi"), name: "go", args: []string{"test", "./workflow/...", "./computer/...", "./llm/budget/...", "./session", "./tools", "./llm/replay", "./llm/gemini", "./llm/transport", "./agent", "./serve", "./gussetcheck"}},
-		{dir: filepath.Join(root, "desktop"), name: "cargo", args: []string{"test", "--locked", "--workspace"}},
-		{dir: filepath.Join(manvi, "native"), name: "cargo", args: []string{"test", "--locked", "--workspace"}},
-		{dir: filepath.Join(dc, "backend", "go_orchestrator"), name: "go", args: []string{"build", "-o", host, "./cmd/devcouncil"}, env: append([]string{"GOWORK=off"}, hostEnv...)},
-		{dir: filepath.Join(dc, "rust"), name: "cargo", args: []string{"test", "--locked", "-p", "dc-evidence", "-p", "dc-verify"}, env: []string{"DEVCOUNCIL_BIN=" + host}},
+		{id: "go-jarvis", dir: root, name: "go", args: []string{"test", "./..."}},
+		{id: "go-manvi", dir: filepath.Join(manvi, "manvi"), name: "go", args: []string{"test", "./workflow/...", "./computer/...", "./llm/budget/...", "./session", "./tools", "./llm/replay", "./llm/gemini", "./llm/transport", "./agent", "./serve", "./gussetcheck"}},
+		{id: "cargo-desktop", dir: filepath.Join(root, "desktop"), name: "cargo", args: []string{"test", "--locked", "--workspace"}, needs: []string{"go-jarvis"}},
+		{id: "cargo-manvi-native", dir: filepath.Join(manvi, "native"), name: "cargo", args: []string{"test", "--locked", "--workspace"}},
+		{id: "devcouncil-host", dir: filepath.Join(dc, "backend", "go_orchestrator"), name: "go", args: []string{"build", "-o", host, "./cmd/devcouncil"}, env: append([]string{"GOWORK=off"}, hostEnv...)},
+		{id: "cargo-dc-verify", dir: filepath.Join(dc, "rust"), name: "cargo", args: []string{"test", "--locked", "-p", "dc-evidence", "-p", "dc-verify"}, env: []string{"DEVCOUNCIL_BIN=" + host}, needs: []string{"devcouncil-host"}},
+		{id: "qualify-boundaries", dir: root, name: "go", args: []string{"run", "./cmd/qualify", "--check-boundaries"}},
 	}
 }
 
