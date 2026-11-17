@@ -1,0 +1,135 @@
+# The gate this repository already has, run by a machine on a checkout nobody has
+# been developing on: restore the pinned upstreams, then `dev test`.
+#
+# There is deliberately no second list of checks here. `dev test` is the plan
+# (Jarvis Go suites, Manvi Go packages, the desktop and native Cargo
+# workspaces, DevCouncil's dc-verify against a host it builds, and the
+# dependency-boundary check), and `dev bootstrap` ends with `check-pins`, which
+# refuses a lock that disagrees with Manvi's, DevCouncil's or go.mod's own pins.
+# A step added here but not to the plan would pass in CI and not on a laptop.
+#
+# The upstreams are cloned from the revisions in upstream.lock.json, never from a
+# branch, so a push to Manvi, DevCouncil or gusset cannot turn this red without a
+# commit here.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # Run by hand on a branch, so a change is verified before its PR exists.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer push to a branch supersedes the run in flight. Each commit on main gets
+# a group of its own (the sha), so no run on main is cancelled, and none is
+# replaced while it waits: a group keeps only one pending run.
+concurrency:
+  group: ci-${{ github.ref == 'refs/heads/main' && github.sha || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+env:
+  # The Rust toolchain for Jarvis's own desktop workspace and Manvi's native
+  # one: the version Manvi pins (scripts/tool-versions.env RUST_TOOLCHAIN) and
+  # desktop/Cargo.toml's rust-version floor. A named version, not `stable`: a
+  # new release adds lints and can turn main red on a day nothing changed here.
+  # DevCouncil's rust/ is different: its own rust-toolchain.toml wins there and
+  # is installed in its own step below.
+  RUST_TOOLCHAIN: "1.100.0"
+
+# Actions are pinned by commit SHA, with the tag beside each. A tag is a
+# reference its owner can move. Both halves were checked against the actions'
+# own tag lists on 2026-11-16 and match the pins Manvi's verify.yml uses.
+jobs:
+  gate:
+    name: dev test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    # An explicit bound, since the default is six hours and a wedged step would
+    # hold the runner for all of them. A cold run compiles three Rust
+    # workspaces and the gusset engine, so this is set well above a guess at
+    # that; replace it with a measured figure once there is one.
+    timeout-minutes: 90
+    # An advisory leg reports without blocking. See the matrix.
+    continue-on-error: ${{ matrix.advisory }}
+    strategy:
+      # Both legs report. A failure on one platform is a fact about the code,
+      # not a reason to stop learning about the other.
+      fail-fast: false
+      matrix:
+        include:
+          # The platform the project's native qualification was recorded on.
+          - os: macos-latest
+            advisory: false
+          # Advisory until it has been green. Nothing here has been run on
+          # Linux: the desktop crates' system libraries and the Linux behaviour
+          # of the upstream suites are untested, so the first run is expected
+          # to say what is missing. Make it blocking by setting this to false.
+          - os: ubuntu-latest
+            advisory: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # go.mod names the release, so this file cannot drift from it.
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      # No marketplace action for Rust: both runner images ship rustup, and an
+      # action here would be a supply-chain dependency bought for two lines.
+      - name: Rust toolchain
+        run: |
+          rustup toolchain install "$RUST_TOOLCHAIN" --profile minimal --no-self-update
+          rustup default "$RUST_TOOLCHAIN"
+          rustc --version
+          cargo --version
+
+      # Clones Manvi, DevCouncil and gusset at their pins into
+      # .local/upstream, writes go.work, and runs check-pins. All three
+      # repositories are public, so no token is involved.
+      - name: Pinned upstreams
+        run: go run ./cmd/dev bootstrap
+
+      # DevCouncil's rust/ and its gusset engine build under the rust-toolchain.toml
+      # at DevCouncil's root, and rustup resolves that file from the working
+      # directory, so RUST_TOOLCHAIN does not reach them. Installing it here, as
+      # DevCouncil's own setup-rust action does, keeps a toolchain download out of
+      # the test step, where it would be counted as test time or fail there.
+      - name: DevCouncil toolchain
+        working-directory: .local/upstream/DevCouncil
+        run: |
+          rustup toolchain install --no-self-update
+          rustc --version --verbose
+
+      # After bootstrap, not before: bootstrap skips a checkout whose directory
+      # already exists, and a restored target/ would create it empty. The
+      # upstreams gitignore target/, so a restore does not dirty them.
+      #
+      # Keyed on the lock and desktop's lockfile. restore-keys deliberately lets
+      # a pin bump start from the previous build, so cargo recompiles what changed
+      # instead of everything. The cache's size, its hit rate and whether the
+      # three target directories fit the repository's quota beside the other leg
+      # are all unmeasured; when they do not fit, the oldest entries are evicted
+      # and a run is merely cold.
+      - name: Cache Rust build
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            desktop/target
+            .local/upstream/Manvi/native/target
+            .local/upstream/DevCouncil/rust/target
+            .local/upstream/DevCouncil/rust/gusset-engine/target
+          key: cargo-${{ runner.os }}-${{ hashFiles('upstream.lock.json', 'desktop/Cargo.lock') }}
+          restore-keys: cargo-${{ runner.os }}-
+
+      # A runner is not shared with other sessions, so the first green run's
+      # duration here is the first timing of this gate that is not mostly queue
+      # wait. Use it to replace the job timeout above.
+      - name: Test plan
+        run: go run ./cmd/dev test
