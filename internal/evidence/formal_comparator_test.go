@@ -278,6 +278,66 @@ func TestHeldOutLockComparatorAcceptsValidAndRejectsEveryBypassClass(t *testing.
 	})
 }
 
+// The lock hashes the verifier and must then run exactly those bytes. A path an
+// attacker can rewrite between the hash and the exec is not the hashed verifier,
+// so the verifier has to run from a private copy that is removed afterwards.
+func TestHeldOutLockRunsAPrivateCopyOfTheHashedVerifier(t *testing.T) {
+	fx := buildCleanHeldOutFixture(t)
+	marker := filepath.Join(fx.dir, "ran-from")
+	orig, err := os.ReadFile(fx.binP)
+	if err != nil {
+		t.Fatal(err)
+	}
+	script := strings.Replace(string(orig), "#!/bin/sh\n", "#!/bin/sh\nprintf '%s' \"$0\" > '"+marker+"'\n", 1)
+	if err := os.WriteFile(fx.binP, []byte(script), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	fx.lock.VerifierSHA256 = sha256HexBytes([]byte(script))
+
+	rep, err := VerifyAgainstHeldOutLock(context.Background(), fx.req, fx.lock)
+	if err != nil || rep.Verdict != "passed" {
+		t.Fatalf("expected the locked verifier to pass, got rep=%+v err=%v", rep, err)
+	}
+	ranFromRaw, err := os.ReadFile(marker)
+	if err != nil {
+		t.Fatalf("verifier did not run: %v", err)
+	}
+	ranFrom := string(ranFromRaw)
+	if ranFrom == fx.binP || strings.HasPrefix(ranFrom, fx.dir+string(filepath.Separator)) {
+		t.Fatalf("verifier ran from %q, a path a writer can swap after it was hashed; it must run a private copy", ranFrom)
+	}
+	if _, err := os.Stat(ranFrom); !os.IsNotExist(err) {
+		t.Fatalf("private verifier copy %q was not removed (stat err=%v)", ranFrom, err)
+	}
+}
+
+// Which criteria are required comes from the held-out contract, never from flags
+// the verifier's own report carries, and a report may not repeat or invent IDs.
+func TestHeldOutLockPassedGateUsesContractNotReportFlags(t *testing.T) {
+	cases := []struct {
+		name string
+		crit []CriterionResult
+	}{
+		{"duplicate_id_masks_required_failure", []CriterionResult{
+			{ID: "crit-tests", Required: false, Verdict: "failed"},
+			{ID: "crit-tests", Required: true, Verdict: "passed"},
+		}},
+		{"criterion_not_in_contract", []CriterionResult{
+			{ID: "crit-tests", Required: true, Verdict: "passed"},
+			{ID: "ghost", Required: false, Verdict: "failed"},
+		}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			fx := buildCleanHeldOutFixture(t)
+			rewriteBundleAndStub(t, &fx, fx.bundleBody, tc.crit, nil)
+			if _, err := VerifyAgainstHeldOutLock(context.Background(), fx.req, fx.lock); err == nil {
+				t.Fatal("accepted a passed report whose criteria disagree with the held-out contract")
+			}
+		})
+	}
+}
+
 func mustMarshal(t *testing.T, v any) []byte {
 	t.Helper()
 	b, err := json.Marshal(v)
