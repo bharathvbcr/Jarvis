@@ -218,13 +218,7 @@ func (a *App) discover(ctx context.Context, e *runEntry, req DiscoveryRequest) {
 		return
 	}
 	clean := func(text string) string {
-		out := scrubber.Clean(text)
-		for _, v := range privacy.Watched {
-			if v != "" {
-				out = strings.ReplaceAll(out, v, "[redacted]")
-			}
-		}
-		return out
+		return redactWatched(scrubber.Clean(text), privacy.Watched)
 	}
 	log := session.NewLog()
 	if req.ResumeSession != "" {
