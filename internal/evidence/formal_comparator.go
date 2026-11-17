@@ -137,6 +137,34 @@ func verifyArtifactConfinementAndDigests(artifactsRoot string, artifacts []Artif
 	return nil
 }
 
+// stagePinnedVerifier writes the already-hashed verifier bytes to a new private
+// (0700) directory and returns the executable's path with a function that
+// removes it. The file is closed before it is returned so it can be executed.
+// ext keeps the original file extension, which Windows needs to execute it.
+func stagePinnedVerifier(raw []byte, ext string) (string, func(), error) {
+	dir, err := os.MkdirTemp("", "jarvis-verifier-")
+	if err != nil {
+		return "", nil, err
+	}
+	discard := func() { _ = os.RemoveAll(dir) }
+	path := filepath.Join(dir, "verifier"+ext)
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o700)
+	if err != nil {
+		discard()
+		return "", nil, err
+	}
+	if _, err := f.Write(raw); err != nil {
+		_ = f.Close()
+		discard()
+		return "", nil, err
+	}
+	if err := f.Close(); err != nil {
+		discard()
+		return "", nil, err
+	}
+	return path, discard, nil
+}
+
 // VerifyAgainstHeldOutLock wraps Verify with pre- and post-execution
 // cryptographic lock verification (verifier binary digest, contract digest,
 // capability/policy digests, strict bundle + artifact confinement, TOCTOU
@@ -154,7 +182,11 @@ func VerifyAgainstHeldOutLock(ctx context.Context, r Request, lock HeldOutLock) 
 	}
 
 	// 1. Pre-execution cryptographic snapshot of verifier binary, contract, and bundle.
-	binSHA, _, _, err := hashRegularFileBounded(r.Binary, 64<<20)
+	// The verifier is pinned by content: the bytes that are hashed are the bytes
+	// that run. Hashing a path and later executing the same path would let a
+	// writer swap the file in between and put it back afterwards, so a private
+	// copy of the hashed bytes is what Verify executes.
+	binSHA, binRaw, _, err := hashRegularFileBounded(r.Binary, 64<<20)
 	if err != nil {
 		return empty, fmt.Errorf("hash verifier binary: %w", err)
 	}
@@ -198,13 +230,23 @@ func VerifyAgainstHeldOutLock(ctx context.Context, r Request, lock HeldOutLock) 
 		return empty, err
 	}
 
-	// 2. Run the child verifier.
-	report, err := Verify(ctx, r)
+	// 2. Run the child verifier from the pinned private copy. It is staged only
+	// now, after every check that can reject without running it.
+	pinnedBinary, discardPinned, err := stagePinnedVerifier(binRaw, filepath.Ext(r.Binary))
+	if err != nil {
+		return empty, fmt.Errorf("stage verifier binary: %w", err)
+	}
+	defer discardPinned()
+	pinned := r
+	pinned.Binary = pinnedBinary
+	report, err := Verify(ctx, pinned)
 	if err != nil {
 		return report, err
 	}
 
-	// 3. Post-execution TOCTOU re-hash + cross-report consistency check.
+	// 3. Post-execution TOCTOU re-hash + cross-report consistency check. The
+	// binary re-hash is defense in depth: what ran was the private copy, but a
+	// verifier path that changed mid-run still fails closed.
 	postBinSHA, _, _, err := hashRegularFileBounded(r.Binary, 64<<20)
 	if err != nil || postBinSHA != binSHA {
 		return empty, errors.New("TOCTOU violation: verifier binary changed during execution")
@@ -227,22 +269,32 @@ func VerifyAgainstHeldOutLock(ctx context.Context, r Request, lock HeldOutLock) 
 		if !bundle.JournalComplete || len(bundle.Degraded) > 0 {
 			return empty, errors.New("passed report rejected: bundle journal incomplete or degraded")
 		}
-		reqIDs := make(map[string]bool)
+		// Which criteria are required is decided by the held-out contract, never by
+		// the Required flag the verifier's own report carries, and a report may
+		// neither repeat a criterion nor name one the contract does not contain.
+		contractRequired := make(map[string]bool, len(contract.Criteria))
 		for _, c := range contract.Criteria {
-			if c.Required {
-				reqIDs[c.ID] = false
+			if _, dup := contractRequired[c.ID]; dup {
+				return empty, fmt.Errorf("contract declares criterion %q more than once", c.ID)
 			}
+			contractRequired[c.ID] = c.Required
 		}
+		reported := make(map[string]bool, len(report.Criteria))
 		for _, cr := range report.Criteria {
-			if cr.Required && cr.Verdict != "passed" {
+			if reported[cr.ID] {
+				return empty, fmt.Errorf("passed report repeats criterion %q", cr.ID)
+			}
+			reported[cr.ID] = true
+			required, inContract := contractRequired[cr.ID]
+			if !inContract {
+				return empty, fmt.Errorf("passed report names criterion %q that the contract does not declare", cr.ID)
+			}
+			if required && cr.Verdict != "passed" {
 				return empty, fmt.Errorf("passed report contains non-passed required criterion %q (%s)", cr.ID, cr.Verdict)
 			}
-			if _, tracked := reqIDs[cr.ID]; tracked && cr.Verdict == "passed" {
-				reqIDs[cr.ID] = true
-			}
 		}
-		for id, seen := range reqIDs {
-			if !seen {
+		for id, required := range contractRequired {
+			if required && !reported[id] {
 				return empty, fmt.Errorf("passed report omitted required contract criterion %q", id)
 			}
 		}
