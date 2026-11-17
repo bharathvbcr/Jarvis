@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `dev test` overlaps independent legs: one Go step and one Cargo step run at a time (`cmd/dev/steps.go`), a step waits only for the steps it names in `needs` (dc-verify waits for the DevCouncil host build), the first failure cancels the rest, output is prefixed per step, and a per-step wall-time table is printed. `--serial` keeps plan order, one step at a time. `qualify --check-boundaries` is now a plan step instead of a tail command. Test steps no longer inherit stdin.
 - Held-out verification lock comparator and safety-first Pareto frontier selection (`internal/evidence/formal_comparator.go`: `VerifyAgainstHeldOutLock`, `StrictlyDominates`, `SelectAdmissibleFrontier`), exposed via `jarvis verify --verifier-sha256`, `--policy-sha256`, and `--artifacts-root` executing out-of-band before broker/bank initialization.
 - Profile-driven sensitive parameter catalogs and non-bank `kind: "inputs"` support (`profiles/vani.json`, `policies/vani.json`, `internal/app/inputs.go`), exposing `jarvis.inputs.put`, `jarvis.inputs.list-keys`, and `jarvis.inputs.get` over stdio while refusing desktop admission via `RequireDesktopProfile` and scoping bank `Confirm creation` approval rules to `BankApplication`.
 - Asynchronous visual anchor construction operation (`jarvis.anchor.create`, 15s deadline) and synthetic bank `--fault` modes `false-ack`, `permission-denied`, `session-expired` plus `--variant renamed-controls` (`south` tenant).
