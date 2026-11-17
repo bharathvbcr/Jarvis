@@ -1,5 +1,15 @@
 # BRANCH_REPORT — branch consolidation (2026-11-15)
 
+## Update 2026-11-17 (later) — the last branch, `claude/pin-manvi-8a7bada-c8f201`, deleted on the owner's instruction
+
+This supersedes the "Kept" sentence in the section below. Main (`eeb4241`) is now the only branch and the only worktree [V].
+
+- **Checks immediately before deleting [V]:** tip `bdd9bec` is an ancestor of main; backup ref `refs/backup/2026-11-15/claude/pin-manvi-8a7bada-c8f201` is at that exact commit; the worktree had no tracked or untracked changes. Its ignored content was all replaceable: `.claude/skills/*` (the same auto-installed set as the primary checkout), `build/` (build output) and the generated `go.work`.
+- **Done with** `git worktree remove` (no `--force`) and `git branch -d`; `git fsck` is clean afterwards.
+- **A live session was attached and was not closed.** `claude` pid 32443 (up 2 days 11 hours, last activity about two days old, never answered the wind-down message) still had its working directory in that worktree. It was not killed, because it was not started by the session that deleted the branch; the owner asked for the cleanup knowing the session was still there. Its working directory no longer exists, so that session's shell tools will fail until it is closed. No work was lost: everything it had committed is on main and its worktree was clean.
+- **Restore** the branch with `git branch claude/pin-manvi-8a7bada-c8f201 refs/backup/2026-11-15/claude/pin-manvi-8a7bada-c8f201`; a worktree has to be re-created with `git worktree add`.
+- **The pin bump itself is still not fully verified:** `ft-0994172b` on the board tracks the consumer checks (`manvi doctor`, `devmap --version`, GitPulse `check:schema-parity`). Its "close out the branch" part is now done.
+
 ## Update 2026-11-17 — wind-down, four branches merged, merged branches pruned
 
 Evidence labels as below: **[V]** verified by a command in this session, **[P]** peer-reported (session a7e8b48b) and re-checked only where stated, **[I]** inferred.
