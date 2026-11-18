@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/assets/logo.png" alt="Jarvis Logo" width="128" height="128" />
+</p>
+
 # Jarvis
 
 [![Website](https://img.shields.io/badge/website-jarvis.vbcr.dev-B91C1C?style=flat&logo=safari&logoColor=white)](https://jarvis.vbcr.dev/)
