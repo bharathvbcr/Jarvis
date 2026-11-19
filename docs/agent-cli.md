@@ -173,6 +173,10 @@ the run to the agent:
   actor. Both become `"agent"`.
 - **The run view** carries `"operator":"agent"`, and promotion history carries
   `"promoted_by":"agent"`.
+- **Unattended replay** (`jarvis replay --unattended`) refuses a capability
+  revision whose latest promotion an agent made, whoever starts the replay. The
+  catalog status alone says only "approved"; a person promoting the same
+  revision again is what admits it.
 - **`cmd/qualify`** refuses any run with an operator, so agent runs never count
   toward human-approval qualification.
 
