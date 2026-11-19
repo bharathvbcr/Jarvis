@@ -244,7 +244,7 @@ func (a *App) inputsPut(ctx context.Context, application, key string, value work
 	if err = doc.matches(application, binding.Profile.Parameters); err != nil {
 		return err
 	}
-	line := inputsLogLine("put", application, key)
+	line := inputsLogLine("put", application, key, a.actor())
 	if doc.Values == nil {
 		doc.Values = map[string]workflow.Value{}
 	}
@@ -291,7 +291,7 @@ func (a *App) inputsGet(ctx context.Context, application, key string) (workflow.
 	if !ok || value.Text == "" {
 		return workflow.Value{}, errors.New("inputs value is not stored")
 	}
-	if err = a.appendInputsLog(inputsLogLine("get", application, key)); err != nil {
+	if err = a.appendInputsLog(inputsLogLine("get", application, key, a.actor())); err != nil {
 		return workflow.Value{}, err
 	}
 	return value, nil
@@ -328,7 +328,7 @@ func (a *App) inputsList(ctx context.Context, application string) ([]string, err
 		keys = append(keys, name)
 	}
 	sort.Strings(keys)
-	if err = a.appendInputsLog(inputsLogLine("list-keys", application, "")); err != nil {
+	if err = a.appendInputsLog(inputsLogLine("list-keys", application, "", a.actor())); err != nil {
 		return nil, err
 	}
 	return keys, nil
@@ -393,8 +393,17 @@ func (a *App) writeInputsStore(application string, doc inputsDocument) error {
 // enters the line: removing it afterwards by search-and-replace fails when
 // stored values overlap each other or the fixed text, so the line is built from
 // the catalog-validated application and key plus a fixed marker for the value.
-func inputsLogLine(op, application, key string) string {
-	line := fmt.Sprintf("op=%s application=%s key=%s", op, application, key)
+// actor names who an audit line is for: "agent" for a yolo-mode operator,
+// "person" otherwise, so an agent's inputs.put is attributable after the fact.
+func (a *App) actor() string {
+	if a.cfg.Operator != "" {
+		return a.cfg.Operator
+	}
+	return "person"
+}
+
+func inputsLogLine(op, application, key, actor string) string {
+	line := fmt.Sprintf("op=%s actor=%s application=%s key=%s", op, actor, application, key)
 	if op != "list-keys" {
 		line += " value=[redacted]"
 	}

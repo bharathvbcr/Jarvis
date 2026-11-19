@@ -110,6 +110,9 @@ func run() (returnErr error) {
 	if flag.NArg() != 0 {
 		return errors.New("unexpected argument")
 	}
+	if err := refuseAgentEnvironment(os.Getenv); err != nil {
+		return err
+	}
 	if runtime.GOOS == "linux" && os.Getenv("XDG_SESSION_TYPE") != "x11" {
 		return errors.New("qualification requires the logged-in X11 desktop session")
 	}
@@ -500,4 +503,15 @@ func lowerBound(successes, total int) float64 {
 		}
 	}
 	return (lo + hi) / 2
+}
+
+// refuseAgentEnvironment keeps qualification out of an agent's hands. Every run
+// qualify starts goes through an App it builds with no operator, so no run it
+// waits on is ever marked agent-operated; the marker an agent session carries is
+// JARVIS_AGENT_MODE, and its presence alone refuses the campaign.
+func refuseAgentEnvironment(getenv func(string) string) error {
+	if mode := getenv("JARVIS_AGENT_MODE"); mode != "" {
+		return fmt.Errorf("qualification refuses to run with JARVIS_AGENT_MODE=%q set: an agent-operated campaign cannot count as human approval", mode)
+	}
+	return nil
 }

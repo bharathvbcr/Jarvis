@@ -29,7 +29,7 @@ This lists the operations this build serves, as reported by the server's
 | Class | Meaning | Can `call` it? |
 |---|---|---|
 | `agent` | Reads, compiles or diagnoses from disk. Not strictly read-only: `inputs.list-keys` appends an audit line to `.local/inputs/serve.log`, and `capability.compile` with `"register":true` adds a draft catalog revision, as `jarvis compile --register` already does. | yes |
-| `human-only` | Approves, acts, takes over, promotes, sets a credential, reads or writes a sensitive input, or writes an export | never: `E_AGENT_REFUSED` |
+| `human-only` | Approves, acts, takes over, promotes, sets a credential, reads or writes a sensitive input, or exports an existing run (`jarvis.evidence.export`) | never: `E_AGENT_REFUSED` |
 | `process-scoped` | Addresses a run or job held in the memory of the process that started it | no: `E_PROCESS_SCOPED`. Use `--events` |
 | `refused` | A Manvi host-plane built-in (`policy.*`, `chat.*`, …) or an unclassified op | no: use the `manvi` CLI |
 
@@ -134,8 +134,11 @@ The rules:
 - **No answer.** If stdin reaches EOF while a gate is waiting, or
   `--gate-timeout` (default 5m) passes, the run is cancelled and the command
   exits 4. EOF before any gate is fine: a read-only run finishes normally.
-- **Export.** `--export FILE.zip` writes the finished run's evidence. It works
-  in every mode.
+- **Export.** `--export FILE.zip` writes the evidence of the run this command
+  just ran, in every mode, including after an exit-4 cancel. That differs from
+  `jarvis.evidence.export` over `call`, which can export any run and stays
+  human-only. The destination may be any path the user can write, outside the
+  root included; an existing file is never overwritten.
 
 Without `--events`, yolo does not answer gates. The interactive loop keeps its
 terminal-only rule for `approve`, `act` and the rest.
@@ -177,8 +180,10 @@ the run to the agent:
   revision whose latest promotion an agent made, whoever starts the replay. The
   catalog status alone says only "approved"; a person promoting the same
   revision again is what admits it.
-- **`cmd/qualify`** refuses any run with an operator, so agent runs never count
-  toward human-approval qualification.
+- **`cmd/qualify`** refuses to start when `JARVIS_AGENT_MODE` is set, and its
+  interactive approver requires a terminal. It builds its own App with no
+  operator, so the per-run refusal of an operator-marked run is defence in depth
+  for a host that marks runs, not what keeps agents out.
 
 Two places still say "human" and are known residue:
 
@@ -234,6 +239,10 @@ leakage, not a security boundary:
 - A pseudo-terminal passes the terminal check.
 - A same-user process can still read `.local/` directly or pipe NDJSON into
   `jarvis serve`, which is unchanged for the workbench.
+- The path check on `jarvis call` params resolves symlinks once, and the
+  handler opens the path again, so a symlink swapped in between is followed. A
+  hard link into `.local` is not seen as `.local` at all. The bound applies
+  only to `jarvis call`; other subcommands' path flags are not bounded.
 
 A real boundary needs an approval credential the agent cannot hold. That is a
 change to Manvi's broker.

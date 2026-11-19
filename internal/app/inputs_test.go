@@ -286,10 +286,10 @@ func TestInputsLogNeverContainsValuesEvenWhenStoredValuesOverlap(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := []string{
-		"op=put application=vani key=email value=[redacted]",
-		"op=put application=vani key=city value=[redacted]",
-		"op=get application=vani key=email value=[redacted]",
-		"op=list-keys application=vani key=",
+		"op=put actor=person application=vani key=email value=[redacted]",
+		"op=put actor=person application=vani key=city value=[redacted]",
+		"op=get actor=person application=vani key=email value=[redacted]",
+		"op=list-keys actor=person application=vani key=",
 	}
 	got := strings.Split(strings.TrimSpace(string(logRaw)), "\n")
 	if strings.Join(got, "\n") != strings.Join(want, "\n") {
@@ -371,5 +371,13 @@ func inputsCall(t *testing.T, a *App, op string, params any) serve.Response {
 		case <-timer.C:
 			t.Fatal(op + " did not answer within 20s")
 		}
+	}
+}
+
+// A yolo-mode inputs.put is attributable: the audit line names the agent.
+func TestInputsAuditLineNamesTheAgent(t *testing.T) {
+	a := &App{cfg: Config{Operator: OperatorAgent}}
+	if got := inputsLogLine("put", "vani", "email", a.actor()); got != "op=put actor=agent application=vani key=email value=[redacted]" {
+		t.Fatalf("audit line %q does not name the agent", got)
 	}
 }
