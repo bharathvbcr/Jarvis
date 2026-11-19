@@ -198,3 +198,29 @@ func TestTerminalStdinStillApproves(t *testing.T) {
 		t.Fatalf("approve %+v is not bound to the pending action", c)
 	}
 }
+
+// Piped stdin that reaches EOF in the default mode can never answer, so a gate
+// is cancelled rather than waited on until the run's own timeout.
+func TestDefaultModeCancelsAtAGateOnceStdinEnds(t *testing.T) {
+	h := &fakeHost{finishOnCancel: true, views: []app.RunView{view(workflow.AwaitingApproval, 6, "act-2", "o-2")}}
+	input := make(chan string)
+	close(input)
+	var stdout, stderr bytes.Buffer
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	err := watchRun(ctx, h, "run-1", watchOptions{lines: input, stdout: &stdout, stderr: &stderr, poll: time.Millisecond, cancelGrace: time.Second})
+	if ctx.Err() != nil || exitCode(err) != exitNeedsHuman {
+		t.Fatalf("exit %d (%v): want a prompt cancel with exit %d, not a wait at the gate", exitCode(err), err, exitNeedsHuman)
+	}
+	if got := strings.Join(h.kinds(), ","); got != "cancel" || h.controls[0].Epoch != 6 {
+		t.Fatalf("controls %+v, want one cancel at epoch 6", h.controls)
+	}
+}
+
+func TestGateKeysOfDifferentGatesDiffer(t *testing.T) {
+	a := view(workflow.AwaitingApproval, 2, "a1", "")
+	b := view(workflow.AwaitingApproval, 2, "a", "1")
+	if gateKey(a) == gateKey(b) {
+		t.Fatalf("two gates share the key %q", gateKey(a))
+	}
+}

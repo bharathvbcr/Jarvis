@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 	"time"
 
@@ -139,6 +140,9 @@ func watchRun(ctx context.Context, h runHost, id string, o watchOptions) error {
 	var gate *runEvent
 	var gateDeadline, cancelDeadline <-chan time.Time
 	answering, stdinClosed, cancelledAtGate := o.answers != nil, false, false
+	// linesClosed: the operator's stdin reached EOF in the default (non-events)
+	// mode, so no answer can come and a gate is cancelled instead of waited on.
+	linesClosed := false
 	seen := 0
 	emit := func(v any) error {
 		if !o.events {
@@ -187,7 +191,21 @@ func watchRun(ctx context.Context, h runHost, id string, o watchOptions) error {
 			if err := emit(controlEvent{Event: "control", RunID: id, Kind: kind, Sent: sent, Reason: reason}); err != nil {
 				return err
 			}
-		case text := <-o.lines:
+		case text, ok := <-o.lines:
+			if !ok {
+				o.lines, linesClosed = nil, true
+				v, err := h.Get(id)
+				if err != nil {
+					return err
+				}
+				if atHumanGate(v.State.Phase) {
+					gate = &runEvent{Event: "needs_human", RunID: id, Phase: string(v.State.Phase), Epoch: v.State.Epoch, ActionID: v.PendingActionID, ObservationID: v.State.Observation.ID}
+					if err := cancelAtGate(v.State.Epoch); err != nil {
+						return err
+					}
+				}
+				continue
+			}
 			if err := operatorLine(ctx, h, id, text, o); err != nil {
 				return err
 			}
@@ -240,12 +258,19 @@ func watchRun(ctx context.Context, h runHost, id string, o watchOptions) error {
 				gateDeadline = nil
 				continue
 			}
-			key := string(v.State.Phase) + v.PendingActionID + v.State.Observation.ID + fmt.Sprint(v.State.Epoch)
+			key := gateKey(v)
 			if key == prompted {
 				continue
 			}
 			prompted = key
 			if !o.events {
+				if linesClosed {
+					gate = &runEvent{Event: "needs_human", RunID: id, Phase: string(v.State.Phase), Epoch: v.State.Epoch, ActionID: v.PendingActionID, ObservationID: v.State.Observation.ID}
+					if err := cancelAtGate(v.State.Epoch); err != nil {
+						return err
+					}
+					continue
+				}
 				fmt.Fprintf(o.stderr, "%s: action=%s observation=%s epoch=%d controller=%s reason=%s\nType approve, deny, cancel, pause, takeover, act <kind name>, handback, refresh, focus, or resume.\n", v.State.Phase, v.PendingActionID, v.State.Observation.ID, v.State.Epoch, v.Controller, v.State.Reason)
 				continue
 			}
@@ -369,4 +394,13 @@ func operatorLine(ctx context.Context, h runHost, id, text string, o watchOption
 		fmt.Fprintln(o.stderr, err)
 	}
 	return nil
+}
+
+// gateKey names one human gate: its phase, pending action, observation and
+// epoch. The parts are joined with a separator no part can contain, so two
+// different gates cannot run together into one key (action "a1" with no
+// observation and action "a" with observation "1" were the same string), which
+// would leave the second gate unprompted and without a deadline.
+func gateKey(v app.RunView) string {
+	return strings.Join([]string{string(v.State.Phase), v.PendingActionID, v.State.Observation.ID, strconv.FormatUint(v.State.Epoch, 10)}, "\x00")
 }

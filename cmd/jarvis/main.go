@@ -318,6 +318,9 @@ func run() error {
 						return
 					}
 				}
+				// EOF (or a read error): no answer can come, so watchRun cancels
+				// at a gate rather than waiting for the run's own timeout.
+				close(lines)
 			}()
 			o.lines = lines
 		}
