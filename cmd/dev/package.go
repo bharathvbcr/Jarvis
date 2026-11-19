@@ -173,19 +173,6 @@ func bootstrap(ctx context.Context, manvi, dc, gusset, bundles string) error {
 		return err
 	}
 	for _, p := range pins.checkouts(manvi, dc, gusset) {
-		if _, err := os.Stat(p.path); err == nil {
-			continue
-		} else if !errors.Is(err, os.ErrNotExist) {
-			return err
-		}
-		if err := os.MkdirAll(filepath.Dir(p.path), 0700); err != nil {
-			return err
-		}
-		tmp, err := os.MkdirTemp(filepath.Dir(p.path), ".jarvis-source-")
-		if err != nil {
-			return err
-		}
-		defer os.RemoveAll(tmp)
 		origin := p.pin.URL
 		bundle, err := filepath.Abs(filepath.Join(bundles, p.name+".bundle"))
 		if err != nil {
@@ -199,6 +186,22 @@ func bootstrap(ctx context.Context, manvi, dc, gusset, bundles string) error {
 		} else if !errors.Is(err, os.ErrNotExist) {
 			return err
 		}
+		if _, err := os.Stat(p.path); err == nil {
+			if err := advanceCheckout(ctx, p, origin); err != nil {
+				return err
+			}
+			continue
+		} else if !errors.Is(err, os.ErrNotExist) {
+			return err
+		}
+		if err := os.MkdirAll(filepath.Dir(p.path), 0700); err != nil {
+			return err
+		}
+		tmp, err := os.MkdirTemp(filepath.Dir(p.path), ".jarvis-source-")
+		if err != nil {
+			return err
+		}
+		defer os.RemoveAll(tmp)
 		if _, err := git(ctx, ".", "clone", "--no-checkout", origin, tmp); err != nil {
 			return err
 		}
@@ -213,6 +216,53 @@ func bootstrap(ctx context.Context, manvi, dc, gusset, bundles string) error {
 		}
 	}
 	return checkPins(ctx, manvi, dc, gusset)
+}
+
+// advanceCheckout moves an existing upstream checkout to its pin. bootstrap
+// used to skip every checkout that existed, so a lock bumped after the first
+// bootstrap left the old revision in place and check-pins refused it from then
+// on (.local/upstream/Manvi stayed at 5f2eb796 through two pin bumps). Only a
+// detached checkout moves, which is what bootstrap's own clones are: a
+// checkout on a branch is someone's working tree (--manvi and JARVIS_*_SOURCE
+// can name one), and Manvi's fetch-modules.sh refuses to move those too. It
+// must be clean, and it only moves forward: its HEAD must be an ancestor of the
+// pin, so no commit made in the checkout becomes unreachable and a lock moved
+// backwards is reported rather than obeyed.
+func advanceCheckout(ctx context.Context, p upstream, origin string) error {
+	head, err := git(ctx, p.path, "rev-parse", "HEAD")
+	if err != nil {
+		return err
+	}
+	if head == p.pin.Revision {
+		return nil
+	}
+	if branch, err := git(ctx, p.path, "symbolic-ref", "--quiet", "--short", "HEAD"); err == nil {
+		return fmt.Errorf("upstream %s is on branch %s, not a detached pinned checkout; not moving it from %s to pin %s", p.path, branch, head, p.pin.Revision)
+	}
+	dirty, err := git(ctx, p.path, "status", "--porcelain", "--untracked-files=normal")
+	if err != nil {
+		return err
+	}
+	if dirty != "" {
+		return fmt.Errorf("upstream %s has local changes; not moving it from %s to pin %s", p.path, head, p.pin.Revision)
+	}
+	// A bundle holds the HEAD it was made from; a remote is asked for the
+	// pinned commit itself.
+	args := []string{"fetch", "--quiet", origin}
+	if origin == p.pin.URL {
+		args = append(args, p.pin.Revision)
+	}
+	if _, err := git(ctx, p.path, args...); err != nil {
+		return err
+	}
+	if _, err := git(ctx, p.path, "cat-file", "-e", p.pin.Revision+"^{commit}"); err != nil {
+		return fmt.Errorf("pin %s is not in %s after fetching %s: %w", p.pin.Revision, p.path, origin, err)
+	}
+	if _, err := git(ctx, p.path, "merge-base", "--is-ancestor", head, p.pin.Revision); err != nil {
+		return fmt.Errorf("upstream %s is at %s, which pin %s does not contain; move it by hand: %w", p.path, head, p.pin.Revision, err)
+	}
+	_, err = git(ctx, p.path, "checkout", "--quiet", "--detach", p.pin.Revision)
+	return err
 }
 
 func bundleSources(ctx context.Context, manvi, dc, gusset, bundles string) error {
