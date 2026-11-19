@@ -350,9 +350,10 @@ func (a *App) execute(ctx context.Context, e *runEntry, p *workflow.Program, bin
 		}()
 
 	}
-	attachCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	session, admission, err := client.AttachFocusedReady(attachCtx, e.view.RunID, pid, binding.Profile.ReadOnlyTargets)
-	cancel()
+	// No deadline of Jarvis's own: AttachFocusedReady bounds itself (25 s) and
+	// lets an attempt in flight finish, where a shorter deadline here would cut
+	// it off and retire the broker for a slow window instead of reporting it.
+	session, admission, err := client.AttachFocusedReady(ctx, e.view.RunID, pid, binding.Profile.ReadOnlyTargets)
 	e.mu.Lock()
 	e.view.Admission = admission
 	e.mu.Unlock()

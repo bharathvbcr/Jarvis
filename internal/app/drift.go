@@ -121,9 +121,10 @@ func (a *App) Drift(ctx context.Context, capabilityPath, tenant string, pid uint
 		ownedPID = uint32(bank.cmd.Process.Pid)
 		defer func() { _ = bank.stop() }()
 	}
-	attachCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	session, _, err := client.AttachFocusedReady(attachCtx, runID, ownedPID, binding.Profile.ReadOnlyTargets)
-	cancel()
+	// No deadline of Jarvis's own: AttachFocusedReady bounds itself (25 s) and
+	// lets an attempt in flight finish, where a shorter deadline here would cut
+	// it off and retire the broker for a slow window instead of reporting it.
+	session, _, err := client.AttachFocusedReady(ctx, runID, ownedPID, binding.Profile.ReadOnlyTargets)
 	if err != nil {
 		err = bank.admissionError(err)
 		return out, errors.Join(err, a.discardBroker(client))
