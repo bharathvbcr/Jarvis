@@ -161,8 +161,13 @@ func TestPackageDoesNotReplaceDestinationCreatedDuringAssembly(t *testing.T) {
 	}
 }
 
-func TestBootstrapRunsOfflineWithoutWorkspaceOrUpstreamModules(t *testing.T) {
-	root := t.TempDir()
+// bootstrapFixture lays out a copy of cmd/dev with three fixture upstreams,
+// each committed once and bundled under build/upstream, and a lock pinning
+// them. repos names each upstream's source repository, so a test can commit
+// to it and re-pin.
+func bootstrapFixture(t *testing.T, ctx context.Context) (root string, mod []byte, pins lock, repos map[string]string) {
+	t.Helper()
+	root = t.TempDir()
 	original := sourceRoot(t)
 	files, err := os.ReadDir(filepath.Join(original, "cmd/dev"))
 	if err != nil {
@@ -177,14 +182,12 @@ func TestBootstrapRunsOfflineWithoutWorkspaceOrUpstreamModules(t *testing.T) {
 			writeFixture(t, root, "cmd/dev/"+file.Name(), raw)
 		}
 	}
-	mod, err := os.ReadFile(filepath.Join(original, "go.mod"))
+	mod, err = os.ReadFile(filepath.Join(original, "go.mod"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	writeFixture(t, root, "go.mod", mod)
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-	pins := lock{SchemaVersion: 1}
+	pins = lock{SchemaVersion: 1}
+	repos = map[string]string{}
 	// Dependency order: each upstream pins the ones before it, and check-pins
 	// requires those pins to agree with the lock.
 	for _, item := range []struct {
@@ -192,6 +195,7 @@ func TestBootstrapRunsOfflineWithoutWorkspaceOrUpstreamModules(t *testing.T) {
 		pin  *source
 	}{{"gusset", &pins.Gusset}, {"DevCouncil", &pins.DevCouncil}, {"Manvi", &pins.Manvi}} {
 		repo := t.TempDir()
+		repos[item.name] = repo
 		switch item.name {
 		case "Manvi":
 			writeFixture(t, repo, "manvi/go.mod", []byte("module github.com/bharathvbcr/Manvi/manvi\n\ngo 1.26.6\n"))
@@ -203,27 +207,46 @@ func TestBootstrapRunsOfflineWithoutWorkspaceOrUpstreamModules(t *testing.T) {
 		default:
 			writeFixture(t, repo, "README.md", []byte("fixture"))
 		}
-		for _, args := range [][]string{{"init", "-b", "main"}, {"add", "."}, {"-c", "user.name=Bootstrap test", "-c", "user.email=bootstrap@example.invalid", "-c", "commit.gpgsign=false", "commit", "-m", "fixture"}} {
-			if _, err := git(ctx, repo, args...); err != nil {
-				t.Fatal(err)
-			}
-		}
-		revision, err := git(ctx, repo, "rev-parse", "HEAD")
-		if err != nil {
+		if _, err := git(ctx, repo, "init", "-b", "main"); err != nil {
 			t.Fatal(err)
 		}
-		*item.pin = source{URL: "https://github.com/bharathvbcr/" + item.name + ".git", Revision: revision}
-		bundle := filepath.Join(root, "build", "upstream", item.name+".bundle")
-		if err := os.MkdirAll(filepath.Dir(bundle), 0700); err != nil {
-			t.Fatal(err)
-		}
-		if _, err := git(ctx, repo, "bundle", "create", bundle, "HEAD"); err != nil {
+		*item.pin = source{URL: "https://github.com/bharathvbcr/" + item.name + ".git", Revision: commitAndBundle(t, ctx, root, item.name, repo)}
+	}
+	writeBootstrapLock(t, root, mod, pins)
+	return root, mod, pins, repos
+}
+
+// commitAndBundle commits everything in repo and replaces the bundle the
+// offline bootstrap clones and fetches name from. It returns the new revision.
+func commitAndBundle(t *testing.T, ctx context.Context, root, name, repo string) string {
+	t.Helper()
+	for _, args := range [][]string{{"add", "."}, {"-c", "user.name=Bootstrap test", "-c", "user.email=bootstrap@example.invalid", "-c", "commit.gpgsign=false", "commit", "-m", "fixture"}} {
+		if _, err := git(ctx, repo, args...); err != nil {
 			t.Fatal(err)
 		}
 	}
-	// The fixture pins freshly created repositories, so its go.mod has to name
-	// the same Manvi revision. Copying the product's go.mod verbatim would leave
-	// the pair inconsistent and check-pins would rightly refuse to bootstrap it.
+	revision, err := git(ctx, repo, "rev-parse", "HEAD")
+	if err != nil {
+		t.Fatal(err)
+	}
+	bundle := filepath.Join(root, "build", "upstream", name+".bundle")
+	if err := os.MkdirAll(filepath.Dir(bundle), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(bundle); err != nil && !os.IsNotExist(err) {
+		t.Fatal(err)
+	}
+	if _, err := git(ctx, repo, "bundle", "create", bundle, "HEAD"); err != nil {
+		t.Fatal(err)
+	}
+	return revision
+}
+
+// writeBootstrapLock writes upstream.lock.json and a go.mod naming the same
+// Manvi revision. Copying the product's go.mod verbatim would leave the pair
+// inconsistent and check-pins would rightly refuse to bootstrap it.
+func writeBootstrapLock(t *testing.T, root string, mod []byte, pins lock) {
+	t.Helper()
 	lines := strings.Split(string(mod), "\n")
 	for i, line := range lines {
 		fields := strings.Fields(line)
@@ -237,10 +260,20 @@ func TestBootstrapRunsOfflineWithoutWorkspaceOrUpstreamModules(t *testing.T) {
 		t.Fatal(err)
 	}
 	writeFixture(t, root, "upstream.lock.json", raw)
+}
+
+func runBootstrap(ctx context.Context, root string) ([]byte, error) {
 	cmd := exec.CommandContext(ctx, "go", "run", "./cmd/dev", "bootstrap")
 	cmd.Dir = root
 	cmd.Env = append(os.Environ(), "GOWORK=off", "GOPROXY=off", "GOSUMDB=off", "GOTOOLCHAIN=local")
-	output, err := cmd.CombinedOutput()
+	return cmd.CombinedOutput()
+}
+
+func TestBootstrapRunsOfflineWithoutWorkspaceOrUpstreamModules(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	root, _, pins, _ := bootstrapFixture(t, ctx)
+	output, err := runBootstrap(ctx, root)
 	if err != nil {
 		t.Fatalf("fresh offline bootstrap failed: %v\n%s", err, output)
 	}
@@ -256,6 +289,77 @@ func TestBootstrapRunsOfflineWithoutWorkspaceOrUpstreamModules(t *testing.T) {
 		if err != nil || head != item.pin.Revision {
 			t.Fatalf("wrong restored pin %s: %s %v", item.name, head, err)
 		}
+	}
+}
+
+// A lock bumped after the first bootstrap must move the existing checkout to
+// the new pin. bootstrap used to skip every checkout that existed, so the
+// checkout stayed on the old revision and check-pins refused it from then on:
+// .local/upstream/Manvi sat at 5f2eb796 through two Manvi pin bumps.
+func TestBootstrapAdvancesAnExistingCheckoutToABumpedPin(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+	root, mod, pins, repos := bootstrapFixture(t, ctx)
+	if output, err := runBootstrap(ctx, root); err != nil {
+		t.Fatalf("fresh offline bootstrap failed: %v\n%s", err, output)
+	}
+	checkout := filepath.Join(root, ".local", "upstream", "Manvi")
+	old := pins.Manvi.Revision
+	writeFixture(t, repos["Manvi"], "CHANGELOG.md", []byte("next\n"))
+	pins.Manvi.Revision = commitAndBundle(t, ctx, root, "Manvi", repos["Manvi"])
+	writeBootstrapLock(t, root, mod, pins)
+	if output, err := runBootstrap(ctx, root); err != nil {
+		t.Fatalf("bootstrap after a pin bump failed: %v\n%s", err, output)
+	}
+	if head, err := git(ctx, checkout, "rev-parse", "HEAD"); err != nil || head != pins.Manvi.Revision {
+		t.Fatalf("existing checkout not moved to the bumped pin: at %s (was %s, pin %s) %v", head, old, pins.Manvi.Revision, err)
+	}
+
+	// A checkout with work in it is refused and left where it is: moving it
+	// would carry or discard changes the pin does not contain.
+	writeFixture(t, checkout, "local-note.txt", []byte("work in progress"))
+	at := pins.Manvi.Revision
+	writeFixture(t, repos["Manvi"], "CHANGELOG.md", []byte("after\n"))
+	pins.Manvi.Revision = commitAndBundle(t, ctx, root, "Manvi", repos["Manvi"])
+	writeBootstrapLock(t, root, mod, pins)
+	output, err := runBootstrap(ctx, root)
+	if err == nil || !bytes.Contains(output, []byte("local changes")) {
+		t.Fatalf("bootstrap moved or accepted a dirty checkout: %v\n%s", err, output)
+	}
+	if head, err := git(ctx, checkout, "rev-parse", "HEAD"); err != nil || head != at {
+		t.Fatalf("dirty checkout moved: at %s, want %s %v", head, at, err)
+	}
+	if err := os.Remove(filepath.Join(checkout, "local-note.txt")); err != nil {
+		t.Fatal(err)
+	}
+
+	// A checkout on a branch is a working tree, not one bootstrap cloned, and
+	// is left alone even when clean and behind the pin.
+	if _, err := git(ctx, checkout, "switch", "--quiet", "-c", "local-work"); err != nil {
+		t.Fatal(err)
+	}
+	output, err = runBootstrap(ctx, root)
+	if err == nil || !bytes.Contains(output, []byte("is on branch local-work")) {
+		t.Fatalf("bootstrap moved a checkout that is on a branch: %v\n%s", err, output)
+	}
+	if head, err := git(ctx, checkout, "rev-parse", "HEAD"); err != nil || head != at {
+		t.Fatalf("branch checkout moved: at %s, want %s %v", head, at, err)
+	}
+	if _, err := git(ctx, checkout, "checkout", "--quiet", "--detach"); err != nil {
+		t.Fatal(err)
+	}
+
+	// A pin that does not contain the checkout's HEAD is refused: moving there
+	// could orphan a commit made in the checkout, and a lock moved backwards
+	// is a mistake to report, not an instruction to follow.
+	pins.Manvi.Revision = old
+	writeBootstrapLock(t, root, mod, pins)
+	output, err = runBootstrap(ctx, root)
+	if err == nil || !bytes.Contains(output, []byte("does not contain")) {
+		t.Fatalf("bootstrap moved a checkout to a pin that does not contain its HEAD: %v\n%s", err, output)
+	}
+	if head, err := git(ctx, checkout, "rev-parse", "HEAD"); err != nil || head != at {
+		t.Fatalf("checkout moved backwards: at %s, want %s %v", head, at, err)
 	}
 }
 

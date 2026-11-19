@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `dev bootstrap` moves an existing upstream checkout to its pin instead of skipping it (`cmd/dev/package.go`: `advanceCheckout`). A lock bumped after the first bootstrap used to leave the old revision checked out, and every later `check-pins` refused it: `.local/upstream/Manvi` stayed at 5f2eb796 through two Manvi pin bumps. Only a clean checkout moves, and only forward (its HEAD must be an ancestor of the pin); a dirty checkout, a checkout on a branch, or a pin that does not contain HEAD is refused and left where it is.
 - `dev test` builds DevCouncil's Go host (`./cmd/devcouncil`) from the pinned checkout into a temporary directory outside the checkout under `GOWORK=off` and the gusset cgo environment, passing it as `DEVCOUNCIL_BIN` to `dc-verify`'s `json_contract.rs` test (`db5964d`). This resolves clean bootstrap test failures where `DEVCOUNCIL_BIN` was absent.
 - `jarvis.key.set` calls `secret.Resolve()` immediately after `NewSecret`, failing fast on unsealable keys (`credentials.ErrLockedMemory`) with an explicit error rather than returning `configured: true` and failing during later discovery or assist runs (`41558b5`).
 

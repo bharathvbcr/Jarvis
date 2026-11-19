@@ -105,9 +105,10 @@ jobs:
           rustup toolchain install --no-self-update
           rustc --version --verbose
 
-      # After bootstrap, not before: bootstrap skips a checkout whose directory
-      # already exists, and a restored target/ would create it empty. The
-      # upstreams gitignore target/, so a restore does not dirty them.
+      # After bootstrap, not before: bootstrap treats an existing directory as a
+      # checkout to move to its pin, and a restored target/ would create it
+      # empty, which is no checkout at all. The upstreams gitignore target/, so a
+      # restore does not dirty them.
       #
       # Keyed on the lock and desktop's lockfile. restore-keys deliberately lets
       # a pin bump start from the previous build, so cargo recompiles what changed
