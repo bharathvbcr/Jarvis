@@ -170,8 +170,16 @@ go run ./cmd/dev build
 go run ./cmd/dev test
 ```
 
-Bootstrap creates `.local/upstream/` and the ignored Go workspace. It refuses a
-different or dirty existing upstream checkout. Go 1.27.4 must already be installed
+Bootstrap creates `.local/upstream/` and the ignored Go workspace. An existing
+upstream checkout is moved forward to its pin when it is clean, detached and
+contained in the pin; one that is dirty, on a branch, or not contained in the
+pin is refused and left where it is.
+
+Manvi's CI builds this repository's main against every Manvi change, so an
+export Jarvis calls is removed in two pin bumps: Manvi adds the replacement,
+Jarvis pins it and migrates, then Manvi removes the old one and Jarvis pins
+again. The steps are in Manvi's `docs/COMPUTER_USE_FOUNDATIONS.md`, "Removing or
+renaming an export Jarvis calls". Go 1.27.4 must already be installed
 for a fully offline bootstrap; automatic Go toolchain acquisition needs network
 access. Rust/Go dependency downloads are separate from restoring source bundles.
 
