@@ -22,7 +22,12 @@ import (
 	"github.com/bharathvbcr/Manvi/manvi/workflow/catalog"
 )
 
-type Config struct{ Root, Broker, Verifier, Bank string }
+type Config struct {
+	Root, Broker, Verifier, Bank string
+	// Operator is empty for a person or OperatorAgent for an agent in yolo
+	// mode. It marks every run this App starts; see operator.go.
+	Operator string
+}
 type App struct {
 	jobs        jobRegistry
 	cfg         Config
@@ -63,8 +68,11 @@ type RunView struct {
 	Assisted          bool                           `json:"assisted"`
 	Controller        string                         `json:"controller,omitempty"`
 	Interventions     []computer.InterventionRequest `json:"interventions,omitempty"`
-	Reconciliation    *Reconciliation                `json:"reconciliation,omitempty"`
-	Matching          *computer.MatchDiagnostics     `json:"matching,omitempty"`
+	// Operator is "agent" for a run an agent operated in yolo mode. Such a run
+	// is never evidence of a human approval.
+	Operator       string                     `json:"operator,omitempty"`
+	Reconciliation *Reconciliation            `json:"reconciliation,omitempty"`
+	Matching       *computer.MatchDiagnostics `json:"matching,omitempty"`
 }
 type runEntry struct {
 	mu        sync.Mutex
@@ -92,6 +100,9 @@ func New(ctx context.Context, cfg Config) (*App, error) {
 		return nil, err
 	}
 	cfg.Root = root
+	if err := validOperator(cfg.Operator); err != nil {
+		return nil, err
+	}
 	suffix := ""
 	if runtime.GOOS == "windows" {
 		suffix = ".exe"
@@ -260,6 +271,7 @@ func (a *App) Start(req StartRequest) (string, error) {
 	entry := &runEntry{startedAt: time.Now().UTC(), program: p, cancel: cancel, done: make(chan struct{}), view: RunView{RunID: id, State: workflow.State{Phase: "admitted"}, Capability: p.Capability(), EvidenceDir: filepath.Join(a.cfg.Root, "evidence", "private", id), Records: []computer.Record{}}}
 	entry.assisted = req.Assisted
 	entry.view.ProgramGeneration = 1
+	entry.view.Operator = a.cfg.Operator
 	inputs := make(map[string]workflow.Value, len(req.Inputs))
 	for k, v := range req.Inputs {
 		inputs[k] = v
@@ -374,6 +386,12 @@ func (a *App) execute(ctx context.Context, e *runEntry, p *workflow.Program, bin
 		failure = err
 		return
 	}
+	// Before StartRun, so no control can reach an unmarked run.
+	if err = writeOperatorSidecar(e.view.EvidenceDir, a.cfg.Operator); err != nil {
+		recorder.file.Close()
+		failure = err
+		return
+	}
 	if err = writeAtomic(filepath.Join(e.view.EvidenceDir, "binding.json"), binding.BindingBytes); err != nil {
 		recorder.file.Close()
 		failure = err
@@ -400,12 +418,7 @@ func (a *App) execute(ctx context.Context, e *runEntry, p *workflow.Program, bin
 	e.session = session
 	e.expected = evidence.Request{Binary: a.cfg.Verifier, ContractPath: filepath.Join(e.view.EvidenceDir, "contract.json"), BundlePath: filepath.Join(e.view.EvidenceDir, "bundle.json"), ArtifactsRoot: e.view.EvidenceDir, ContractSHA256: digest(contract), CapabilitySHA256: p.Digest(), RunID: session.RunID, SessionID: session.ID, Epoch: session.Epoch}
 	e.mu.Unlock()
-	onRecord := func(record computer.Record) error {
-		if err := recorder.Record(record); err != nil {
-			return err
-		}
-		return e.appendRecord(record)
-	}
+	onRecord := a.replaySink(recorder, e)
 	privacy := bankPrivacy(binding.Policy, req.Inputs)
 	privacy.PID = session.Window.PID
 	privacy.WindowID = session.Window.ID

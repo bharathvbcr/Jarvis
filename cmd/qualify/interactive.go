@@ -180,6 +180,16 @@ func waitTrialWithApproval(ctx context.Context, host trialHost, id string, human
 		if err != nil {
 			return view, approvals, err
 		}
+		// A yolo-mode run is operated by an agent; nothing it records is a
+		// human grant, so it can never count toward qualification.
+		if view.Operator != "" {
+			refused := fmt.Errorf("run is %s-operated and cannot count toward qualification", view.Operator)
+			if view.Finished {
+				return view, approvals, refused
+			}
+			v, e := cancelTrial(host, id, view, refused)
+			return v, approvals, e
+		}
 		if view.Finished {
 			return view, approvals, nil
 		}

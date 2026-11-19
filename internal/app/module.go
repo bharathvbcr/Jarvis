@@ -65,6 +65,8 @@ type promotion struct {
 	Revision   string `json:"revision"`
 	SHA256     string `json:"sha256"`
 	PromotedAt string `json:"promoted_at"`
+	// PromotedBy is "agent" for a yolo-mode promotion; empty for a person.
+	PromotedBy string `json:"promoted_by,omitempty"`
 }
 
 func (a *App) Configure(r *serve.Router) error {
@@ -113,7 +115,7 @@ func (a *App) Configure(r *serve.Router) error {
 					if err != nil {
 						return empty{}, err
 					}
-					history = append(history, promotion{e.ID, e.Revision, e.SHA256, time.Now().UTC().Format(time.RFC3339Nano)})
+					history = append(history, promotion{e.ID, e.Revision, e.SHA256, time.Now().UTC().Format(time.RFC3339Nano), a.cfg.Operator})
 					return empty{}, writeJSON(filepath.Join(a.cfg.Root, ".local", "promotions", e.ID+".json"), history)
 				}
 			}

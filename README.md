@@ -206,7 +206,19 @@ Account-changing replay:
 ./build/jarvis replay --capability examples/create-subaccount.json --inputs scenarios/subaccount.inputs.json --contract scenarios/subaccount.contract.json
 ```
 
-The workflow pauses for a human approval of the exact action, revision, input binding and observed form. In the CLI, type `approve` or `deny`; the workbench provides the corresponding reviewed action controls. Approval is consumed once. After uncertain delivery the engine fences input, attempts one bounded same-session observation, and retains `outcome_unknown`. The reconciliation report records observed UI facts without asserting a durable account change. Automatic mutation retry and terminal-run resume remain prohibited.
+The workflow pauses for a human approval of the exact action, revision, input binding and observed form. In yolo mode an agent may answer instead; that run is recorded as agent-operated and is not a human approval. In the CLI, type `approve` or `deny`; the workbench provides the corresponding reviewed action controls. Approval is consumed once. After uncertain delivery the engine fences input, attempts one bounded same-session observation, and retains `outcome_unknown`. The reconciliation report records observed UI facts without asserting a durable account change. Automatic mutation retry and terminal-run resume remain prohibited.
+
+## Agent CLI
+
+Agents that cannot rely on an MCP server can drive the same operations from a shell:
+
+- `jarvis ops` lists every served operation with its agent class.
+- `jarvis call OP` runs one of them and writes one JSON envelope line.
+- `jarvis replay --events` and `jarvis discover --events` stream NDJSON. They cancel at the first human gate and exit 4.
+
+By default, agents are refused approval, takeover, credential and sensitive-input operations, and the interactive CLI accepts `approve` only from a terminal.
+
+Yolo mode (`--yolo` or `JARVIS_AGENT_MODE=yolo`) lets an agent operate Jarvis fully: it answers gates with NDJSON controls on `--events` stdin, acts, takes over, promotes, and stores inputs. Each agent-operated run is marked: an `operator.json` sidecar, journal actor `agent`, and `"operator":"agent"` in the run view. These runs never count as human approvals, and `cmd/qualify` refuses them. See [docs/agent-cli.md](docs/agent-cli.md).
 
 ## Discovery and assisted mode
 

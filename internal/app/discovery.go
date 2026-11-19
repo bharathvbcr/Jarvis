@@ -83,7 +83,7 @@ func (a *App) Discover(req DiscoveryRequest) (string, error) {
 		return "", err
 	}
 	ctx, cancel := context.WithTimeout(a.ctx, 15*time.Minute)
-	e := &runEntry{startedAt: time.Now().UTC(), cancel: cancel, done: make(chan struct{}), view: RunView{RunID: id, State: workflow.State{Phase: "discovering"}, EvidenceDir: filepath.Join(a.cfg.Root, "evidence", "private", id), Records: []computer.Record{}}}
+	e := &runEntry{startedAt: time.Now().UTC(), cancel: cancel, done: make(chan struct{}), view: RunView{RunID: id, State: workflow.State{Phase: "discovering"}, EvidenceDir: filepath.Join(a.cfg.Root, "evidence", "private", id), Records: []computer.Record{}, Operator: a.cfg.Operator}}
 	if admitGate != nil {
 		admitGate()
 	}
@@ -133,6 +133,10 @@ func (a *App) discover(ctx context.Context, e *runEntry, req DiscoveryRequest) {
 		failure = err
 		return
 	}
+	if err := writeOperatorSidecar(e.view.EvidenceDir, a.cfg.Operator); err != nil {
+		failure = err
+		return
+	}
 	journal, err := openDesktopJournal(e.view.EvidenceDir)
 	if err != nil {
 		failure = err
@@ -144,7 +148,7 @@ func (a *App) discover(ctx context.Context, e *runEntry, req DiscoveryRequest) {
 			failure = errors.Join(failure, err)
 		}
 	}()
-	record := func(r computer.Record) error { return writer.record(e, r) }
+	record := a.discoverySink(writer, e)
 	ledger, err := openCampaignLedger(ctx, a.cfg.Root)
 	if err != nil {
 		failure = err

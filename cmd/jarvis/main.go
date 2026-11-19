@@ -7,17 +7,16 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/bharathvbcr/Jarvis/internal/app"
 	"github.com/bharathvbcr/Jarvis/internal/codegen"
 	"github.com/bharathvbcr/Jarvis/internal/evidence"
 	offline "github.com/bharathvbcr/Jarvis/internal/trace"
-	"github.com/bharathvbcr/Manvi/manvi/computer"
 	"github.com/bharathvbcr/Manvi/manvi/gussetcheck"
 	"github.com/bharathvbcr/Manvi/manvi/serve"
 	"github.com/bharathvbcr/Manvi/manvi/workflow"
@@ -25,21 +24,43 @@ import (
 
 func main() {
 	if err := run(); err != nil {
-		fmt.Fprintln(os.Stderr, "jarvis:", err)
-		os.Exit(1)
+		code := exitFailed
+		var exit *exitError
+		if errors.As(err, &exit) {
+			code = exit.code
+		}
+		if msg := err.Error(); msg != "" {
+			fmt.Fprintln(os.Stderr, "jarvis:", msg)
+		}
+		os.Exit(code)
 	}
 }
-func output(v interface{}) error {
-	enc := json.NewEncoder(os.Stdout)
+func output(v interface{}) error { return writeJSON(os.Stdout, v) }
+func writeJSON(w io.Writer, v interface{}) error {
+	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
 	return enc.Encode(v)
 }
+
+// isTerminal reports whether f is a character device, as a person's
+// terminal is and a pipe or file is not.
+func isTerminal(f *os.File) bool {
+	info, err := f.Stat()
+	return err == nil && info.Mode()&os.ModeCharDevice != 0
+}
 func run() error {
 	if len(os.Args) < 2 {
-		return errors.New("commands: doctor, discover, compile, replay, drift, trace replay, verify, catalog, codegen, serve, gusset-check")
+		return errors.New("commands: doctor, discover, compile, replay, drift, trace replay, verify, catalog, codegen, serve, gusset-check, ops, call")
 	}
 	command := os.Args[1]
 	args := os.Args[2:]
+	// The agent commands parse their own flags: call takes the op as a
+	// positional argument, which the shared flag set refuses.
+	if command == "ops" || command == "call" {
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+		defer stop()
+		return agentCommand(ctx, command, args, os.Stdin, os.Stdout)
+	}
 	if command == "trace" {
 		if len(args) == 0 || args[0] != "replay" {
 			return errors.New("use trace replay")
@@ -77,6 +98,10 @@ func run() error {
 	verifierSHA := f.String("verifier-sha256", "", "independently expected verifier binary SHA-256 (enables held-out lock comparator)")
 	policySHA := f.String("policy-sha256", "", "independently expected policy SHA-256 for held-out lock comparator")
 	artifactsRoot := f.String("artifacts-root", "", "evidence artifacts root directory (defaults to bundle parent directory)")
+	events := f.Bool("events", false, "replay/discover: write NDJSON run events on stdout; without --yolo, read no stdin and cancel at a human gate (exit 4)")
+	yolo := f.Bool("yolo", false, "replay/discover: agent yolo mode (also JARVIS_AGENT_MODE=yolo); with --events, answer gates with NDJSON controls on stdin; the run is recorded as agent-operated")
+	gateTimeout := f.Duration("gate-timeout", 5*time.Minute, "replay/discover --events --yolo: how long a gate waits for an answer before the run is cancelled")
+	exportPath := f.String("export", "", "replay/discover: write the finished run's evidence to this .zip")
 	if err := f.Parse(args); err != nil {
 		return err
 	}
@@ -180,7 +205,20 @@ func run() error {
 		}
 		return nil
 	}
-	a, err := app.New(ctx, app.Config{Root: absRoot, Broker: *broker, Verifier: *verifier, Bank: *bank})
+	// The agent mode applies to replay and discover only; every other command,
+	// serve above all, ignores JARVIS_AGENT_MODE.
+	mode := app.AgentModeDefault
+	if command == "replay" || command == "discover" {
+		if mode, err = resolveAgentMode(*yolo); err != nil {
+			return &exitError{code: exitUsage, err: err}
+		}
+		if *gateTimeout <= 0 || *gateTimeout > time.Hour {
+			return &exitError{code: exitUsage, err: errors.New("--gate-timeout must be within (0, 1h]")}
+		}
+	} else if *yolo || *exportPath != "" {
+		return &exitError{code: exitUsage, err: errors.New("--yolo and --export apply to replay and discover; use jarvis call --yolo for operations")}
+	}
+	a, err := app.New(ctx, app.Config{Root: absRoot, Broker: *broker, Verifier: *verifier, Bank: *bank, Operator: operatorFor(mode)})
 	if err != nil {
 		return err
 	}
@@ -259,93 +297,44 @@ func run() error {
 			return err
 		}
 		fmt.Fprintln(os.Stderr, "run", id)
-		lines := make(chan string, 1)
-		go func() {
-			scanner := bufio.NewScanner(os.Stdin)
-			for scanner.Scan() {
-				select {
-				case lines <- scanner.Text():
-				case <-ctx.Done():
-					return
-				}
+		o := watchOptions{events: *events, stdout: os.Stdout, stderr: os.Stderr, poll: 150 * time.Millisecond, gateTimeout: *gateTimeout, cancelGrace: 30 * time.Second}
+		switch {
+		case *events:
+			if err := writeLine(os.Stdout, runEvent{Event: "started", RunID: id}); err != nil {
+				return err
 			}
-		}()
-		ticker := time.NewTicker(150 * time.Millisecond)
-		defer ticker.Stop()
-		var prompted string
-		seen := 0
-		for {
-			select {
-			case <-ctx.Done():
-				v, _ := a.Get(id)
-				_ = a.Control(context.Background(), id, computer.Control{Kind: "cancel", Epoch: v.State.Epoch})
-				return ctx.Err()
-			case text := <-lines:
-				v, err := a.Get(id)
-				if err != nil {
-					return err
-				}
-				line := strings.TrimSpace(text)
-				kind := strings.ToLower(line)
-				if kind == "assist" {
-					if err = a.Assist(id); err != nil {
-						fmt.Fprintln(os.Stderr, err)
-					}
-					continue
-				}
-				if kind == "takeover" {
-					if err = a.Takeover(ctx, id); err != nil {
-						fmt.Fprintln(os.Stderr, err)
-					}
-					continue
-				}
-				if kind == "handback" {
-					if err = a.Handback(ctx, id); err != nil {
-						fmt.Fprintln(os.Stderr, err)
-					}
-					continue
-				}
-				if strings.HasPrefix(kind, "act ") {
-					if err = a.ActHuman(ctx, id, strings.TrimSpace(line[3:])); err != nil {
-						fmt.Fprintln(os.Stderr, err)
-					}
-					continue
-				}
-				if kind == "approve" || kind == "deny" || kind == "cancel" || kind == "pause" || kind == "resume" || kind == "refresh" || kind == "focus" {
-					if err = a.Control(ctx, id, computer.Control{Kind: kind, Epoch: v.State.Epoch, ActionID: v.PendingActionID, ObservationID: v.State.Observation.ID}); err != nil {
-						fmt.Fprintln(os.Stderr, err)
-					}
-				}
-			case <-ticker.C:
-				// The poll needs the state, not the history: ask only for the
-				// records that arrived since the last tick.
-				v, err := a.GetSince(id, seen)
-				if err != nil {
-					return err
-				}
-				seen = v.TotalRecords
-				if v.Finished {
-					if v, err = a.Get(id); err != nil {
-						return err
-					}
-					if err = output(v); err != nil {
-						return err
-					}
-					if v.Error != "" {
-						return errors.New(v.Error)
-					}
-					if v.Report != nil && v.Report.Verdict != "passed" {
-						return fmt.Errorf("independent verification: %s", v.Report.Verdict)
-					}
-					return nil
-				}
-				key := string(v.State.Phase) + v.PendingActionID + v.State.Observation.ID
-				if (v.State.Phase == workflow.AwaitingApproval || v.State.Phase == workflow.Paused) && key != prompted {
-					prompted = key
-					fmt.Fprintf(os.Stderr, "%s: action=%s observation=%s epoch=%d controller=%s reason=%s\nType approve, deny, cancel, pause, takeover, act <kind name>, handback, refresh, focus, or resume.\n", v.State.Phase, v.PendingActionID, v.State.Observation.ID, v.State.Epoch, v.Controller, v.State.Reason)
-				}
+			if mode == app.AgentModeYolo {
+				o.answers = readAnswers(ctx, os.Stdin)
 			}
+		default:
+			o.stdinTTY = isTerminal(os.Stdin)
+			lines := make(chan string, 1)
+			go func() {
+				scanner := bufio.NewScanner(os.Stdin)
+				for scanner.Scan() {
+					select {
+					case lines <- scanner.Text():
+					case <-ctx.Done():
+						return
+					}
+				}
+			}()
+			o.lines = lines
 		}
+		watchErr := watchRun(ctx, a, id, o)
+		if *exportPath == "" || ctx.Err() != nil {
+			return watchErr
+		}
+		path, err := a.Export(id, *exportPath)
+		if err != nil {
+			return errors.Join(watchErr, fmt.Errorf("export: %w", err))
+		}
+		if *events {
+			err = writeLine(os.Stdout, runEvent{Event: "exported", RunID: id, Path: path})
+		} else {
+			_, err = fmt.Fprintln(os.Stderr, "exported", path)
+		}
+		return errors.Join(watchErr, err)
 	default:
 		return fmt.Errorf("unknown command %q", command)
 	}

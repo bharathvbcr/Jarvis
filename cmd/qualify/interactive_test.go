@@ -162,6 +162,23 @@ func TestExactApprovalUsesBackendAttemptAndObservationIDs(t *testing.T) {
 		t.Fatalf("wrong binding: %+v", c)
 	}
 }
+func TestQualificationRefusesAnAgentOperatedRun(t *testing.T) {
+	agentView := reviewedView()
+	agentView.Operator = app.OperatorAgent
+	h := &scriptedHost{views: []app.RunView{agentView}}
+	// Bounded: were the guard missing, the loop would otherwise wait forever.
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	_, approvals, err := waitTrialWithApproval(ctx, h, "run-1", approveFunc(func(context.Context, approvalPrompt) (bool, error) { return true, nil }), expectedForm{})
+	if err == nil || len(approvals.Granted) != 0 || len(h.controls) != 1 || h.controls[0].Kind != "cancel" {
+		t.Fatalf("agent-operated run was not refused: %+v %v", h.controls, err)
+	}
+	finished := agentView
+	finished.Finished = true
+	if _, _, err := waitTrialWithApproval(context.Background(), &scriptedHost{views: []app.RunView{finished}}, "run-1", nil, expectedForm{}); err == nil {
+		t.Fatal("finished agent-operated run counted")
+	}
+}
 func TestApprovalEOFAndCancellationNeverGrantAndUseBoundedCleanup(t *testing.T) {
 	for _, cause := range []error{io.EOF, context.Canceled, context.DeadlineExceeded} {
 		h := &scriptedHost{views: []app.RunView{reviewedView()}}
