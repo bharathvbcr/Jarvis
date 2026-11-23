@@ -7,27 +7,73 @@
 [![Website](https://img.shields.io/badge/website-jarvis.vbcr.dev-B91C1C?style=flat&logo=safari&logoColor=white)](https://jarvis.vbcr.dev/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
+## What Jarvis is
+
+Jarvis is the computer-use agent arm for Manvi and Vani, with more agents to follow. It is the computer-use capability that Manvi-based agents call: an agent decides what to do, and Jarvis observes and operates a native desktop on its behalf, under approval gates and with recorded evidence. This is the owner's direction as of 2026-11-22.
+
 Jarvis discovers desktop capabilities with Gemini, freezes them into typed artifacts, and executes those artifacts through Manvi with zero model decisions. DevCouncil evaluates an independent acceptance contract against the resulting evidence. The native bank has two tenant layouts; the native workbench exposes catalog, editing, execution, approvals, takeover, diagnostics, and evidence inspection.
 
-The build recorded in [`evidence/build-verification.json`](evidence/build-verification.json)
-(2026-09-09, Manvi `4818dc2`, DevCouncil `4ccadc6`) passed its automated suites; that
-run has not been re-recorded at the pins now in `upstream.lock.json`. The campaigns
-below record their own executables, not those pins. The fresh macOS campaign on that build completed
-**23/40 read-only replays**, with **17 safe suspensions after input-counter changes**;
-all 40 independent saved-state checks passed. Those suspensions were attributed to
-bare pointer motion by a [controlled experiment](evidence/guard-partition/) and the
-admission guard was narrowed to the input that can actually commit a change. The
-campaign that followed completed **35/40**, again with all 40 saved-state checks
-unchanged, and its four input refusals are attributed by input category — all
-genuine human keyboard and pointer-button activity during the run, none of it
-pointer motion; a fifth run stopped on an unsatisfied wait predicate. Neither is a
-clean stability pass.
-Earlier macOS and Linux X11 campaigns each passed 20/20 per tenant on their recorded
-executables. First-attempt successes were zero on macOS and one on Linux; retries
-are reported separately. The Linux refresh is blocked by a UTM startup crash.
-Live Gemini and human-approved account changes remain unqualified; Windows
-runtime qualification is deferred by the user. See the exact results in
-[`evidence/`](evidence/README.md) and the remaining [acceptance gates](docs/requirements-evidence.md).
+## How an agent uses Jarvis
+
+An agent reaches Jarvis through its CLI (`jarvis ops`, `jarvis call`, `jarvis replay`, `jarvis discover`, `jarvis verify`) or through the same operations on the Manvi host plane. The contract is in [docs/agent-cli.md](docs/agent-cli.md) (gate, envelopes, yolo mode, exit codes) and [docs/host-jobs.md](docs/host-jobs.md) (background jobs).
+
+### Operations by class
+
+Every `jarvis.*` op the host serves is classified in `internal/app/agent.go` (`agentOps`), default-deny. `agent` ops read, compile or diagnose from disk and run from a one-shot `jarvis call`. `process-scoped` ops address a run or job held in a live process, so a one-shot call is refused with `E_PROCESS_SCOPED`. `human-only` ops approve, act, take over, promote, set a credential, touch a sensitive input or export a run, and are refused with `E_AGENT_REFUSED` unless yolo mode admits them. `TestREADMEOpsTableMatchesAgentOps` fails when this table and `agentOps` disagree.
+
+| Op | Class | Notes |
+| --- | --- | --- |
+| `jarvis.catalog.list` | agent | params may be inline |
+| `jarvis.catalog.history` | agent | params may be inline |
+| `jarvis.capability.read` | agent | params may be inline; path params confined to the product root |
+| `jarvis.capability.compile` | agent | params may be inline |
+| `jarvis.codegen` | agent | params may be inline; path params confined to the product root |
+| `jarvis.trace.load` | agent | params may be inline; path params confined to the product root |
+| `jarvis.trace.replay` | agent | path params confined to the product root |
+| `jarvis.inputs.list-keys` | agent | params may be inline |
+| `jarvis.doctor` | agent | background job (`jarvis.job.get`); params may be inline |
+| `jarvis.run.start` | process-scoped | - |
+| `jarvis.run.list` | process-scoped | - |
+| `jarvis.run.get` | process-scoped | - |
+| `jarvis.run.control` | process-scoped | - |
+| `jarvis.intervention.list` | process-scoped | - |
+| `jarvis.anchor.create` | process-scoped | background job (`jarvis.job.get`) |
+| `jarvis.frame.get` | process-scoped | background job (`jarvis.job.get`) |
+| `jarvis.evidence.verify` | process-scoped | background job (`jarvis.job.get`) |
+| `jarvis.job.get` | process-scoped | - |
+| `jarvis.discovery.start` | process-scoped | - |
+| `jarvis.discovery.get` | process-scoped | - |
+| `jarvis.catalog.promote` | human-only | admitted to `jarvis call` in yolo mode; params may be inline |
+| `jarvis.inputs.put` | human-only | admitted to `jarvis call` in yolo mode |
+| `jarvis.run.assist` | human-only | needs a live run or credential; yolo reaches it through `--events` |
+| `jarvis.run.takeover` | human-only | needs a live run or credential; yolo reaches it through `--events` |
+| `jarvis.run.handback` | human-only | needs a live run or credential; yolo reaches it through `--events` |
+| `jarvis.run.act` | human-only | needs a live run or credential; yolo reaches it through `--events` |
+| `jarvis.key.set` | human-only | needs a live run or credential; yolo reaches it through `--events` |
+| `jarvis.evidence.export` | human-only | needs a live run or credential; yolo reaches it through `--events` |
+| `jarvis.inputs.get` | human-only | refused in every mode: it would print a stored secret into the transcript |
+
+### CLI quickstart
+
+```sh
+./build/jarvis ops                                   # every served op with its class
+./build/jarvis call jarvis.catalog.list              # one op, one JSON envelope line
+./build/jarvis call jarvis.doctor                    # background op: call polls it to the end
+./build/jarvis replay --events --capability examples/balance.json --tenant north
+./build/jarvis discover --events --provider fixture --tenant north --task '...'
+./build/jarvis verify --contract CONTRACT --bundle BUNDLE ...
+```
+
+- **Exit codes:** 0 ok; 1 the operation or run failed or verification did not pass; 2 usage error; 3 refused by the agent gate; 4 a run reached an unanswered human gate under `--events` and was cancelled; 5 `--timeout` passed.
+- **Async jobs:** `jarvis.doctor`, `jarvis.evidence.verify`, `jarvis.frame.get` and `jarvis.anchor.create` (and `jarvis.evidence.export`) answer on a host connection with `job_id` and `status: "pending"`; poll `jarvis.job.get` until `succeeded`, `failed` or `cancelled` ([docs/host-jobs.md](docs/host-jobs.md)). A one-shot `jarvis call jarvis.doctor` does that polling itself, bounded by `--timeout`.
+- **Approvals:** by default an agent is refused approval, takeover, credential and sensitive-input operations, and the interactive CLI accepts `approve` only from a terminal. `replay --events` and `discover --events` stream NDJSON and cancel at the first human gate (exit 4).
+- **Yolo mode** (`--yolo` or `JARVIS_AGENT_MODE=yolo`) lets an agent operate Jarvis end to end: it answers gates with NDJSON controls on `--events` stdin, acts, takes over, promotes, and stores inputs. Each agent-operated run is marked (an `operator.json` sidecar, journal actor `agent`, `"operator":"agent"` in the run view), never counts as a human approval, and is refused by `cmd/qualify`.
+
+## Consumers
+
+- **Manvi.** Jarvis imports Manvi's `serve` package and registers its `jarvis.*` ops as a `serve.Module` (`App.Configure` in `internal/app/module.go`), so they are served on the same host plane as Manvi's own ops.
+- **Vani.** What the code shows: `profiles/vani.json` and `policies/vani.json` define an inputs catalog of contact fields (given and family name, email, phone, city, country, LinkedIn, GitHub, website), served by `jarvis.inputs.put`, `jarvis.inputs.list-keys` and `jarvis.inputs.get`. A Vani profile has `kind: "inputs"`; the desktop loader refuses that kind, so Vani profiles never drive a desktop window (`internal/app/profile.go`).
+- **Open gap.** There is no documented path yet for a Manvi agent to load Jarvis at runtime. Manvi only build-checks Jarvis, through its `scripts/check-consumers.sh`; nothing in this repository shows an agent loading Jarvis as a module.
 
 ## System Architecture
 
@@ -155,11 +201,33 @@ flowchart LR
 
 Manvi owns the workflow/compiler/catalog, native broker/client, provider integration, journal privacy, cancellation and per-attempt budget ledger. DevCouncil owns evidence validation and acceptance predicates. Jarvis owns bank/workbench composition, reviewed tenant profiles, independent scenario expectations, qualification and packaging. Generic components are developed in their upstream worktrees, not copied here.
 
-## Build and run
+## Evidence status
 
-Prerequisites: Rust and Cargo with the target platform toolchain, Go 1.27.4, platform accessibility and capture permissions, and the pinned Manvi/DevCouncil checkouts. `cmd/dev` uses Go/Rust only. Platform-specific prerequisites are in `docs/platforms.md`.
+The build recorded in [`evidence/build-verification.json`](evidence/build-verification.json)
+(2026-09-09, Manvi `4818dc2`, DevCouncil `4ccadc6`) passed its automated suites; that
+run has not been re-recorded at the pins now in `upstream.lock.json`. The campaigns
+below record their own executables, not those pins. The fresh macOS campaign on that build completed
+**23/40 read-only replays**, with **17 safe suspensions after input-counter changes**;
+all 40 independent saved-state checks passed. Those suspensions were attributed to
+bare pointer motion by a [controlled experiment](evidence/guard-partition/) and the
+admission guard was narrowed to the input that can actually commit a change. The
+campaign that followed completed **35/40**, again with all 40 saved-state checks
+unchanged, and its four input refusals are attributed by input category — all
+genuine human keyboard and pointer-button activity during the run, none of it
+pointer motion; a fifth run stopped on an unsatisfied wait predicate. Neither is a
+clean stability pass.
+Earlier macOS and Linux X11 campaigns each passed 20/20 per tenant on their recorded
+executables. First-attempt successes were zero on macOS and one on Linux; retries
+are reported separately. The Linux refresh is blocked by a UTM startup crash.
+Live Gemini and human-approved account changes remain unqualified; Windows
+runtime qualification is deferred by the user. See the exact results in
+[`evidence/`](evidence/README.md) and the remaining [acceptance gates](docs/requirements-evidence.md).
 
-The assignment archive includes `build/upstream/Manvi.bundle`,
+## Build, pins and run
+
+Prerequisites: Rust and Cargo with the target platform toolchain, Go 1.27.4, platform accessibility and capture permissions, and the pinned Manvi/DevCouncil checkouts. Upstream revisions are pinned in `upstream.lock.json` (with `go.mod` for Manvi); this README copies no SHAs, so read the lock for the current pins and run `go run ./cmd/dev check-pins` to verify checkouts against it. `cmd/dev` uses Go/Rust only. Platform-specific prerequisites are in `docs/platforms.md`.
+
+A packaged source archive includes `build/upstream/Manvi.bundle`,
 `build/upstream/DevCouncil.bundle` and `build/upstream/gusset.bundle`. Restore the exact reviewed revisions without
 depending on unpublished remote branches:
 
@@ -215,18 +283,6 @@ Account-changing replay:
 ```
 
 The workflow pauses for a human approval of the exact action, revision, input binding and observed form. In yolo mode an agent may answer instead; that run is recorded as agent-operated and is not a human approval. In the CLI, type `approve` or `deny`; the workbench provides the corresponding reviewed action controls. Approval is consumed once. After uncertain delivery the engine fences input, attempts one bounded same-session observation, and retains `outcome_unknown`. The reconciliation report records observed UI facts without asserting a durable account change. Automatic mutation retry and terminal-run resume remain prohibited.
-
-## Agent CLI
-
-Agents that cannot rely on an MCP server can drive the same operations from a shell:
-
-- `jarvis ops` lists every served operation with its agent class.
-- `jarvis call OP` runs one of them and writes one JSON envelope line.
-- `jarvis replay --events` and `jarvis discover --events` stream NDJSON. They cancel at the first human gate and exit 4.
-
-By default, agents are refused approval, takeover, credential and sensitive-input operations, and the interactive CLI accepts `approve` only from a terminal.
-
-Yolo mode (`--yolo` or `JARVIS_AGENT_MODE=yolo`) lets an agent operate Jarvis fully: it answers gates with NDJSON controls on `--events` stdin, acts, takes over, promotes, and stores inputs. Each agent-operated run is marked: an `operator.json` sidecar, journal actor `agent`, and `"operator":"agent"` in the run view. These runs never count as human approvals, and `cmd/qualify` refuses them. See [docs/agent-cli.md](docs/agent-cli.md).
 
 ## Discovery and assisted mode
 
@@ -297,7 +353,7 @@ panic caught at the boundary. The panic line on stderr is that proof running.
 
 Read-only qualification never approves a business change. The denial scenario records denied approval and checks that saved state stayed unchanged. Successful account-changing qualification requires real human approval on every OS/tenant combination. All-success 20/20 results have an approximately 86.1% one-sided 95% exact-binomial lower bound under independence; repeated desktop runs are regression evidence, not proof of independent reliability. [Exact-binomial method](https://itl.nist.gov/div898/software/dataplot/refman2/auxillar/exacbino.htm)
 
-See `REPORT.md` for the required assignment narrative and `docs/requirements-evidence.md` for the acceptance matrix.
+See `REPORT.md` for the design notes and `docs/requirements-evidence.md` for the acceptance matrix.
 
 ## License
 

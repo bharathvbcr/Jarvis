@@ -13,7 +13,7 @@ evidence/discovery/<RUN_ID>/
 ```
 
 Copy only the public, scrubbed artifacts listed in stage 6. Private Gemini
-continuation under `.local/discovery/` is never a submission artifact.
+continuation under `.local/discovery/` is never a published artifact.
 
 ## Stage 0 — Build and doctor
 

@@ -75,6 +75,53 @@ func TestEveryServedJarvisOpIsClassified(t *testing.T) {
 	}
 }
 
+// readmeOpsTable parses the ops table in README.md: rows of
+// "| `jarvis.X` | class | notes |". It returns op -> class.
+func readmeOpsTable(t *testing.T) map[string]string {
+	t.Helper()
+	raw, err := os.ReadFile(filepath.Join("..", "..", "README.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	rows := map[string]string{}
+	for _, line := range strings.Split(string(raw), "\n") {
+		if !strings.HasPrefix(line, "| `jarvis.") {
+			continue
+		}
+		cells := strings.Split(line, "|")
+		if len(cells) < 4 {
+			t.Fatalf("malformed ops row: %q", line)
+		}
+		op := strings.Trim(strings.TrimSpace(cells[1]), "`")
+		if _, dup := rows[op]; dup {
+			t.Errorf("README lists %s twice", op)
+		}
+		rows[op] = strings.TrimSpace(cells[2])
+	}
+	return rows
+}
+
+// TestREADMEOpsTableMatchesAgentOps keeps the README's ops table from drifting
+// from the agentOps classification: every op listed under its class, and every
+// classified op listed.
+func TestREADMEOpsTableMatchesAgentOps(t *testing.T) {
+	rows := readmeOpsTable(t)
+	for op, p := range agentOps {
+		got, ok := rows[op]
+		switch {
+		case !ok:
+			t.Errorf("%s is classified %s in agentOps but missing from the README ops table", op, p.class)
+		case got != string(p.class):
+			t.Errorf("README lists %s as %q, agentOps classifies it %s", op, got, p.class)
+		}
+	}
+	for op := range rows {
+		if _, ok := agentOps[op]; !ok {
+			t.Errorf("README lists %s, which agentOps does not classify", op)
+		}
+	}
+}
+
 func agentApp(t *testing.T) (*App, string) {
 	t.Helper()
 	root := t.TempDir()

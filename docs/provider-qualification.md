@@ -36,7 +36,7 @@ above the current promotional rates, and reserves before every HTTP attempt.
 
    Require a new live provider request after restoration and another native
    observation/tool/result cycle. Local deserialization success is insufficient.
-   Private continuation files are never submission artifacts.
+   Private continuation files are never published artifacts.
 5. Replay the resulting immutable catalog artifact against a fresh bank process,
    supplying `scenarios/balance-m1001.contract.json` independently. Confirm zero
    model requests and a passed evidence report; use the qualification harness's

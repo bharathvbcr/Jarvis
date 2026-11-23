@@ -1,4 +1,4 @@
-# Jarvis assignment report
+# Jarvis design notes
 
 ## Architecture
 
@@ -63,4 +63,4 @@ reports Accessibility and Screen Recording denied under its own application iden
 
 Wayland unattended input, arbitrary inaccessible-canvas text extraction, distributed orchestration and extra runtime frameworks are excluded. All six optional features have implemented surfaces; qualification status is tracked in [the requirement matrix](docs/requirements-evidence.md). Live Gemini discovery/save-restore and assisted recovery require a locally supplied credential. Successful creation, false acknowledgment, uncertain post-commit delivery, completed takeover and approved visual clicks still require genuine native qualification. macOS has a bounded HID-counter guard, but hardware-versus-injected classification is unqualified; continuous monitoring and Windows/X11 external-input listeners are not implemented. Packaging does not complete those acceptance gates. Fixtures and semantic UI tests do not replace these checks.
 
-The two optional features highlighted for submission are the native capability catalog with typed invocation, and generated Go callers that delegate to the canonical executor. Matching diagnostics and approval policy, assisted recovery, tenant bindings, and N-run diagnostic reports provide the other four source surfaces. The Linux refresh is currently blocked before guest startup by a recorded UTM host failure, with zero new trials attempted. The packaged workbench requires its own Accessibility and Screen Recording grants. Submission readiness depends on completing the evidence matrix, not on feature names or a successful build alone.
+The native capability catalog with typed invocation and the generated Go callers that delegate to the canonical executor are the two most developed optional surfaces. Matching diagnostics and approval policy, assisted recovery, tenant bindings, and N-run diagnostic reports provide the other four source surfaces. The Linux refresh is currently blocked before guest startup by a recorded UTM host failure, with zero new trials attempted. The packaged workbench requires its own Accessibility and Screen Recording grants. Release readiness depends on completing the evidence matrix, not on feature names or a successful build alone.

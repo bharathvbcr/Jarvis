@@ -57,6 +57,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
+- Reframed Jarvis as the computer-use agent arm for Manvi and Vani, with more agents to follow (owner direction, 2026-11-22). `README.md` now opens on that role, lists every `jarvis.*` op by class as `agentOps` classifies it, describes the Manvi and Vani consumers from what the code shows, states as an open gap that no documented path lets a Manvi agent load Jarvis at runtime, and points to `upstream.lock.json` for pins. `TestREADMEOpsTableMatchesAgentOps` fails when the README table and `agentOps` disagree.
+- Removed assignment and submission framing from `README.md`, `REPORT.md` (now "Jarvis design notes", same path), `docs/IMPLEMENTATION.md`, `docs/requirements-evidence.md`, `docs/provider-qualification.md` and `docs/live-discovery-runbook.md`. Dated evidence and its figures are unchanged; stale pin mentions are marked historical.
+- Moved the self-superseded `docs/publish-status.md` to `docs/archive/publish-status.md`.
+- Untracked the installed skill copies under `.agents/skills`, `.claude/skills` and `.cursor/skills` and `.devcouncil-skills.json`; `.gitignore` keeps a reinstall (`devmap skills install`, `dev skills scaffold`) untracked.
 - Clarified across `README.md`, `REPORT.md`, `docs/platforms.md`, `docs/publish-status.md`, and `docs/requirements-evidence.md` that automated build verification in `evidence/build-verification.json` was recorded against earlier pins (Manvi `4818dc2`, DevCouncil `4ccadc6`) and not re-recorded at current `upstream.lock.json` pins (`067c4a2`).
 - Detailed the 35/40 narrowed-guard macOS campaign outcomes in `evidence/macos-guard-partition-40.json`: four human input refusals attributed by category (two `pointer_button`, one `keyboard`, one `keyboard, pointer_button`) and one stopped on an unsatisfied wait predicate (`067c4a2`).
 

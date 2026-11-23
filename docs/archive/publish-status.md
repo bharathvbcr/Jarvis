@@ -40,4 +40,4 @@ workspace `dev bootstrap` or `dev workspace` writes.
 
 1. **Screen Recording** — grant to Terminal/Cursor and `build/manvi-desktop`, then re-record Phase-6 curated bundles and the reduced 10/tenant campaign (`evidence/README.md`).
 2. **Live Gemini discovery** — set `GEMINI_API_KEY` and follow `docs/live-discovery-runbook.md`; copy sanitized output to `evidence/discovery/<RUN_ID>/`.
-3. **Optional council close** — with OpenRouter configured, lease and `dev verify` remaining tasks from a clean diff window if a requirement→task coverage report is required for submission.
+3. **Optional council close** — with OpenRouter configured, lease and `dev verify` remaining tasks from a clean diff window if a requirement→task coverage report is required.
