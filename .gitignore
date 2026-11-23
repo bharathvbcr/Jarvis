@@ -52,7 +52,7 @@ tasks/
 !.devcouncil/
 !.devcouncil/config.yaml
 
-# Installed skill copies and their lock (devmap skills install / dev skills scaffold)
+# Installed skill copies and their lock (devmap skills install / devcouncil skills scaffold)
 # are regenerated per checkout and stay untracked.
 .agents/skills/
 .claude/skills/
