@@ -5,6 +5,7 @@ github.com/awnumar/memguard v0.23.0/go.mod h1:olVofBrsPdITtJ2HgxQKrEYEMyIBAIciVG
 github.com/bharathvbcr/Manvi v0.0.6-0.20261019190646-9bea4d98d35f h1:Ryg3JE2rCTpWKf3CZI5TJyALYXStAi9zZRnXI2zTgFg=
 github.com/bharathvbcr/Manvi v0.0.6-0.20261026165110-e60b6e01eea7 h1:uTDMLA7/67lZK7i1S3HVUuOxgHFFCMqftlyAjQGPUYQ=
 github.com/bharathvbcr/Manvi v0.0.6-0.20261029005942-ddec7b0c907a h1:WUHBsdvHlzXlT5XeDz2qgey9H3eztPgXUGJtPdkLSJQ=
+github.com/bharathvbcr/Manvi v0.0.6-0.20261125003843-a86369b6b554 h1:r4yIfCbqKQVPrVOE/8Vgvqg03+fUsq0ETBw1QPtUsM8=
 github.com/bharathvbcr/Manvi/manvi v0.0.0-20260910143105-adeb253a76f2 h1:mGD9ERoKRGFg/z65GZzvc5oi+0jujKLqyYnk9gzsdus=
 github.com/bharathvbcr/Manvi/manvi v0.0.0-20260910143105-adeb253a76f2/go.mod h1:VenFbSZKHPpIizjIEf93j+em99LekNuI+T4WjXbR/nc=
 github.com/bharathvbcr/Manvi/manvi v0.0.0-20261017134948-5dbf47c78cc5 h1:egIpoUrO1yMp96FhUVAzxmkOG4KY0+IhuRAxUMsZXx8=
@@ -27,6 +28,8 @@ github.com/bharathvbcr/Manvi/manvi v0.0.0-20261123172547-66d17fa7a46b h1:0Si6biT
 github.com/bharathvbcr/Manvi/manvi v0.0.0-20261123172547-66d17fa7a46b/go.mod h1:utMUCa0O/te7MrA2jTqZ7/zdaojdCsfFtqmylbLae4g=
 github.com/bharathvbcr/Manvi/manvi v0.0.0-20261124095131-907eeed19295 h1:uw2DhFQDN9QkP4+S17Azj2bD6Vu1ynTcfBgWgFkpey0=
 github.com/bharathvbcr/Manvi/manvi v0.0.0-20261124095131-907eeed19295/go.mod h1:utMUCa0O/te7MrA2jTqZ7/zdaojdCsfFtqmylbLae4g=
+github.com/bharathvbcr/Manvi/manvi v0.0.0-20261125003843-a86369b6b554 h1:8qkM8sV2dKT0Rm06H4S/oE25xrSvtnbNt91SeVeajuU=
+github.com/bharathvbcr/Manvi/manvi v0.0.0-20261125003843-a86369b6b554/go.mod h1:utMUCa0O/te7MrA2jTqZ7/zdaojdCsfFtqmylbLae4g=
 github.com/samber/mo v1.17.0 h1:EbeLc7nxIdpalstxQQakLOcXxULuMRqo7PJPtY18bQg=
 github.com/samber/mo v1.17.0/go.mod h1:DlgzJ4SYhOh41nP1L9kh9rDNERuf8IqWSAs+gj2Vxag=
 golang.org/x/crypto v0.56.0 h1:GUh5Ii4J5jtcseSMiRqr1jXCNHoxjeV9Fmekc2oLy6Y=
