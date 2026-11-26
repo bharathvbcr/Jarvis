@@ -256,7 +256,7 @@ were found on PATH on 2026-11-18.
 |---|---|
 | `devmap_*` | `devmap`. Ran on 2026-11-18: `paths --json`, `status --json`, `impact FILE::SYMBOL --json`, `affected FILE --json`, `gap-record`. Listed in `AGENTS.md` but not run: `explore`, `search`, `ask --evidence`. |
 | DevCouncil MCP | `devcouncil`, also installed as `dev` and `devc`. Taken from `devcouncil --help`, not run: `gate status --json`, `task show ID --json`, `verify TASK_ID --json`, `doctor --json`. |
-| `gitpulse_*` | No query CLI was found; `gitpulse-hook` is the hook entry point. Report the gap rather than substituting another tool. |
+| `waylode_*` | No query CLI was found; `waylode-hook` is the hook entry point. Report the gap rather than substituting another tool. |
 
 If a devmap MCP entry points at a missing binary, the CLI on PATH still
 answers. `devmap paths --json` reports the dead registration as
