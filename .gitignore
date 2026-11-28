@@ -177,3 +177,12 @@ Thumbs.db
 
 # DevCouncil local state
 !/.devcouncil/
+
+# Point-in-time audit and branch reports, the inspiration list, the archived
+# publish status and the unimplemented flush-batching proposal are local-only:
+# untracked 2026-11-28; history up to ed8a1bb148 still has them.
+/AUDIT_REPORT.md
+/BRANCH_REPORT.md
+/docs/inspiration.md
+/docs/archive/
+/docs/evidence-journal-flush-batching.md
