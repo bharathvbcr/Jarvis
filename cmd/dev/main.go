@@ -50,7 +50,7 @@ func main() {
 }
 func run() error {
 	if len(os.Args) < 2 {
-		return errors.New("commands: bootstrap, workspace, build, test, gusset, qualify, check-pins, bundle-sources, package")
+		return errors.New("commands: bootstrap, workspace, build, test, gusset, qualify, check-pins, check-specs, bundle-sources, package")
 	}
 	action := os.Args[1]
 	f := flag.NewFlagSet(action, flag.ContinueOnError)
@@ -122,6 +122,8 @@ func run() error {
 		return workspace()
 	case "check-pins":
 		return checkPins(ctx, *manvi, *dc, *gusset)
+	case "check-specs":
+		return command(root, "devcouncil", "spec", "validate", "--all", "--strict")
 	case "build":
 		if err := workspace(); err != nil {
 			return err

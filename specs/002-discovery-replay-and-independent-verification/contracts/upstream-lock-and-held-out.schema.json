@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jarvis.local/specs/002/upstream-lock-and-held-out.schema.json",
+  "title": "Jarvis upstream lock and held-out verification lock",
+  "description": "Shape of upstream.lock.json as parsed by cmd/dev, and the held-out expectations of internal/evidence.HeldOutLock expressed as lower-case SHA-256 hex strings.",
+  "$defs": {
+    "source": {
+      "type": "object",
+      "required": ["url", "revision"],
+      "properties": {
+        "url": { "type": "string", "minLength": 1 },
+        "revision": { "type": "string", "pattern": "^[0-9a-f]{40}$" }
+      }
+    },
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "upstreamLock": {
+      "type": "object",
+      "required": ["schema_version", "manvi", "devcouncil", "gusset"],
+      "properties": {
+        "schema_version": { "const": 1 },
+        "manvi": { "$ref": "#/$defs/source" },
+        "devcouncil": { "$ref": "#/$defs/source" },
+        "gusset": { "$ref": "#/$defs/source" }
+      }
+    },
+    "heldOutLock": {
+      "type": "object",
+      "required": ["VerifierSHA256", "ContractSHA256", "CapabilitySHA256"],
+      "properties": {
+        "VerifierSHA256": { "$ref": "#/$defs/sha256" },
+        "ContractSHA256": { "$ref": "#/$defs/sha256" },
+        "CapabilitySHA256": { "$ref": "#/$defs/sha256" },
+        "PolicySHA256": { "$ref": "#/$defs/sha256" }
+      }
+    }
+  },
+  "oneOf": [
+    { "$ref": "#/$defs/upstreamLock" },
+    { "$ref": "#/$defs/heldOutLock" }
+  ]
+}

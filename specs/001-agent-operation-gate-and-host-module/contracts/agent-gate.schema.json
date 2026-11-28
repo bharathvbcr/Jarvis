@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jarvis.local/specs/001/agent-gate.schema.json",
+  "title": "Jarvis agent gate: call envelope, job view and operator record",
+  "description": "Wire and on-disk shapes of the agent surface in specs/001: the one-line envelope printed by `jarvis call`, the background job view returned by jarvis.job.get, and the operator.json sidecar of an agent-operated run.",
+  "$defs": {
+    "envelope": {
+      "type": "object",
+      "required": ["id", "ok"],
+      "properties": {
+        "id": { "type": "string" },
+        "ok": { "type": "boolean" },
+        "result": {},
+        "error": {
+          "type": "object",
+          "required": ["code", "message"],
+          "properties": {
+            "code": { "type": "string", "examples": ["E_AGENT_REFUSED", "E_PROCESS_SCOPED", "E_JARVIS"] },
+            "message": { "type": "string" }
+          }
+        }
+      }
+    },
+    "jobView": {
+      "type": "object",
+      "required": ["job_id", "operation", "status"],
+      "properties": {
+        "job_id": { "type": "string" },
+        "operation": { "type": "string" },
+        "status": { "enum": ["pending", "running", "succeeded", "failed", "cancelled"] },
+        "result": {},
+        "error": { "type": "string" }
+      }
+    },
+    "operatorRecord": {
+      "type": "object",
+      "required": ["schema_version", "operator", "mode", "human_qualified"],
+      "properties": {
+        "schema_version": { "type": "integer" },
+        "operator": { "const": "agent" },
+        "mode": { "type": "string" },
+        "human_qualified": { "const": false }
+      }
+    }
+  },
+  "oneOf": [
+    { "$ref": "#/$defs/envelope" },
+    { "$ref": "#/$defs/jobView" },
+    { "$ref": "#/$defs/operatorRecord" }
+  ]
+}
